@@ -221,7 +221,11 @@ CMD ["npm", "start"]
 - **File Storage**: Automatic data directory creation
 - **Event Bus**: Singleton event emitter for loose coupling
 
-## Related
+## Related Projects
 
-Part of MS-14 (Technical Proof of Concept) - validates core client-server integration patterns before full MindMeld implementation.
-<!-- PR ready for review -->
+- **MindMeld Client**: https://github.com/maudlin/mindmeld
+- **Developer Guide**: https://github.com/maudlin/mindmeld/blob/main/docs/developer-guide.md
+
+## Project Context
+
+Part of MS-14 (Technical Proof of Concept) - validates core client-server integration patterns before full MindMeld implementation. This server provides the backend foundation for the MindMeld mind mapping application.
