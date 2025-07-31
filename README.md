@@ -224,3 +224,4 @@ CMD ["npm", "start"]
 ## Related
 
 Part of MS-14 (Technical Proof of Concept) - validates core client-server integration patterns before full MindMeld implementation.
+<!-- PR ready for review -->
