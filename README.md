@@ -2,6 +2,14 @@
 
 Production-ready Express.js server for MindMeld mind mapping application, built following MindMeld client standards.
 
+> Status: Active redesign in progress
+>
+> We’re migrating to an MVP that manages per-map resources via a /maps API backed by SQLite (better-sqlite3) with optimistic concurrency. The current implementation still serves a single global state and file storage. See:
+> - To-be architecture: design/to-be/README.md
+> - To-be OpenAPI: design/to-be/openapi.yaml
+> - ADRs: design/to-be/adr/
+> - Merge strategy: design/to-be/MERGE-STRATEGY.md
+
 ## Features
 
 - **Event-Driven Architecture**: Central event bus with "noun.verb" event naming
@@ -39,7 +47,10 @@ Production-ready Express.js server for MindMeld mind mapping application, built 
    npm run validate  # lint + format + test
    ```
 
-## API Endpoints
+## API
+
+### As-Is API (current code)
+See design/as-is/openapi.yaml for full spec.
 
 ### GET /health
 Returns server status, uptime, and state statistics.
@@ -103,6 +114,16 @@ Returns state statistics for monitoring.
 }
 ```
 
+### Planned API (to-be)
+- GET /maps
+- POST /maps
+- GET /maps/{id}
+- PUT /maps/{id} (with version or If-Match)
+- PATCH /maps/{id}/meta
+- DELETE /maps/{id}
+
+See design/to-be/openapi.yaml for the draft spec.
+
 ## Architecture
 
 ### Project Structure
@@ -152,11 +173,22 @@ eventBus.emit('health.checked', { healthy: true, stats });
 ## Configuration
 
 Environment variables:
+
+### As-Is (file storage)
 - `PORT` - Server port (default: 3001)
 - `CORS_ORIGIN` - CORS origin (default: http://localhost:8080)
 - `STATE_FILE_PATH` - State file location (default: ./data/state.json)  
 - `JSON_LIMIT` - Max JSON payload size (default: 50mb)
 - `NODE_ENV` - Environment (development/production)
+
+### Planned (SQLite)
+- `SQLITE_FILE` - SQLite database file path (or use `DATABASE_URL`)
+- `PORT` - Server port (default: 3001)
+- `CORS_ORIGIN` - CORS origin (default: http://localhost:8080)
+- `JSON_LIMIT` - Max JSON payload size (default: 50mb)
+- `NODE_ENV` - Environment (development/production)
+
+Notes: planned implementation uses SQLite in WAL mode with transactional writes and optimistic concurrency (version/ETag).
 
 ## Development
 
