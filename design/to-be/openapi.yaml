@@ -1,0 +1,211 @@
+openapi: 3.1.0
+info:
+  title: MindMeld Server API (MVP)
+  version: 0.1.0
+  description: Minimal API for managing mind map documents with optimistic concurrency.
+servers:
+  - url: http://localhost:3001
+    description: Local development
+tags:
+  - name: maps
+paths:
+  /maps:
+    get:
+      tags: [maps]
+      summary: List maps (id, name, updated_at)
+      operationId: listMaps
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MapSummary"
+    post:
+      tags: [maps]
+      summary: Create a map
+      operationId: createMap
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MapCreateRequest"
+      responses:
+        "201":
+          description: Created
+          headers:
+            ETag:
+              description: Weak or strong ETag representing the current state
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Map"
+        "400": { $ref: "#/components/responses/BadRequest" }
+  /maps/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      tags: [maps]
+      summary: Get a map
+      operationId: getMap
+      responses:
+        "200":
+          description: OK
+          headers:
+            ETag:
+              description: Weak or strong ETag representing the current state
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Map"
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: [maps]
+      summary: Replace map state with optimistic concurrency
+      operationId: updateMap
+      parameters:
+        - name: If-Match
+          in: header
+          required: false
+          description: Supply last-seen ETag to protect against concurrent updates (alternative to version field)
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MapUpdateRequest"
+      responses:
+        "200":
+          description: Updated
+          headers:
+            ETag:
+              description: New ETag after update
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Map"
+        "409":
+          description: Version conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "412":
+          description: Precondition failed (If-Match mismatch)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: [maps]
+      summary: Delete a map
+      operationId: deleteMap
+      responses:
+        "204": { description: No Content }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /maps/{id}/meta:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    patch:
+      tags: [maps]
+      summary: Update map metadata (e.g., name)
+      operationId: patchMapMeta
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MapMetaPatchRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Map"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+components:
+  schemas:
+    MapSummary:
+      type: object
+      required: [id, name, updated_at]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string, minLength: 1 }
+        updated_at: { type: string, format: date-time }
+    Map:
+      type: object
+      required: [id, name, state, version, updated_at]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string, minLength: 1 }
+        state:
+          description: Opaque client JSON document representing a map
+          type: object
+          additionalProperties: true
+        version:
+          description: Monotonic integer used for optimistic concurrency
+          type: integer
+          minimum: 1
+        updated_at: { type: string, format: date-time }
+    MapCreateRequest:
+      type: object
+      required: [name, state]
+      properties:
+        name: { type: string, minLength: 1 }
+        state:
+          type: object
+          additionalProperties: true
+    MapUpdateRequest:
+      type: object
+      required: [state, version]
+      properties:
+        state:
+          type: object
+          additionalProperties: true
+        version:
+          description: Last-seen version; server increments on success
+          type: integer
+          minimum: 1
+    MapMetaPatchRequest:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1 }
+    Error:
+      type: object
+      required: [message]
+      properties:
+        message: { type: string }
+        code: { type: string }
+        details: { type: object, additionalProperties: true }
+  responses:
+    BadRequest:
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
