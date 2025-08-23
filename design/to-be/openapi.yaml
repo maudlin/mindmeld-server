@@ -12,17 +12,17 @@ paths:
   /maps:
     get:
       tags: [maps]
-      summary: List maps (id, name, updated_at)
+      summary: List maps (id, name, version, updatedAt, size)
       operationId: listMaps
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/MapSummary"
+                  $ref: '#/components/schemas/MapSummary'
     post:
       tags: [maps]
       summary: Create a map
@@ -32,9 +32,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/MapCreateRequest"
+              $ref: '#/components/schemas/MapCreateRequest'
       responses:
-        "201":
+        '201':
           description: Created
           headers:
             ETag:
@@ -43,8 +43,8 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Map"
-        "400": { $ref: "#/components/responses/BadRequest" }
+                $ref: '#/components/schemas/Map'
+        '400': { $ref: '#/components/responses/BadRequest' }
   /maps/{id}:
     parameters:
       - name: id
@@ -56,7 +56,7 @@ paths:
       summary: Get a map
       operationId: getMap
       responses:
-        "200":
+        '200':
           description: OK
           headers:
             ETag:
@@ -65,8 +65,8 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Map"
-        "404": { $ref: "#/components/responses/NotFound" }
+                $ref: '#/components/schemas/Map'
+        '404': { $ref: '#/components/responses/NotFound' }
     put:
       tags: [maps]
       summary: Replace map state with optimistic concurrency
@@ -82,9 +82,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/MapUpdateRequest"
+              $ref: '#/components/schemas/MapUpdateRequest'
       responses:
-        "200":
+        '200':
           description: Updated
           headers:
             ETag:
@@ -93,28 +93,22 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Map"
-        "409":
+                $ref: '#/components/schemas/Map'
+        '409':
           description: Version conflict
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "412":
-          description: Precondition failed (If-Match mismatch)
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
-        "400": { $ref: "#/components/responses/BadRequest" }
-        "404": { $ref: "#/components/responses/NotFound" }
+                $ref: '#/components/schemas/Error'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
     delete:
       tags: [maps]
       summary: Delete a map
       operationId: deleteMap
       responses:
-        "204": { description: No Content }
-        "404": { $ref: "#/components/responses/NotFound" }
+        '204': { description: No Content }
+        '404': { $ref: '#/components/responses/NotFound' }
   /maps/{id}/meta:
     parameters:
       - name: id
@@ -130,54 +124,56 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/MapMetaPatchRequest"
+              $ref: '#/components/schemas/MapMetaPatchRequest'
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Map"
-        "400": { $ref: "#/components/responses/BadRequest" }
-        "404": { $ref: "#/components/responses/NotFound" }
+                $ref: '#/components/schemas/Map'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
 
 components:
   schemas:
     MapSummary:
       type: object
-      required: [id, name, updated_at]
+      required: [id, version, updatedAt]
       properties:
         id: { type: string, format: uuid }
         name: { type: string, minLength: 1 }
-        updated_at: { type: string, format: date-time }
+        version: { type: integer, minimum: 1 }
+        updatedAt: { type: string, format: date-time }
+        size: { type: integer, minimum: 0 }
     Map:
       type: object
-      required: [id, name, state, version, updated_at]
+      required: [id, version, updatedAt, data]
       properties:
         id: { type: string, format: uuid }
         name: { type: string, minLength: 1 }
-        state:
-          description: Opaque client JSON document representing a map
-          type: object
-          additionalProperties: true
         version:
           description: Monotonic integer used for optimistic concurrency
           type: integer
           minimum: 1
-        updated_at: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        data:
+          description: Opaque client JSON document representing a map
+          type: object
+          additionalProperties: true
     MapCreateRequest:
       type: object
-      required: [name, state]
+      required: [name, data]
       properties:
         name: { type: string, minLength: 1 }
-        state:
+        data:
           type: object
           additionalProperties: true
     MapUpdateRequest:
       type: object
-      required: [state, version]
+      required: [data, version]
       properties:
-        state:
+        data:
           type: object
           additionalProperties: true
         version:
@@ -202,10 +198,10 @@ components:
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/Error"
+            $ref: '#/components/schemas/Error'
     NotFound:
       description: Not Found
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/Error"
+            $ref: '#/components/schemas/Error'

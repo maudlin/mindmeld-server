@@ -3,36 +3,51 @@ const { randomUUID } = require('crypto');
 const MapsRepo = require('./repo');
 const { NotFoundError, ConflictError, BadRequestError } = require('./errors');
 
-const MapCreateSchema = z.object({
-  name: z.string().min(1),
-  state: z.object({}).passthrough()
-});
+const MapCreateSchema = z
+  .object({
+    name: z.string().min(1),
+    data: z.object({}).passthrough().optional(),
+    state: z.object({}).passthrough().optional()
+  })
+  .refine(v => v.data || v.state, {
+    message: 'Invalid create request: missing data',
+    path: ['data']
+  });
 
-const MapUpdateSchema = z.object({
-  state: z.object({}).passthrough(),
-  version: z.number().int().min(1)
-});
+const MapUpdateSchema = z
+  .object({
+    data: z.object({}).passthrough().optional(),
+    state: z.object({}).passthrough().optional(),
+    version: z.number().int().min(1)
+  })
+  .refine(v => v.data || v.state, {
+    message: 'Invalid update request: missing data',
+    path: ['data']
+  });
 
 class MapsService {
   constructor(sqliteFile) {
     this.repo = new MapsRepo(sqliteFile);
   }
 
-  create({ name, state }) {
-    const parsed = MapCreateSchema.safeParse({ name, state });
+  create({ name, data, state }) {
+    const parsed = MapCreateSchema.safeParse({ name, data, state });
     if (!parsed.success) {
       throw new BadRequestError('Invalid create request');
     }
+    const payload = parsed.data.data ?? parsed.data.state;
     const id = randomUUID();
     const version = 1;
     const updatedAt = new Date().toISOString();
-    const stateJson = JSON.stringify(state);
+    const stateJson = JSON.stringify(payload);
+    const sizeBytes = Buffer.byteLength(stateJson, 'utf8');
     const result = this.repo.create({
       id,
       name,
       version,
       updatedAt,
-      stateJson
+      stateJson,
+      sizeBytes
     });
     return { id: result.id, name, version, updatedAt };
   }
@@ -42,13 +57,27 @@ class MapsService {
     if (!row) {
       throw new NotFoundError('Map not found');
     }
+    const parsed = JSON.parse(row.stateJson);
+    // Back-compat: return both data and state for a transition period
     return {
       id: row.id,
       name: row.name,
       version: row.version,
       updatedAt: row.updatedAt,
-      state: JSON.parse(row.stateJson)
+      data: parsed,
+      state: parsed
     };
+  }
+
+  list({ limit = 50, offset = 0 } = {}) {
+    const rows = this.repo.list(limit, offset);
+    return rows.map(r => ({
+      id: r.id,
+      name: r.name,
+      version: r.version,
+      updatedAt: r.updated_at,
+      size: r.size_bytes
+    }));
   }
 
   update(id, body) {
@@ -68,7 +97,9 @@ class MapsService {
 
     const nextVersion = expectedVersion + 1;
     const updatedAt = new Date().toISOString();
-    const stateJson = JSON.stringify(parsed.data.state);
+    const payload = parsed.data.data ?? parsed.data.state;
+    const stateJson = JSON.stringify(payload);
+    const sizeBytes = Buffer.byteLength(stateJson, 'utf8');
     const name = current.name; // unchanged here
 
     const changes = this.repo.update({
@@ -77,7 +108,8 @@ class MapsService {
       updatedAt,
       stateJson,
       name,
-      expectedVersion
+      expectedVersion,
+      sizeBytes
     });
     if (changes !== 1) {
       // Another writer updated between read and update
