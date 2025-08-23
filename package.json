@@ -27,7 +27,8 @@
     "pino": "^9.4.0",
     "pino-http": "^10.1.0",
     "zod": "^3.23.8",
-    "dotenv": "^16.4.5"
+    "dotenv": "^16.4.5",
+    "better-sqlite3": "^12.2.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.1",

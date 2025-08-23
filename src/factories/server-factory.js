@@ -48,6 +48,12 @@ function createServer(config = {}) {
   const apiRoutes = createApiRoutes(stateService);
   app.use('/', apiRoutes);
 
+  // Feature-flagged /maps router (to-be API)
+  if (config && config.featureMapsApi === true) {
+    const createMapsRouter = require('../modules/maps/routes');
+    app.use('/maps', createMapsRouter({ sqliteFile: config.sqliteFile }));
+  }
+
   // Dev-only docs (Redoc)
   if (process.env.NODE_ENV !== 'production') {
     app.use('/', createDocsRouter());
@@ -55,13 +61,11 @@ function createServer(config = {}) {
 
   // 404 handler (after routes)
   app.use((req, res) => {
-    res
-      .status(404)
-      .json({
-        error: 'Not Found',
-        path: req.path,
-        timestamp: new Date().toISOString()
-      });
+    res.status(404).json({
+      error: 'Not Found',
+      path: req.path,
+      timestamp: new Date().toISOString()
+    });
   });
 
   // Store services on app for testing access
