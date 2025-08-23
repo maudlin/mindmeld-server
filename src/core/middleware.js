@@ -65,20 +65,43 @@ function createMiddleware(config = {}) {
     cors({
       origin: corsOrigin,
       credentials: true,
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
       allowedHeaders: [
         'Content-Type',
         'Authorization',
         'If-Match',
         'If-None-Match'
+      ],
+      exposedHeaders: [
+        'ETag',
+        'RateLimit-Policy',
+        'RateLimit-Limit',
+        'RateLimit-Remaining',
+        'RateLimit-Reset'
       ]
     })
   );
 
-  // Basic rate limiting for write endpoints
+  // Ensure OPTIONS preflight returns quickly with CORS headers
+  middleware.push((req, res, next) => {
+    if (req.method === 'OPTIONS') {
+      return res.sendStatus(204);
+    }
+    return next();
+  });
+
+  // Basic rate limiting for write endpoints (relaxed in development)
+  const windowMs = process.env.RATE_LIMIT_WINDOW_MS
+    ? parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10)
+    : 60 * 1000;
+  const max = process.env.RATE_LIMIT_MAX
+    ? parseInt(process.env.RATE_LIMIT_MAX, 10)
+    : process.env.NODE_ENV === 'development'
+      ? 600
+      : 60;
   const limiter = rateLimit({
-    windowMs: 60 * 1000,
-    max: 60,
+    windowMs,
+    max,
     standardHeaders: true,
     legacyHeaders: false
   });

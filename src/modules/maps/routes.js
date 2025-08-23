@@ -10,6 +10,7 @@ function createMapsRouter({ sqliteFile }) {
     try {
       const { name, state } = req.body || {};
       const created = service.create({ name, state });
+      res.set('ETag', 'W/"v-1"');
       res.status(201).json(created);
     } catch (err) {
       next(err);
