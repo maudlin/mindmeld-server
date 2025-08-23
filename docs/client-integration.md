@@ -7,6 +7,7 @@ The MindMeld server provides a RESTful API for state persistence with backward c
 ## 🚀 **Quick Start Integration**
 
 ### **1. Server Setup**
+
 ```bash
 # Clone and start the server
 git clone https://github.com/maudlin/mindmeld-server.git
@@ -19,32 +20,86 @@ npm start
 ```
 
 ### **2. Client Configuration**
+
 Update your client's API base URL:
+
 ```javascript
 // In your client configuration
 const API_BASE_URL = 'http://localhost:3001/api';
 
 // For production
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+const API_BASE_URL =
+  process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
 ```
 
 ## 📡 **API Integration Points**
 
+### Maps API (canonical data payload + ETag/If-Match)
+
+- Create
+
+  ```javascript
+  const res = await fetch(`${API_BASE_URL.replace('/api', '')}/maps`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: 'My Map', data: { n: [], c: [] } })
+  });
+  const etag = res.headers.get('ETag'); // sha256 of canonical JSON
+  const created = await res.json(); // { id, name?, version, updatedAt }
+  ```
+
+- Load
+
+  ```javascript
+  const res = await fetch(`${API_BASE_URL.replace('/api', '')}/maps/${id}`);
+  const etag = res.headers.get('ETag');
+  const map = await res.json(); // { id, version, updatedAt, data }
+  ```
+
+- Save with optimistic concurrency (prefer If-Match)
+
+  ```javascript
+  const res = await fetch(`${API_BASE_URL.replace('/api', '')}/maps/${id}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'If-Match': lastSeenEtag // from previous GET/POST
+    },
+    body: JSON.stringify({ data: newData, version }) // version fallback supported
+  });
+  if (res.status === 409) {
+    // conflict: reload vs force save UX
+  }
+  const newEtag = res.headers.get('ETag');
+  ```
+
+- List
+
+  ```javascript
+  const res = await fetch(
+    `${API_BASE_URL.replace('/api', '')}/maps?limit=50&offset=0`
+  );
+  const items = await res.json(); // [{ id, name?, version, updatedAt, size }]
+  ```
+
+- Important CORS note: server exposes ETag and RateLimit\* headers via Access-Control-Expose-Headers.
+
 ### **State Loading (GET /api/state)**
+
 ```javascript
 // Load mind map state on app initialization
 async function loadMindMapState() {
   try {
     const response = await fetch(`${API_BASE_URL}/state`);
     const state = await response.json();
-    
+
     // State structure:
     // {
     //   notes: [{ id, content, left, top, ... }],
     //   connections: [{ from, to }],
     //   zoomLevel: number
     // }
-    
+
     return state;
   } catch (error) {
     console.error('Failed to load state:', error);
@@ -55,26 +110,26 @@ async function loadMindMapState() {
 ```
 
 ### **State Saving (PUT /api/state)**
+
 ```javascript
 // Save mind map state (debounced for performance)
-const saveState = debounce(async (state) => {
+const saveState = debounce(async state => {
   try {
     const response = await fetch(`${API_BASE_URL}/state`, {
       method: 'PUT',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify(state)
     });
-    
+
     if (!response.ok) {
       throw new Error(`Save failed: ${response.status}`);
     }
-    
+
     const result = await response.json();
     console.log('State saved:', result);
     // result: { success: true, notes: 5, connections: 3, timestamp: "..." }
-    
   } catch (error) {
     console.error('Failed to save state:', error);
     // Handle error (show user notification, retry, etc.)
@@ -85,20 +140,21 @@ const saveState = debounce(async (state) => {
 ```
 
 ### **Health Monitoring (GET /health)**
+
 ```javascript
 // Check server health (optional - for monitoring)
 async function checkServerHealth() {
   try {
     const response = await fetch(`${API_BASE_URL.replace('/api', '')}/health`);
     const health = await response.json();
-    
+
     // Health structure:
     // {
     //   status: "ok",
     //   uptime: 123.45,
     //   stats: { notesCount: 5, connectionsCount: 3, isEmpty: false }
     // }
-    
+
     return health;
   } catch (error) {
     console.warn('Server health check failed:', error);
@@ -110,10 +166,15 @@ async function checkServerHealth() {
 ## 🔧 **Integration Patterns**
 
 ### **1. Auto-Save Implementation**
+
 ```javascript
 // Example React hook for auto-save
 function useMindMapPersistence() {
-  const [state, setState] = useState({ notes: [], connections: [], zoomLevel: 5 });
+  const [state, setState] = useState({
+    notes: [],
+    connections: [],
+    zoomLevel: 5
+  });
   const [saveStatus, setSaveStatus] = useState('saved'); // 'saving', 'saved', 'error'
 
   // Load initial state
@@ -136,6 +197,7 @@ function useMindMapPersistence() {
 ```
 
 ### **2. Error Handling Strategy**
+
 ```javascript
 // Robust error handling with retry
 async function saveStateWithRetry(state, maxRetries = 3) {
@@ -146,26 +208,34 @@ async function saveStateWithRetry(state, maxRetries = 3) {
     } catch (error) {
       if (attempt === maxRetries) {
         // Final attempt failed - show user error
-        showNotification('Failed to save changes. Please check your connection.', 'error');
+        showNotification(
+          'Failed to save changes. Please check your connection.',
+          'error'
+        );
         throw error;
       }
-      
+
       // Wait before retry (exponential backoff)
-      await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+      await new Promise(resolve =>
+        setTimeout(resolve, Math.pow(2, attempt) * 1000)
+      );
     }
   }
 }
 ```
 
 ### **3. Optimistic Updates**
+
 ```javascript
 // Update UI immediately, sync with server in background
 function updateNoteOptimistically(noteId, newContent) {
   // 1. Update UI immediately
-  setNotes(prev => prev.map(note => 
-    note.id === noteId ? { ...note, content: newContent } : note
-  ));
-  
+  setNotes(prev =>
+    prev.map(note =>
+      note.id === noteId ? { ...note, content: newContent } : note
+    )
+  );
+
   // 2. Save to server in background
   const newState = { ...currentState, notes: updatedNotes };
   saveState(newState).catch(error => {
@@ -178,6 +248,7 @@ function updateNoteOptimistically(noteId, newContent) {
 ## ⚡ **Performance Recommendations**
 
 ### **1. Debounced Saves**
+
 ```javascript
 // Prevent excessive API calls during rapid editing
 const debouncedSave = debounce(saveState, 1000);
@@ -190,36 +261,39 @@ function handleNoteChange(noteId, content) {
 ```
 
 ### **2. State Validation (Client-Side)**
+
 ```javascript
 // Validate state before sending to prevent server errors
 function validateState(state) {
   if (!state || typeof state !== 'object') {
     throw new Error('State must be an object');
   }
-  
+
   if (!Array.isArray(state.notes)) {
     throw new Error('State must have notes array');
   }
-  
+
   if (!Array.isArray(state.connections)) {
     throw new Error('State must have connections array');
   }
-  
+
   if (typeof state.zoomLevel !== 'number') {
     throw new Error('State must have numeric zoomLevel');
   }
-  
+
   // Validate notes structure
   state.notes.forEach((note, index) => {
     if (!note.id) throw new Error(`Note ${index} missing id`);
-    if (typeof note.content !== 'string') throw new Error(`Note ${index} missing content`);
+    if (typeof note.content !== 'string')
+      throw new Error(`Note ${index} missing content`);
   });
-  
+
   // Validate connections
   state.connections.forEach((conn, index) => {
-    if (!conn.from || !conn.to) throw new Error(`Connection ${index} missing from/to`);
+    if (!conn.from || !conn.to)
+      throw new Error(`Connection ${index} missing from/to`);
   });
-  
+
   return true;
 }
 ```
@@ -227,6 +301,7 @@ function validateState(state) {
 ## 🔄 **CORS Configuration**
 
 The server is configured for CORS. For development:
+
 ```javascript
 // Client runs on http://localhost:8080 (default CORS origin)
 // Server runs on http://localhost:3001
@@ -238,6 +313,7 @@ The server is configured for CORS. For development:
 ## 🚦 **Development Workflow**
 
 ### **1. Local Development Setup**
+
 ```bash
 # Terminal 1: Start server
 cd mindmeld-server
@@ -249,6 +325,7 @@ npm start    # Your existing client startup
 ```
 
 ### **2. Testing Integration**
+
 ```bash
 # Test server endpoints manually
 curl http://localhost:3001/health
@@ -259,40 +336,50 @@ curl -X PUT http://localhost:3001/api/state -H "Content-Type: application/json" 
 ## 📊 **Monitoring & Debugging**
 
 ### **1. Client-Side Logging**
+
 ```javascript
 // Add logging for integration debugging
 const api = {
   async saveState(state) {
-    console.log('Saving state:', { notesCount: state.notes.length, connectionsCount: state.connections.length });
+    console.log('Saving state:', {
+      notesCount: state.notes.length,
+      connectionsCount: state.connections.length
+    });
     const result = await saveState(state);
     console.log('Save result:', result);
     return result;
   },
-  
+
   async loadState() {
     console.log('Loading state...');
     const state = await loadMindMapState();
-    console.log('Loaded state:', { notesCount: state.notes.length, connectionsCount: state.connections.length });
+    console.log('Loaded state:', {
+      notesCount: state.notes.length,
+      connectionsCount: state.connections.length
+    });
     return state;
   }
 };
 ```
 
 ### **2. Server Status Indicator** (Optional)
+
 ```javascript
 // Add server status to your UI
 function ServerStatusIndicator() {
   const [health, setHealth] = useState(null);
-  
+
   useEffect(() => {
     const checkHealth = () => checkServerHealth().then(setHealth);
     checkHealth();
     const interval = setInterval(checkHealth, 30000); // Check every 30s
     return () => clearInterval(interval);
   }, []);
-  
+
   return (
-    <div className={`server-status ${health?.status === 'ok' ? 'online' : 'offline'}`}>
+    <div
+      className={`server-status ${health?.status === 'ok' ? 'online' : 'offline'}`}
+    >
       Server: {health?.status || 'checking...'}
     </div>
   );
@@ -302,22 +389,26 @@ function ServerStatusIndicator() {
 ## 🐛 **Common Issues & Solutions**
 
 ### **CORS Errors**
+
 ```bash
 # If you see CORS errors, check server environment:
 CORS_ORIGIN=http://localhost:YOUR_CLIENT_PORT npm start
 ```
 
 ### **Save Failures**
+
 - Check browser network tab for HTTP status codes
 - Common causes: malformed JSON, validation errors, network issues
 - Server validation errors return 400 with detailed messages
 
 ### **State Loading Issues**
+
 - Server returns empty state `{notes: [], connections: [], zoomLevel: 5}` if no data exists - this is normal
 - Check server logs: `npm run dev` shows detailed logging
 - Verify server is running: `curl http://localhost:3001/health`
 
 ### **Performance Issues**
+
 - Implement debounced saves to prevent API spam
 - Use optimistic updates for better UX
 - Consider client-side validation before server requests
@@ -336,12 +427,12 @@ CORS_ORIGIN=http://localhost:YOUR_CLIENT_PORT npm start
 
 ## 🔗 **API Reference Summary**
 
-| Endpoint | Method | Purpose | Request | Response |
-|----------|--------|---------|---------|----------|
-| `/health` | GET | Server health check | - | `{status, uptime, stats}` |
-| `/api/state` | GET | Load current state | - | `{notes[], connections[], zoomLevel}` |
-| `/api/state` | PUT | Save state | `{notes[], connections[], zoomLevel}` | `{success, timestamp, stats}` |
-| `/api/state/stats` | GET | Get state statistics | - | `{notesCount, connectionsCount, zoomLevel, isEmpty}` |
+| Endpoint           | Method | Purpose              | Request                               | Response                                             |
+| ------------------ | ------ | -------------------- | ------------------------------------- | ---------------------------------------------------- |
+| `/health`          | GET    | Server health check  | -                                     | `{status, uptime, stats}`                            |
+| `/api/state`       | GET    | Load current state   | -                                     | `{notes[], connections[], zoomLevel}`                |
+| `/api/state`       | PUT    | Save state           | `{notes[], connections[], zoomLevel}` | `{success, timestamp, stats}`                        |
+| `/api/state/stats` | GET    | Get state statistics | -                                     | `{notesCount, connectionsCount, zoomLevel, isEmpty}` |
 
 ## 🆘 **Need Help?**
 
