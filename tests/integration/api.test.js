@@ -28,7 +28,7 @@ describe('API Integration Tests', () => {
     });
   });
 
-  afterEach(async() => {
+  afterEach(async () => {
     // Clean up test file
     try {
       await fs.unlink(testStateFile);
@@ -38,7 +38,7 @@ describe('API Integration Tests', () => {
   });
 
   describe('GET /health', () => {
-    it('should return health status', async() => {
+    it('should return health status', async () => {
       const response = await request(app).get('/health').expect(200);
 
       expect(response.body).toMatchObject({
@@ -51,7 +51,7 @@ describe('API Integration Tests', () => {
   });
 
   describe('GET /api/state', () => {
-    it('should return empty state when no file exists', async() => {
+    it('should return empty state when no file exists', async () => {
       const response = await request(app).get('/api/state').expect(200);
 
       expect(response.body).toEqual({
@@ -61,7 +61,7 @@ describe('API Integration Tests', () => {
       });
     });
 
-    it('should return saved state when file exists', async() => {
+    it('should return saved state when file exists', async () => {
       const testState = {
         notes: [{ id: '1', content: 'Test Note' }],
         connections: [],
@@ -79,7 +79,7 @@ describe('API Integration Tests', () => {
   });
 
   describe('PUT /api/state', () => {
-    it('should save valid state', async() => {
+    it('should save valid state', async () => {
       const testState = {
         notes: [
           { id: '1', content: 'Test Note 1' },
@@ -103,7 +103,7 @@ describe('API Integration Tests', () => {
       });
     });
 
-    it('should reject invalid state - missing notes array', async() => {
+    it('should reject invalid state - missing notes array', async () => {
       const invalidState = {
         connections: [],
         zoomLevel: 5
@@ -117,7 +117,7 @@ describe('API Integration Tests', () => {
       expect(response.body.error).toContain('Invalid state');
     });
 
-    it('should reject invalid state - non-object', async() => {
+    it('should reject invalid state - non-object', async () => {
       const response = await request(app)
         .put('/api/state')
         .send('invalid')
@@ -126,7 +126,7 @@ describe('API Integration Tests', () => {
       expect(response.body.error).toContain('Invalid state');
     });
 
-    it('should handle rapid saves (atomic writes)', async() => {
+    it('should handle rapid saves (atomic writes)', async () => {
       const testState = {
         notes: [{ id: '1', content: 'Test' }],
         connections: [],
@@ -148,8 +148,15 @@ describe('API Integration Tests', () => {
       // All should succeed
       responses.forEach((response, index) => {
         if (response.status !== 200) {
-          console.error(`Response ${index} failed:`, response.status, response.body);
-          console.error(`Response ${index} error details:`, JSON.stringify(response.body, null, 2));
+          console.error(
+            `Response ${index} failed:`,
+            response.status,
+            response.body
+          );
+          console.error(
+            `Response ${index} error details:`,
+            JSON.stringify(response.body, null, 2)
+          );
         }
         expect(response.status).toBe(200);
         expect(response.body.success).toBe(true);
@@ -164,7 +171,7 @@ describe('API Integration Tests', () => {
   });
 
   describe('GET /api/state/stats', () => {
-    it('should return empty stats initially', async() => {
+    it('should return empty stats initially', async () => {
       const response = await request(app).get('/api/state/stats').expect(200);
 
       expect(response.body).toEqual({
@@ -175,7 +182,7 @@ describe('API Integration Tests', () => {
       });
     });
 
-    it('should return correct stats after saving state', async() => {
+    it('should return correct stats after saving state', async () => {
       const testState = {
         notes: [
           { id: '1', content: 'Note 1' },
@@ -203,7 +210,7 @@ describe('API Integration Tests', () => {
   });
 
   describe('CORS', () => {
-    it('should include CORS headers', async() => {
+    it('should include CORS headers', async () => {
       const response = await request(app).get('/health').expect(200);
 
       expect(response.headers['access-control-allow-origin']).toBe(

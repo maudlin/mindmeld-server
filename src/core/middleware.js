@@ -25,7 +25,9 @@ function createMiddleware(config = {}) {
   middleware.push(
     pinoHttp({
       logger,
-      genReqId: (req) => req.headers['x-request-id'] || `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      genReqId: req =>
+        req.headers['x-request-id'] ||
+        `${Date.now()}-${Math.random().toString(36).slice(2)}`,
       customLogLevel: (res, err) => {
         if (err || res.statusCode >= 500) {
           return 'error';
@@ -64,7 +66,12 @@ function createMiddleware(config = {}) {
       origin: corsOrigin,
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'If-Match', 'If-None-Match']
+      allowedHeaders: [
+        'Content-Type',
+        'Authorization',
+        'If-Match',
+        'If-None-Match'
+      ]
     })
   );
 
@@ -86,7 +93,10 @@ function createMiddleware(config = {}) {
 
   // Error handling middleware (kept to preserve existing behavior)
   middleware.push((error, req, res, _next) => {
-    logger.error({ err: error, path: req.path, method: req.method }, 'Request error');
+    logger.error(
+      { err: error, path: req.path, method: req.method },
+      'Request error'
+    );
 
     eventBus.emit('request.error', {
       method: req.method,
@@ -105,7 +115,10 @@ function createMiddleware(config = {}) {
     });
   });
 
-  logger.info({ corsOrigin, jsonLimit, middlewareCount: middleware.length }, 'Middleware configured');
+  logger.info(
+    { corsOrigin, jsonLimit, middlewareCount: middleware.length },
+    'Middleware configured'
+  );
 
   return middleware;
 }
