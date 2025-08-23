@@ -1,0 +1,19 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Launch MindMeld Server",
+      "program": "${workspaceFolder}/src/index.js",
+      "envFile": "${workspaceFolder}/.env",
+      "env": {
+        "NODE_ENV": "development"
+      },
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "runtimeArgs": ["--nolazy"],
+      "skipFiles": ["<node_internals>/**"]
+    }
+  ]
+}

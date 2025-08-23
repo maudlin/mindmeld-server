@@ -1,0 +1,17 @@
+extends: []
+rules:
+  openapi-tags:
+    description: All operations should have tags
+    message: Operation should be tagged
+    given: $.paths[*][*]
+    then:
+      field: tags
+      function: truthy
+  info-contact:
+    description: Info object should include contact
+    message: Info.contact is recommended
+    given: $.info
+    then:
+      field: contact
+      function: falsy
+    severity: warn

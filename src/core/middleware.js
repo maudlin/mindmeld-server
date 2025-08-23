@@ -5,7 +5,10 @@
 
 const express = require('express');
 const cors = require('cors');
-const Logger = require('../utils/logger');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const pinoHttp = require('pino-http');
+const logger = require('../utils/logger');
 const eventBus = require('../utils/event-bus');
 
 /**
@@ -18,12 +21,33 @@ function createMiddleware(config = {}) {
 
   const middleware = [];
 
+  // Request logging (first)
+  middleware.push(
+    pinoHttp({
+      logger,
+      genReqId: req =>
+        req.headers['x-request-id'] ||
+        `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      customLogLevel: (res, err) => {
+        if (err || res.statusCode >= 500) {
+          return 'error';
+        }
+        if (res.statusCode >= 400) {
+          return 'warn';
+        }
+        return 'info';
+      }
+    })
+  );
+
+  // Security headers
+  middleware.push(helmet());
+
   // JSON parsing with size limit
   middleware.push(
     express.json({
       limit: jsonLimit,
       verify: (req, res, buf) => {
-        // Emit event for large payloads
         if (buf.length > 1024 * 1024) {
           // > 1MB
           eventBus.emit('request.large-payload', {
@@ -36,52 +60,43 @@ function createMiddleware(config = {}) {
     })
   );
 
-  // CORS configuration
+  // CORS configuration (strict to provided origin)
   middleware.push(
     cors({
       origin: corsOrigin,
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization']
+      allowedHeaders: [
+        'Content-Type',
+        'Authorization',
+        'If-Match',
+        'If-None-Match'
+      ]
     })
   );
 
-  // Request logging middleware
+  // Basic rate limiting for write endpoints
+  const limiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 60,
+    standardHeaders: true,
+    legacyHeaders: false
+  });
   middleware.push((req, res, next) => {
-    const startTime = Date.now();
-
-    // Log request
-    Logger.request(req.method, req.path);
-    eventBus.emit('request.started', {
-      method: req.method,
-      path: req.path,
-      userAgent: req.get('User-Agent'),
-      timestamp: new Date().toISOString()
-    });
-
-    // Hook into response to log completion
-    const originalSend = res.send;
-    res.send = function(data) {
-      const duration = Date.now() - startTime;
-
-      Logger.request(req.method, req.path, res.statusCode);
-      eventBus.emit('request.completed', {
-        method: req.method,
-        path: req.path,
-        statusCode: res.statusCode,
-        duration,
-        timestamp: new Date().toISOString()
-      });
-
-      return originalSend.call(this, data);
-    };
-
-    next();
+    const isWrite = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method);
+    if (isWrite) {
+      return limiter(req, res, next);
+    } else {
+      return next();
+    }
   });
 
-  // Error handling middleware
+  // Error handling middleware (kept to preserve existing behavior)
   middleware.push((error, req, res, _next) => {
-    Logger.error(`Request error on ${req.method} ${req.path}:`, error);
+    logger.error(
+      { err: error, path: req.path, method: req.method },
+      'Request error'
+    );
 
     eventBus.emit('request.error', {
       method: req.method,
@@ -91,7 +106,6 @@ function createMiddleware(config = {}) {
       timestamp: new Date().toISOString()
     });
 
-    // Don't expose internal errors in production
     const isDevelopment = process.env.NODE_ENV === 'development';
 
     res.status(error.status || 500).json({
@@ -101,11 +115,10 @@ function createMiddleware(config = {}) {
     });
   });
 
-  Logger.info('Middleware configured', {
-    corsOrigin,
-    jsonLimit,
-    middlewareCount: middleware.length
-  });
+  logger.info(
+    { corsOrigin, jsonLimit, middlewareCount: middleware.length },
+    'Middleware configured'
+  );
 
   return middleware;
 }

@@ -68,8 +68,28 @@ class FileStorage {
       // Atomic write: write to unique temp file first, then rename
       await fs.writeFile(uniqueTmpPath, JSON.stringify(state, null, 2));
       
-      // Atomic rename - this is guaranteed to be atomic on most filesystems
-      await fs.rename(uniqueTmpPath, this.filePath);
+      // Atomic rename with fallbacks for edge cases in CI/concurrency
+      try {
+        await fs.rename(uniqueTmpPath, this.filePath);
+      } catch (err) {
+        if (err && err.code === 'EXDEV') {
+          // Cross-device link not permitted: fallback to copy then unlink
+          await fs.copyFile(uniqueTmpPath, this.filePath);
+          await fs.unlink(uniqueTmpPath).catch(() => {});
+        } else if (err && err.code === 'ENOENT') {
+          // Rare race on some filesystems: if temp disappeared but final exists, treat as success
+          try {
+            const stat = await fs.stat(this.filePath);
+            if (!stat.isFile()) {
+              throw err;
+            }
+          } catch (_) {
+            throw err;
+          }
+        } else {
+          throw err;
+        }
+      }
 
       const stats = {
         notes: state.notes?.length || 0,

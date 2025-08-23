@@ -3,22 +3,13 @@
  * Production-ready server following MindMeld standards
  */
 
+require('dotenv').config();
 const path = require('path');
 const fs = require('fs').promises;
 const createServer = require('./factories/server-factory');
 const Logger = require('./utils/logger');
 const eventBus = require('./utils/event-bus');
-
-// Configuration
-const CONFIG = {
-  port: process.env.PORT || 3001,
-  corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:8080',
-  stateFilePath:
-    process.env.STATE_FILE_PATH ||
-    path.join(process.cwd(), 'data', 'state.json'),
-  jsonLimit: process.env.JSON_LIMIT || '50mb',
-  nodeEnv: process.env.NODE_ENV || 'development'
-};
+const { config: CONFIG } = require('./config/config');
 
 /**
  * Ensure data directory exists
@@ -88,7 +79,7 @@ function setupErrorHandlers() {
  */
 async function startServer() {
   try {
-    Logger.info('Starting MindMeld Server...', CONFIG);
+    Logger.info({ CONFIG }, 'Starting MindMeld Server...');
 
     // Setup error handling
     setupErrorHandlers();
@@ -101,15 +92,11 @@ async function startServer() {
 
     // Start listening
     const server = app.listen(CONFIG.port, () => {
-      Logger.info(
-        `🚀 MindMeld Server running on http://localhost:${CONFIG.port}`
-      );
-      Logger.info(`📁 State file: ${CONFIG.stateFilePath}`);
-      Logger.info(`🔗 Health check: http://localhost:${CONFIG.port}/health`);
-      Logger.info(`🌐 CORS origin: ${CONFIG.corsOrigin}`);
-      Logger.info(
-        `📊 Stats endpoint: http://localhost:${CONFIG.port}/api/state/stats`
-      );
+      Logger.info({ port: CONFIG.port }, '🚀 MindMeld Server running');
+      Logger.info({ stateFile: CONFIG.stateFilePath }, '📁 State file');
+      Logger.info({ health: '/health', ready: '/ready' }, 'Probes available');
+      Logger.info({ corsOrigin: CONFIG.corsOrigin }, '🌐 CORS origin');
+      Logger.info({ stats: '/api/state/stats' }, '📊 Stats endpoint');
 
       eventBus.emit('server.started', {
         port: CONFIG.port,

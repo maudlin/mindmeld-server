@@ -19,7 +19,7 @@ function createApiRoutes(stateService) {
    * Health check endpoint
    * GET /health
    */
-  router.get('/health', async(req, res) => {
+  router.get('/health', async (req, res) => {
     try {
       const stats = await stateService.getStateStats();
 
@@ -56,7 +56,7 @@ function createApiRoutes(stateService) {
    * Get current state
    * GET /api/state
    */
-  router.get('/api/state', async(req, res) => {
+  router.get('/api/state', async (req, res) => {
     try {
       eventBus.emit('api.state.get-requested', {
         userAgent: req.get('User-Agent'),
@@ -92,7 +92,7 @@ function createApiRoutes(stateService) {
    * Save state
    * PUT /api/state
    */
-  router.put('/api/state', async(req, res) => {
+  router.put('/api/state', async (req, res) => {
     try {
       eventBus.emit('api.state.put-requested', {
         notesCount: req.body.notes?.length || 0,
@@ -132,7 +132,7 @@ function createApiRoutes(stateService) {
    * Get state statistics (useful for monitoring)
    * GET /api/state/stats
    */
-  router.get('/api/state/stats', async(req, res) => {
+  router.get('/api/state/stats', async (req, res) => {
     try {
       const stats = await stateService.getStateStats();
 
@@ -149,6 +149,21 @@ function createApiRoutes(stateService) {
         error: 'Failed to get statistics',
         timestamp: new Date().toISOString()
       });
+    }
+  });
+
+  /**
+   * Readiness probe
+   * GET /ready
+   * For now, returns ok; when DB is added, check DB connectivity
+   */
+  router.get('/ready', async (req, res) => {
+    try {
+      // Placeholder readiness check; extend when SQLite is integrated
+      res.json({ status: 'ready', timestamp: new Date().toISOString() });
+    } catch (error) {
+      Logger.error('Readiness check failed:', error);
+      res.status(503).json({ status: 'not-ready' });
     }
   });
 

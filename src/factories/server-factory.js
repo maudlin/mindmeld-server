@@ -10,6 +10,7 @@ const FileStorage = require('../data/file-storage');
 const StateService = require('../services/state-service');
 const createApiRoutes = require('../core/api-routes');
 const createMiddleware = require('../core/middleware');
+const createDocsRouter = require('../core/docs-route');
 const Logger = require('../utils/logger');
 
 /**
@@ -46,6 +47,26 @@ function createServer(config = {}) {
   // Apply routes
   const apiRoutes = createApiRoutes(stateService);
   app.use('/', apiRoutes);
+
+  // Feature-flagged /maps router (to-be API)
+  if (config && config.featureMapsApi === true) {
+    const createMapsRouter = require('../modules/maps/routes');
+    app.use('/maps', createMapsRouter({ sqliteFile: config.sqliteFile }));
+  }
+
+  // Dev-only docs (Redoc)
+  if (process.env.NODE_ENV !== 'production') {
+    app.use('/', createDocsRouter());
+  }
+
+  // 404 handler (after routes)
+  app.use((req, res) => {
+    res.status(404).json({
+      error: 'Not Found',
+      path: req.path,
+      timestamp: new Date().toISOString()
+    });
+  });
 
   // Store services on app for testing access
   app.locals.services = {

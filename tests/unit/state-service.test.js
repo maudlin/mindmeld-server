@@ -56,7 +56,7 @@ describe('StateService', () => {
   });
 
   describe('getCurrentState', () => {
-    it('should return stored state when available', async() => {
+    it('should return stored state when available', async () => {
       const testState = {
         notes: [{ id: '1', content: 'Test' }],
         connections: [],
@@ -69,7 +69,7 @@ describe('StateService', () => {
       expect(result).toEqual(testState);
     });
 
-    it('should return empty state when no data exists', async() => {
+    it('should return empty state when no data exists', async () => {
       const result = await stateService.getCurrentState();
       expect(result).toEqual({
         notes: [],
@@ -78,7 +78,7 @@ describe('StateService', () => {
       });
     });
 
-    it('should return empty state on storage error', async() => {
+    it('should return empty state on storage error', async () => {
       mockStorage.shouldThrow = true;
 
       const result = await stateService.getCurrentState();
@@ -91,7 +91,7 @@ describe('StateService', () => {
   });
 
   describe('saveState', () => {
-    it('should save valid state', async() => {
+    it('should save valid state', async () => {
       const validState = {
         notes: [{ id: '1', content: 'Test Note' }],
         connections: [{ from: '1', to: '2' }],
@@ -107,7 +107,7 @@ describe('StateService', () => {
       expect(mockStorage.data).toEqual(validState);
     });
 
-    it('should reject state with missing notes array', async() => {
+    it('should reject state with missing notes array', async () => {
       const invalidState = {
         connections: [],
         zoomLevel: 5
@@ -118,7 +118,7 @@ describe('StateService', () => {
       );
     });
 
-    it('should reject state with missing connections array', async() => {
+    it('should reject state with missing connections array', async () => {
       const invalidState = {
         notes: [],
         zoomLevel: 5
@@ -129,7 +129,7 @@ describe('StateService', () => {
       );
     });
 
-    it('should reject state with invalid zoomLevel', async() => {
+    it('should reject state with invalid zoomLevel', async () => {
       const invalidState = {
         notes: [],
         connections: [],
@@ -141,13 +141,13 @@ describe('StateService', () => {
       );
     });
 
-    it('should reject non-object state', async() => {
+    it('should reject non-object state', async () => {
       await expect(stateService.saveState('invalid')).rejects.toThrow(
         'Invalid state: State must be an object'
       );
     });
 
-    it('should reject null state', async() => {
+    it('should reject null state', async () => {
       await expect(stateService.saveState(null)).rejects.toThrow(
         'Invalid state: State must be an object'
       );
@@ -214,7 +214,7 @@ describe('StateService', () => {
   });
 
   describe('getStateStats', () => {
-    it('should return stats for existing state', async() => {
+    it('should return stats for existing state', async () => {
       const testState = {
         notes: [
           { id: '1', content: 'Note 1' },
@@ -235,7 +235,7 @@ describe('StateService', () => {
       });
     });
 
-    it('should return empty stats for no data', async() => {
+    it('should return empty stats for no data', async () => {
       const stats = await stateService.getStateStats();
       expect(stats).toEqual({
         notesCount: 0,
@@ -245,7 +245,7 @@ describe('StateService', () => {
       });
     });
 
-    it('should handle storage errors gracefully', async() => {
+    it('should handle storage errors gracefully', async () => {
       mockStorage.shouldThrow = true;
 
       const stats = await stateService.getStateStats();

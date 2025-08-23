@@ -1,0 +1,22 @@
+{
+  "name": "MindMeld Server Dev",
+  "image": "mcr.microsoft.com/devcontainers/node:18",
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/node:1": {
+      "nodeGypDependencies": true
+    }
+  },
+  "postCreateCommand": "npm ci || npm install",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode"
+      ]
+    }
+  },
+  "forwardPorts": [3001],
+  "remoteUser": "node"
+}
+

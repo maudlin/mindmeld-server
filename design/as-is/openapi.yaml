@@ -1,0 +1,123 @@
+openapi: 3.1.0
+info:
+  title: MindMeld Server API (As-Is)
+  version: 0.1.0
+  description: Current endpoints as implemented in the repository at reconstruction time.
+servers:
+  - url: http://localhost:3001
+    description: Local development
+paths:
+  /health:
+    get:
+      summary: Health check
+      operationId: health
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+  /api/state:
+    get:
+      summary: Get current state
+      operationId: getState
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/State"
+    put:
+      summary: Replace current state (atomic write with validation)
+      operationId: putState
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/State"
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SaveResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/state/stats:
+    get:
+      summary: Get state statistics
+      operationId: getStateStats
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StateStats"
+
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        status: { type: string }
+        timestamp: { type: string, format: date-time }
+        uptime: { type: number }
+        stats: { $ref: "#/components/schemas/StateStats" }
+      required: [status, timestamp, uptime, stats]
+    State:
+      type: object
+      properties:
+        notes:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string }
+              content: { type: string }
+              left: { type: string }
+              top: { type: string }
+            required: [id, content]
+        connections:
+          type: array
+          items:
+            type: object
+            properties:
+              from: { type: string }
+              to: { type: string }
+            required: [from, to]
+        zoomLevel:
+          type: integer
+      required: [notes, connections, zoomLevel]
+    StateStats:
+      type: object
+      properties:
+        notesCount: { type: integer }
+        connectionsCount: { type: integer }
+        zoomLevel: { type: integer }
+        isEmpty: { type: boolean }
+      required: [notesCount, connectionsCount, zoomLevel, isEmpty]
+    SaveResponse:
+      type: object
+      properties:
+        success: { type: boolean }
+        timestamp: { type: string, format: date-time }
+        notes: { type: integer }
+        connections: { type: integer }
+        zoomLevel: { type: integer }
+      required: [success, timestamp]
+    Error:
+      type: object
+      properties:
+        message: { type: string }
+        code: { type: string }
+        details: { type: object, additionalProperties: true }
+      required: [message]

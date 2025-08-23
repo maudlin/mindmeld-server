@@ -10,7 +10,7 @@ const path = require('path');
 jest.setTimeout(10000);
 
 // Clean up test data directory after tests
-afterAll(async() => {
+afterAll(async () => {
   const testDataDir = path.join(process.cwd(), 'test-data');
   try {
     await fs.rm(testDataDir, { recursive: true, force: true });
