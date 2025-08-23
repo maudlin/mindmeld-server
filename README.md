@@ -220,6 +220,8 @@ Notes: planned implementation uses SQLite in WAL mode with transactional writes 
 - `npm run test:watch` - Run tests in watch mode
 - `npm run test:coverage` - Generate coverage report
 - `npm run validate` - Run all quality checks
+- `npm run smoke` - Local end-to-end sanity check for /maps (create → get → update → conflict)
+- `npm run seed:map` - Create a new map and print its id (handy for pointing the client at an existing map)
 
 ### Code Standards
 
@@ -281,6 +283,66 @@ CMD ["npm", "start"]
 
 - **MindMeld Client**: https://github.com/maudlin/mindmeld
 - **Developer Guide**: https://github.com/maudlin/mindmeld/blob/main/docs/developer-guide.md
+
+## Client ↔ Server interaction (to-be /maps)
+
+Baseline
+
+- Client origin: http://localhost:3000
+- Server: http://localhost:3001
+- Exposed response headers (browser-visible): ETag, RateLimit-Policy, RateLimit-Limit, RateLimit-Remaining, RateLimit-Reset
+- Preflight: Browser sends OPTIONS automatically; server replies 204 with CORS headers
+
+A) Create → Fetch → Update (using version guard)
+
+1. Create a new map
+
+- POST /maps with JSON { name, state }
+- 201 Created
+  - Body: { id, name, version: 1, updatedAt }
+  - Headers: ETag: W/"v-1"
+
+2. Fetch the map
+
+- GET /maps/{id}
+- 200 OK
+  - Body: { id, name, version, updatedAt, state }
+  - Headers: ETag: W/"v-{version}"
+
+3. Update with optimistic concurrency via version
+
+- Client sends PUT /maps/{id} with JSON { state, version }
+- If server current version == provided version:
+  - 200 OK with { id, name, version: version+1, updatedAt }, ETag: W/"v-(version+1)"
+- Else:
+  - 409 Conflict
+
+B) Update using If-Match (alternative guard)
+
+1. Fetch and note the ETag (e.g., W/"v-2")
+2. PUT /maps/{id} with headers If-Match: W/"v-2" (optionally include the version field too)
+
+- Match: 200 OK, returns updated map and ETag W/"v-3"
+- Mismatch: 412 Precondition Failed
+
+C) Conflict handling on the client (409/412)
+
+- Refetch latest: GET /maps/{id}
+- Merge local changes if necessary
+- Retry PUT with updated version or If-Match
+
+D) Caching hint (optional)
+
+- GET /maps/{id} with If-None-Match: <last-seen-ETag>
+- Server may return 304 Not Modified if unchanged
+
+Dev setup tips for client testing
+
+- Ensure .env has FEATURE_MAPS_API=1 and CORS_ORIGIN=http://localhost:3000
+- Start the server: npm run dev
+- Quick sanity check: npm run smoke
+- Seed a map id for the client: MAP_ID=$(npm run -s seed:map)
+- Open API docs: http://localhost:3001/docs (loads design/to-be/openapi.yaml)
 
 ## Project Context
 
