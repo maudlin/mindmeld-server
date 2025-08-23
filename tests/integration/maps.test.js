@@ -63,4 +63,27 @@ describe('Maps API (to-be) integration', () => {
       .send({ state: { notes: [{ id: '2' }], connections: [] }, version: 1 })
       .expect(409);
   });
+
+  it('should list maps with id, name, version, updatedAt, size', async () => {
+    await request(app)
+      .post('/maps')
+      .send({
+        name: 'Map One',
+        state: { notes: [{ id: 'n1' }], connections: [] }
+      })
+      .expect(201);
+    await request(app)
+      .post('/maps')
+      .send({ name: 'Map Two', state: { notes: [], connections: [] } })
+      .expect(201);
+
+    const listRes = await request(app).get('/maps').expect(200);
+    expect(Array.isArray(listRes.body)).toBe(true);
+    expect(listRes.body.length).toBeGreaterThanOrEqual(2);
+    const item = listRes.body[0];
+    expect(item).toHaveProperty('id', expect.any(String));
+    expect(item).toHaveProperty('version', expect.any(Number));
+    expect(item).toHaveProperty('updatedAt', expect.any(String));
+    expect(item).toHaveProperty('size', expect.any(Number));
+  });
 });

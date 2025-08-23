@@ -18,7 +18,8 @@
     "prepare": "npm run validate",
     "postinstall": "husky install",
     "openapi:lint": "spectral lint design/to-be/openapi.yaml",
-    "smoke": "node scripts/smoke.js"
+    "smoke": "node scripts/smoke.js",
+    "seed": "node scripts/seed.js"
   },
   "dependencies": {
     "express": "^4.18.2",

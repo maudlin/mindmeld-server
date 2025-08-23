@@ -33,6 +33,18 @@ function createMapsRouter({ sqliteFile }) {
   const router = express.Router();
   const service = new MapsService(sqliteFile);
 
+  // List maps
+  router.get('/', (req, res, next) => {
+    try {
+      const limit = parseInt(req.query.limit, 10) || 50;
+      const offset = parseInt(req.query.offset, 10) || 0;
+      const items = service.list({ limit, offset });
+      res.json(items);
+    } catch (err) {
+      next(err);
+    }
+  });
+
   // Create map
   router.post('/', (req, res, next) => {
     try {

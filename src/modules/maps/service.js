@@ -40,12 +40,14 @@ class MapsService {
     const version = 1;
     const updatedAt = new Date().toISOString();
     const stateJson = JSON.stringify(payload);
+    const sizeBytes = Buffer.byteLength(stateJson, 'utf8');
     const result = this.repo.create({
       id,
       name,
       version,
       updatedAt,
-      stateJson
+      stateJson,
+      sizeBytes
     });
     return { id: result.id, name, version, updatedAt };
   }
@@ -67,6 +69,17 @@ class MapsService {
     };
   }
 
+  list({ limit = 50, offset = 0 } = {}) {
+    const rows = this.repo.list(limit, offset);
+    return rows.map(r => ({
+      id: r.id,
+      name: r.name,
+      version: r.version,
+      updatedAt: r.updated_at,
+      size: r.size_bytes
+    }));
+  }
+
   update(id, body) {
     const parsed = MapUpdateSchema.safeParse(body);
     if (!parsed.success) {
@@ -86,6 +99,7 @@ class MapsService {
     const updatedAt = new Date().toISOString();
     const payload = parsed.data.data ?? parsed.data.state;
     const stateJson = JSON.stringify(payload);
+    const sizeBytes = Buffer.byteLength(stateJson, 'utf8');
     const name = current.name; // unchanged here
 
     const changes = this.repo.update({
@@ -94,7 +108,8 @@ class MapsService {
       updatedAt,
       stateJson,
       name,
-      expectedVersion
+      expectedVersion,
+      sizeBytes
     });
     if (changes !== 1) {
       // Another writer updated between read and update
