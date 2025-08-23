@@ -71,6 +71,14 @@ function createMiddleware(config = {}) {
         'Authorization',
         'If-Match',
         'If-None-Match'
+      ],
+      exposedHeaders: [
+        // Allow client to read caching/concurrency and rate limit metadata
+        'ETag',
+        'RateLimit-Limit',
+        'RateLimit-Remaining',
+        'RateLimit-Reset',
+        'RateLimit-Policy'
       ]
     })
   );
