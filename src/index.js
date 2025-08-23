@@ -94,9 +94,9 @@ async function startServer() {
     const server = app.listen(CONFIG.port, () => {
       Logger.info({ port: CONFIG.port }, '🚀 MindMeld Server running');
       Logger.info({ stateFile: CONFIG.stateFilePath }, '📁 State file');
-      Logger.info({ health: `/health`, ready: `/ready` }, 'Probes available');
+      Logger.info({ health: '/health', ready: '/ready' }, 'Probes available');
       Logger.info({ corsOrigin: CONFIG.corsOrigin }, '🌐 CORS origin');
-      Logger.info({ stats: `/api/state/stats` }, '📊 Stats endpoint');
+      Logger.info({ stats: '/api/state/stats' }, '📊 Stats endpoint');
 
       eventBus.emit('server.started', {
         port: CONFIG.port,

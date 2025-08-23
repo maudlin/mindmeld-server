@@ -27,8 +27,12 @@ function createMiddleware(config = {}) {
       logger,
       genReqId: (req) => req.headers['x-request-id'] || `${Date.now()}-${Math.random().toString(36).slice(2)}`,
       customLogLevel: (res, err) => {
-        if (err || res.statusCode >= 500) return 'error';
-        if (res.statusCode >= 400) return 'warn';
+        if (err || res.statusCode >= 500) {
+          return 'error';
+        }
+        if (res.statusCode >= 400) {
+          return 'warn';
+        }
         return 'info';
       }
     })
@@ -72,10 +76,12 @@ function createMiddleware(config = {}) {
     legacyHeaders: false
   });
   middleware.push((req, res, next) => {
-    if (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH' || req.method === 'DELETE') {
+    const isWrite = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method);
+    if (isWrite) {
       return limiter(req, res, next);
+    } else {
+      return next();
     }
-    next();
   });
 
   // Error handling middleware (kept to preserve existing behavior)

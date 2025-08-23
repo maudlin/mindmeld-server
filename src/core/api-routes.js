@@ -157,7 +157,7 @@ function createApiRoutes(stateService) {
    * GET /ready
    * For now, returns ok; when DB is added, check DB connectivity
    */
-  router.get('/ready', async (req, res) => {
+  router.get('/ready', async(req, res) => {
     try {
       // Placeholder readiness check; extend when SQLite is integrated
       res.json({ status: 'ready', timestamp: new Date().toISOString() });
