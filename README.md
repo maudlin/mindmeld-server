@@ -5,6 +5,7 @@ Production-ready Express.js server for MindMeld mind mapping application, built 
 > Status: Active redesign in progress
 >
 > We’re migrating to an MVP that manages per-map resources via a /maps API backed by SQLite (better-sqlite3) with optimistic concurrency. The current implementation still serves a single global state and file storage. See:
+>
 > - To-be architecture: design/to-be/README.md
 > - To-be OpenAPI: design/to-be/openapi.yaml
 > - ADRs: design/to-be/adr/
@@ -13,7 +14,7 @@ Production-ready Express.js server for MindMeld mind mapping application, built 
 ## Features
 
 - **Event-Driven Architecture**: Central event bus with "noun.verb" event naming
-- **Service Layer Pattern**: Clean separation with dependency injection  
+- **Service Layer Pattern**: Clean separation with dependency injection
 - **Atomic Writes**: Prevents state corruption during concurrent saves
 - **Comprehensive Validation**: State structure and content validation
 - **Production Ready**: ESLint, Prettier, Jest testing, graceful shutdown
@@ -23,21 +24,25 @@ Production-ready Express.js server for MindMeld mind mapping application, built 
 ## Quick Start
 
 1. **Install dependencies**:
+
    ```bash
    npm install
    ```
 
 2. **Start server**:
+
    ```bash
    npm start
    ```
 
 3. **Development mode** (auto-reload):
+
    ```bash
    npm run dev
    ```
 
 4. **Run tests**:
+
    ```bash
    npm test
    ```
@@ -50,12 +55,15 @@ Production-ready Express.js server for MindMeld mind mapping application, built 
 ## API
 
 ### As-Is API (current code)
+
 See design/as-is/openapi.yaml for full spec.
 
 ### GET /health
+
 Returns server status, uptime, and state statistics.
 
 **Response**:
+
 ```json
 {
   "status": "ok",
@@ -71,26 +79,26 @@ Returns server status, uptime, and state statistics.
 ```
 
 ### GET /api/state
+
 Returns current mind map state. Returns empty state if no data exists.
 
 **Response**:
+
 ```json
 {
-  "notes": [
-    { "id": "1", "content": "Note 1", "left": "100px", "top": "50px" }
-  ],
-  "connections": [
-    { "from": "1", "to": "2" }
-  ],
+  "notes": [{ "id": "1", "content": "Note 1", "left": "100px", "top": "50px" }],
+  "connections": [{ "from": "1", "to": "2" }],
   "zoomLevel": 5
 }
 ```
 
 ### PUT /api/state
+
 Saves mind map state with validation and atomic writes.
 
 **Request Body**: JSON state object  
 **Response**:
+
 ```json
 {
   "success": true,
@@ -102,9 +110,11 @@ Saves mind map state with validation and atomic writes.
 ```
 
 ### GET /api/state/stats
+
 Returns state statistics for monitoring.
 
 **Response**:
+
 ```json
 {
   "notesCount": 5,
@@ -115,6 +125,7 @@ Returns state statistics for monitoring.
 ```
 
 ### Planned API (to-be)
+
 - GET /maps
 - POST /maps
 - GET /maps/{id}
@@ -127,6 +138,7 @@ See design/to-be/openapi.yaml for the draft spec.
 ## Architecture
 
 ### Project Structure
+
 ```
 src/
 ├── core/           # Core application logic
@@ -162,7 +174,7 @@ eventBus.emit('state.saving', { notesCount: 5 });
 eventBus.emit('state.saved', { success: true, stats });
 eventBus.emit('state.error', { operation: 'save', error });
 
-// Request events  
+// Request events
 eventBus.emit('request.started', { method: 'PUT', path: '/api/state' });
 eventBus.emit('request.completed', { statusCode: 200, duration: 45 });
 
@@ -175,13 +187,15 @@ eventBus.emit('health.checked', { healthy: true, stats });
 Environment variables:
 
 ### As-Is (file storage)
+
 - `PORT` - Server port (default: 3001)
 - `CORS_ORIGIN` - CORS origin (default: http://localhost:8080)
-- `STATE_FILE_PATH` - State file location (default: ./data/state.json)  
+- `STATE_FILE_PATH` - State file location (default: ./data/state.json)
 - `JSON_LIMIT` - Max JSON payload size (default: 50mb)
 - `NODE_ENV` - Environment (development/production)
 
 ### Planned (SQLite)
+
 - `SQLITE_FILE` - SQLite database file path (or use `DATABASE_URL`)
 - `PORT` - Server port (default: 3001)
 - `CORS_ORIGIN` - CORS origin (default: http://localhost:8080)
@@ -190,9 +204,14 @@ Environment variables:
 
 Notes: planned implementation uses SQLite in WAL mode with transactional writes and optimistic concurrency (version/ETag).
 
-## Development
+### Development
+
+- Pre-commit hooks run lint/format on staged files; on first install, husky is set up automatically.
+- CI runs lint, format check, tests, and OpenAPI lint on PRs.
+- Dev-only API docs are available at /docs (served via Redoc) when NODE_ENV != production.
 
 ### Scripts
+
 - `npm start` - Start production server
 - `npm run dev` - Development mode with auto-reload
 - `npm run lint` - Run ESLint
@@ -203,6 +222,7 @@ Notes: planned implementation uses SQLite in WAL mode with transactional writes 
 - `npm run validate` - Run all quality checks
 
 ### Code Standards
+
 - **ESLint**: Enforces MindMeld coding standards
 - **Prettier**: Consistent code formatting
 - **Jest**: Unit and integration testing
@@ -212,11 +232,13 @@ Notes: planned implementation uses SQLite in WAL mode with transactional writes 
 ## Testing
 
 ### Test Types
+
 - **Unit Tests**: Business logic and validation (`tests/unit/`)
 - **Integration Tests**: Full API endpoints (`tests/integration/`)
 - **Coverage**: Comprehensive test coverage reporting
 
 ### Running Tests
+
 ```bash
 npm test                # Run all tests
 npm run test:watch      # Watch mode for development
@@ -227,6 +249,7 @@ VERBOSE=true npm test   # Enable console logging
 ## Production Deployment
 
 ### Features
+
 - **Graceful Shutdown**: Handles SIGTERM/SIGINT signals
 - **Error Handling**: Global uncaught exception handling
 - **Process Management**: Ready for PM2, Docker, or systemd
@@ -234,6 +257,7 @@ VERBOSE=true npm test   # Enable console logging
 - **Structured Logging**: JSON logs with correlation IDs
 
 ### Docker Example
+
 ```dockerfile
 FROM node:18-alpine
 WORKDIR /app

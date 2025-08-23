@@ -10,6 +10,7 @@ const FileStorage = require('../data/file-storage');
 const StateService = require('../services/state-service');
 const createApiRoutes = require('../core/api-routes');
 const createMiddleware = require('../core/middleware');
+const createDocsRouter = require('../core/docs-route');
 const Logger = require('../utils/logger');
 
 /**
@@ -47,9 +48,20 @@ function createServer(config = {}) {
   const apiRoutes = createApiRoutes(stateService);
   app.use('/', apiRoutes);
 
+  // Dev-only docs (Redoc)
+  if (process.env.NODE_ENV !== 'production') {
+    app.use('/', createDocsRouter());
+  }
+
   // 404 handler (after routes)
   app.use((req, res) => {
-    res.status(404).json({ error: 'Not Found', path: req.path, timestamp: new Date().toISOString() });
+    res
+      .status(404)
+      .json({
+        error: 'Not Found',
+        path: req.path,
+        timestamp: new Date().toISOString()
+      });
   });
 
   // Store services on app for testing access
