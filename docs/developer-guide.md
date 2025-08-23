@@ -11,15 +11,15 @@ Get started
 
 Node version strategy
 
-- Baseline: Node 24.x for all contributors and CI
+- Baseline: Node 24.x for all contributors and CI (see ADR 0001)
 - Rationale: prebuilt native modules (better-sqlite3 12.x), built-in test runner, and built-in WebSocket client are available in Node 24.
 
 Testing strategy
 
-- Unit/integration: Jest (same as sister project)
+- Unit/integration: Jest + Supertest (see ADR 0003)
 - Coverage: npm run test:coverage
-- E2E: Not applicable in this repo; API integration tests live under tests/integration
-- Optional: When evaluating Node 24, we may add node:test suites alongside Jest (Jest remains canonical)
+- Integration: API tests live under tests/integration using a temp SQLite DB per suite
+- Optional: Contract tests with jest-openapi against design/to-be/openapi.yaml
 
 Database strategy
 
@@ -66,7 +66,7 @@ Quality gates
 
 - ESLint + Prettier: npm run lint, npm run format:check
 - Tests: npm test
-- OpenAPI: npm run openapi:lint
+- OpenAPI: npm run openapi:lint (see ADR 0005)
 - Pre-push: Husky runs linting and tests to keep main green
 
 Logging and observability

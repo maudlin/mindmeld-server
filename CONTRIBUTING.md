@@ -25,12 +25,12 @@ Standards
 - Errors: Throw typed errors in services, map to HTTP responses in handlers
 - Logging: Use pino/pino-http; no console.log in production paths
 - Security: Helmet, rate limiting, and validation via zod on all inputs
-- API: RESTful routes, explicit version field for optimistic concurrency where applicable
+- API: RESTful routes, explicit version field for optimistic concurrency where applicable (see docs/adr/0002-api-naming-and-concurrency.md)
 
 Node, tests, and DB
 
 - Node version policy:
-  - Baseline: Node 24.x for local dev and CI. We use modern Node features and prebuilt native modules compatible with Node 24.
+  - Baseline: Node 24.x for local dev and CI (see docs/adr/0001-node-24-baseline.md). We use modern Node features and prebuilt native modules compatible with Node 24.
 - Test framework:
   - Jest (unit/integration) to stay consistent with the sister MindMeld client project.
   - We may add a small number of node:test suites during Node 24 evaluation, but Jest remains the standard for now.
@@ -53,8 +53,8 @@ Branching and commits
 Pull request checklist
 
 - Lint and format: npm run lint && npm run format:check
-- Tests: npm test; add/update tests for new behavior
-- API docs: Update OpenAPI when endpoints or shapes change (design/to-be/openapi.yaml)
+- Tests: npm test; add/update tests for new behavior (see docs/adr/0003-testing-strategy.md)
+- API docs: Update OpenAPI when endpoints or shapes change (design/to-be/openapi.yaml). Lint with Spectral (see docs/adr/0005-openapi-governance.md)
 - Security: No secrets in code; validate inputs with zod; consider rate limits for new routes
 - Docs: Update README and docs as needed
 

@@ -8,7 +8,7 @@ Production-ready Express.js server for MindMeld mind mapping application, built 
 >
 > - To-be architecture: design/to-be/README.md
 > - To-be OpenAPI: design/to-be/openapi.yaml
-> - ADRs: design/to-be/adr/
+> - ADRs: docs/adr/
 > - Merge strategy: design/to-be/MERGE-STRATEGY.md
 
 ## Features
@@ -259,7 +259,7 @@ VERBOSE=true npm test   # Enable console logging
 ### Docker Example
 
 ```dockerfile
-FROM node:18-alpine
+FROM node:24-alpine
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci --only=production
@@ -270,7 +270,7 @@ CMD ["npm", "start"]
 
 ## Technical Notes
 
-- **Node.js**: Requires Node.js 18+
+- **Node.js**: Requires Node.js 24.x (see docs/adr/0001-node-24-baseline.md)
 - **Atomic Writes**: Uses temporary files to prevent corruption
 - **State Validation**: Comprehensive validation of notes and connections
 - **CORS**: Configurable origin support
