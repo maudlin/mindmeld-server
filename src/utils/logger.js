@@ -1,33 +1,26 @@
 /**
- * Centralized logging utility
- * Provides consistent logging across the application
+ * Structured logger (pino)
+ * - JSON logs by default; pretty in development
+ * - Use with pino-http in middleware for request logging
  */
 
-class Logger {
-  static info(message, data = {}) {
-    console.log(`${new Date().toISOString()} [INFO] ${message}`, data);
-  }
+const pino = require('pino');
 
-  static error(message, error = null) {
-    console.error(`${new Date().toISOString()} [ERROR] ${message}`, error);
-  }
+const isDev = process.env.NODE_ENV !== 'production';
 
-  static warn(message, data = {}) {
-    console.warn(`${new Date().toISOString()} [WARN] ${message}`, data);
-  }
+const logger = pino({
+  level: process.env.LOG_LEVEL || (isDev ? 'debug' : 'info'),
+  transport: isDev
+    ? {
+        target: 'pino-pretty',
+        options: {
+          colorize: true,
+          translateTime: 'SYS:standard',
+          singleLine: true
+        }
+      }
+    : undefined,
+  base: undefined // don't include pid, hostname by default
+});
 
-  static debug(message, data = {}) {
-    if (process.env.NODE_ENV === 'development') {
-      console.debug(`${new Date().toISOString()} [DEBUG] ${message}`, data);
-    }
-  }
-
-  static request(method, path, statusCode = null) {
-    const status = statusCode ? ` ${statusCode}` : '';
-    console.log(
-      `${new Date().toISOString()} [HTTP] ${method} ${path}${status}`
-    );
-  }
-}
-
-module.exports = Logger;
+module.exports = logger;

@@ -47,6 +47,11 @@ function createServer(config = {}) {
   const apiRoutes = createApiRoutes(stateService);
   app.use('/', apiRoutes);
 
+  // 404 handler (after routes)
+  app.use((req, res) => {
+    res.status(404).json({ error: 'Not Found', path: req.path, timestamp: new Date().toISOString() });
+  });
+
   // Store services on app for testing access
   app.locals.services = {
     storage,

@@ -152,6 +152,21 @@ function createApiRoutes(stateService) {
     }
   });
 
+  /**
+   * Readiness probe
+   * GET /ready
+   * For now, returns ok; when DB is added, check DB connectivity
+   */
+  router.get('/ready', async (req, res) => {
+    try {
+      // Placeholder readiness check; extend when SQLite is integrated
+      res.json({ status: 'ready', timestamp: new Date().toISOString() });
+    } catch (error) {
+      Logger.error('Readiness check failed:', error);
+      res.status(503).json({ status: 'not-ready' });
+    }
+  });
+
   Logger.info('API routes configured');
   return router;
 }
