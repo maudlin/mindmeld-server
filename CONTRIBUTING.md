@@ -30,8 +30,7 @@ Standards
 Node, tests, and DB
 
 - Node version policy:
-  - Baseline: Node 20 LTS for local dev and CI (stable, broad ecosystem support)
-  - Evaluation track: Node 24 for future adoption. Benefits include built-in test runner and stable WebSocket client. We will trial on a branch before switching the baseline.
+  - Baseline: Node 24.x for local dev and CI. We use modern Node features and prebuilt native modules compatible with Node 24.
 - Test framework:
   - Jest (unit/integration) to stay consistent with the sister MindMeld client project.
   - We may add a small number of node:test suites during Node 24 evaluation, but Jest remains the standard for now.

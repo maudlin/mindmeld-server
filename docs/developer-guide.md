@@ -4,16 +4,15 @@ This guide helps you set up, develop, test, and contribute to the MindMeld Serve
 
 Get started
 
-- Prereqs: Node 20 LTS (baseline), npm, Git
+- Prereqs: Node 24.x (baseline), npm, Git
 - Clone and install: npm install
 - Run dev server: npm run dev
 - Validate: npm run validate (lint, format:check, unit tests, OpenAPI lint)
 
 Node version strategy
 
-- Baseline: Node 20 LTS for all contributors and CI
-- Evaluation: Node 24 trial branch to explore built-in test runner and WebSocket client
-- Switch criteria: green CI across platforms, dependency compatibility (including DB driver), and DX parity; if satisfied, we will update engines.node and CI to Node 24
+- Baseline: Node 24.x for all contributors and CI
+- Rationale: prebuilt native modules (better-sqlite3 12.x), built-in test runner, and built-in WebSocket client are available in Node 24.
 
 Testing strategy
 

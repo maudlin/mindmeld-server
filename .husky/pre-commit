@@ -1,4 +1,4 @@
 #!/bin/sh
-. "$(dirname "$0")/_/husky.sh"
+# Husky v9+ (no shim needed)
 
-npx lint-staged
+npx --no-install lint-staged
