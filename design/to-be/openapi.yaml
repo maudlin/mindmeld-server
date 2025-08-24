@@ -38,8 +38,12 @@ paths:
           description: Created
           headers:
             ETag:
-              description: Weak or strong ETag representing the current state
-              schema: { type: string }
+              description: Strong ETag (sha256 of canonical data payload)
+              schema:
+                {
+                  type: string,
+                  example: '"e3b0c44298fc1c149afbf4c8996fb924..."'
+                }
           content:
             application/json:
               schema:
@@ -60,8 +64,12 @@ paths:
           description: OK
           headers:
             ETag:
-              description: Weak or strong ETag representing the current state
-              schema: { type: string }
+              description: Strong ETag (sha256 of canonical data payload)
+              schema:
+                {
+                  type: string,
+                  example: '"e3b0c44298fc1c149afbf4c8996fb924..."'
+                }
           content:
             application/json:
               schema:
@@ -95,7 +103,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Map'
         '409':
-          description: Version conflict
+          description: Conflict (version or If-Match ETag mismatch)
           content:
             application/json:
               schema:
@@ -161,6 +169,15 @@ components:
           description: Opaque client JSON document representing a map
           type: object
           additionalProperties: true
+      examples:
+        minimal:
+          summary: Minimal map
+          value:
+            id: 4d8a9e7c-6a1e-4c55-8b4b-2a8d9f1b1c2e
+            name: Project Plan
+            version: 3
+            updatedAt: 2025-08-24T12:00:00.000Z
+            data: { n: [], c: [] }
     MapCreateRequest:
       type: object
       required: [name, data]
@@ -180,6 +197,9 @@ components:
           description: Last-seen version; server increments on success
           type: integer
           minimum: 1
+      example:
+        data: { n: [{ id: 'n1' }], c: [] }
+        version: 2
     MapMetaPatchRequest:
       type: object
       required: [name]
