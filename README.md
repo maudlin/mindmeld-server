@@ -23,6 +23,13 @@ Production-ready Express.js server for MindMeld mind mapping application, built 
 
 ## Quick Start
 
+Minimal setup for Maps API (early production):
+
+- Node version: see .nvmrc (Node 24)
+- Enable maps API: FEATURE_MAPS_API=1
+- SQLite file path: SQLITE_FILE=./data/maps.sqlite
+- Seed sample maps: npm run seed
+
 1. **Install dependencies**:
 
    ```bash

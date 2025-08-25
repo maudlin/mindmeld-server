@@ -1,26 +1,7 @@
 const express = require('express');
-const { createHash } = require('crypto');
 const MapsService = require('./service');
 const { ConflictError } = require('./errors');
-
-function stableStringify(value) {
-  if (value === null || typeof value !== 'object') {
-    return JSON.stringify(value);
-  }
-  if (Array.isArray(value)) {
-    return `[${value.map(v => stableStringify(v)).join(',')}]`;
-  }
-  const keys = Object.keys(value).sort();
-  const entries = keys.map(
-    k => `${JSON.stringify(k)}:${stableStringify(value[k])}`
-  );
-  return `{${entries.join(',')}}`;
-}
-
-function computeEtag(obj) {
-  const canonical = stableStringify(obj);
-  return createHash('sha256').update(canonical).digest('hex');
-}
+const { computeEtag } = require('../../utils/etag');
 
 function stripQuotes(str) {
   if (typeof str !== 'string') {
@@ -89,8 +70,9 @@ function createMapsRouter({ sqliteFile }) {
       }
 
       const updated = service.update(id, req.body || {});
-
-      const nextPayload = (req.body && (req.body.data ?? req.body.state)) || {};
+      const payload = updated && (req.body?.data ?? req.body?.state);
+      const nextPayload =
+        payload !== undefined ? payload : (service.get(id).data ?? {});
       const nextEtag = computeEtag(nextPayload);
       res.set('ETag', `"${nextEtag}"`);
       res.json(updated);
