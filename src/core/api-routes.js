@@ -92,11 +92,11 @@ function createApiRoutes(stateService) {
    * Save state
    * PUT /api/state
    */
-  router.put('/api/state', async (req, res) => {
+  router.put('/api/state', async (req, res, next) => {
     try {
       eventBus.emit('api.state.put-requested', {
-        notesCount: req.body.notes?.length || 0,
-        connectionsCount: req.body.connections?.length || 0,
+        notesCount: req.body?.notes?.length || 0,
+        connectionsCount: req.body?.connections?.length || 0,
         userAgent: req.get('User-Agent'),
         timestamp: new Date().toISOString()
       });
@@ -118,13 +118,8 @@ function createApiRoutes(stateService) {
         timestamp: new Date().toISOString()
       });
 
-      // Return appropriate error status
-      const status = error.message.includes('Invalid state') ? 400 : 500;
-
-      res.status(status).json({
-        message: error.message,
-        timestamp: new Date().toISOString()
-      });
+      // Delegate to global error handler
+      next(error);
     }
   });
 

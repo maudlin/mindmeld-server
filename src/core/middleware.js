@@ -100,31 +100,6 @@ function createMiddleware(config = {}) {
     }
   });
 
-  // Error handling middleware
-  middleware.push((error, req, res, _next) => {
-    logger.error(
-      { err: error, path: req.path, method: req.method },
-      'Request error'
-    );
-
-    eventBus.emit('request.error', {
-      method: req.method,
-      path: req.path,
-      error: error.message,
-      stack: error.stack,
-      timestamp: new Date().toISOString()
-    });
-
-    const isDevelopment = process.env.NODE_ENV === 'development';
-
-    res.status(error.status || 500).json({
-      message: error.message,
-      code: error.code,
-      ...(isDevelopment && { stack: error.stack }),
-      timestamp: new Date().toISOString()
-    });
-  });
-
   logger.info(
     { corsOrigin, jsonLimit, middlewareCount: middleware.length },
     'Middleware configured'
