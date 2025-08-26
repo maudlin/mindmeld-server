@@ -6,7 +6,7 @@ Overview
 
 - Purpose: HTTP API for MindMeld client state management and future /maps feature
 - Status: Stable core API for file-based state; experimental /maps vertical slice behind a feature flag
-- Branch: integration/merge-planning (active integration branch)
+- Baseline branch: main; work proceeds on short-lived feature branches (prefix by type or Jira key)
 
 Runtime and dependencies
 
@@ -22,6 +22,7 @@ Key paths
 - Server factory: src/factories/server-factory.js
 - Core API routes: src/core/api-routes.js (file-based state)
 - Middleware: src/core/middleware.js
+- Config (planned centralization): src/config/config.js (validated via zod)
 - Maps (to-be): src/modules/maps/\* (db, repo, service, routes)
 - Tests: tests/unit/_, tests/integration/_
 - OpenAPI (to-be): design/to-be/openapi.yaml
@@ -49,6 +50,44 @@ Recent changes
   - Integration tests added for create/get/update/conflict
   - Zod schemas accept arbitrary object state via z.object({}).passthrough()
 - ESLint/Prettier cleanup across codebase; tests and lints pass locally
+- ETag utilities refactored; unit tests added; groundwork for If-Match/ETag consistency
+- Error envelope normalization in progress (error -> message; optional code)
+- pino-http logging: customLogLevel corrected; verifying levels and duplicate logs
+
+Priorities and plan (lean, production-minded)
+
+Top priorities (next):
+
+- Logging correctness and signal-to-noise:
+  - Ensure customLogLevel is respected; 2xx/3xx=info, 4xx=warn, 5xx=error; avoid duplicate request logs.
+- Error response consistency:
+  - Normalize to { message, code?, details? } in production; include stack only in development; update tests/OpenAPI.
+- Config as a single source of truth:
+  - Centralize env in src/config/config.js validated with zod; have server factory consume only this config.
+- Graceful shutdown and resource lifecycle:
+  - Handle SIGTERM/SIGINT; stop accepting new requests; flush logger; close SQLite; optional /ready endpoint.
+- Maps error handling alignment:
+  - Map typed errors to consistent payloads; include minimal codes (e.g., MAP_NOT_FOUND, VERSION_CONFLICT).
+
+Near-term improvements:
+
+- API versioning shim:
+  - Mount maps at /api/v1/maps; keep /maps as alias; document deprecation.
+- Read caching:
+  - Support If-None-Match on GET /maps/:id to return 304.
+- Migrations hygiene:
+  - Add schema_version table and tiny linear migration runner at startup (synchronous).
+- Transitional field deprecation:
+  - Keep dual fields during transition; document removal timeline.
+- Focused unit tests:
+  - Add conflict-path test for If-Match vs version fallback.
+
+What we will not add right now (to stay lean):
+
+- No heavy auth (optional API key only, feature-flagged if needed).
+- No ORM or external migration framework.
+- No big observability stack; health + minimal logs are enough.
+- No additional rate-limiting complexity.
 
 Open questions / decisions pending
 
@@ -74,13 +113,14 @@ Open questions / decisions pending
 
 Short-term TODOs
 
-- Decide Node baseline (20 vs 24) and update package.json engines + CI runtime matrix
-- Finalize /maps API contract (request/response), then update design/to-be/openapi.yaml and add spectral rules as needed
-- Add more tests for /maps edge cases (invalid payloads, large payloads, pagination for list, error mapping, ETag/If-Match variants)
-- Add indexes/migrations for /maps if needed (name, updated_at), and decide on DB file lifecycle/paths
-- Add repository error handling/logging patterns; consider retry/transaction boundaries where applicable
-- Confirm CORS origins for environments; reflect in config
-- Document ops tasks: DB backup, rotation, and local dev DB cleanup
+- Decide Node baseline (22 LTS vs 24) and update package.json engines + CI runtime matrix
+- Centralize config in src/config/config.js with zod; route all consumers through it
+- Finalize /maps API contract and update design/to-be/openapi.yaml; add Spectral rules
+- Implement If-None-Match on GET /api/v1/maps/:id; return 304 when matched
+- Add a minimal migrations runner and schema_version table; add indexes as needed (e.g., name, updated_at)
+- Align error payloads across routes and middleware; update tests and OpenAPI examples
+- Confirm CORS origins; document ops (SQLite backups, WAL, shutdown); add graceful shutdown hooks
+- Add unit tests for ETag/If-Match conflict path and logging level classification
 
 How to work locally
 

@@ -61,12 +61,23 @@ function createServer(config = {}) {
 
   // 404 handler (after routes)
   app.use((req, res) => {
-    res.status(404).json({
-      error: 'Not Found',
-      path: req.path,
-      timestamp: new Date().toISOString()
-    });
+    const problem = {
+      type: 'https://mindmeld.dev/problems/not-found',
+      title: 'Not Found',
+      status: 404,
+      detail: `Route ${req.method} ${req.path} not found`,
+      instance: req.originalUrl,
+      error: 'Not Found' // legacy field
+    };
+    res
+      .status(404)
+      .set('Content-Type', 'application/problem+json')
+      .json(problem);
   });
+
+  // Global error handler (must be after routes and 404)
+  const { errorHandler } = require('../core/error-handler');
+  app.use(errorHandler);
 
   // Store services on app for testing access
   app.locals.services = {
