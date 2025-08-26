@@ -28,7 +28,8 @@ function createMiddleware(config = {}) {
       genReqId: req =>
         req.headers['x-request-id'] ||
         `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-      customLogLevel: (res, err) => {
+      // Ensure correct signature to avoid misclassification of log levels
+      customLogLevel: (req, res, err) => {
         if (err || res.statusCode >= 500) {
           return 'error';
         }
@@ -99,7 +100,7 @@ function createMiddleware(config = {}) {
     }
   });
 
-  // Error handling middleware (kept to preserve existing behavior)
+  // Error handling middleware
   middleware.push((error, req, res, _next) => {
     logger.error(
       { err: error, path: req.path, method: req.method },
@@ -117,7 +118,8 @@ function createMiddleware(config = {}) {
     const isDevelopment = process.env.NODE_ENV === 'development';
 
     res.status(error.status || 500).json({
-      error: error.message,
+      message: error.message,
+      code: error.code,
       ...(isDevelopment && { stack: error.stack }),
       timestamp: new Date().toISOString()
     });

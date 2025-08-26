@@ -47,7 +47,7 @@ function createApiRoutes(stateService) {
       res.status(503).json({
         status: 'error',
         timestamp: new Date().toISOString(),
-        error: 'Service unavailable'
+        message: 'Service unavailable'
       });
     }
   });
@@ -82,7 +82,7 @@ function createApiRoutes(stateService) {
       });
 
       res.status(500).json({
-        error: 'Failed to retrieve state',
+        message: 'Failed to retrieve state',
         timestamp: new Date().toISOString()
       });
     }
@@ -122,7 +122,7 @@ function createApiRoutes(stateService) {
       const status = error.message.includes('Invalid state') ? 400 : 500;
 
       res.status(status).json({
-        error: error.message,
+        message: error.message,
         timestamp: new Date().toISOString()
       });
     }
@@ -146,7 +146,7 @@ function createApiRoutes(stateService) {
       Logger.error('Failed to get state stats:', error);
 
       res.status(500).json({
-        error: 'Failed to get statistics',
+        message: 'Failed to get statistics',
         timestamp: new Date().toISOString()
       });
     }
