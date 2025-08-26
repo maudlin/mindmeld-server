@@ -5,18 +5,18 @@
     "ghcr.io/devcontainers/features/git:1": {},
     "ghcr.io/devcontainers/features/node:1": {
       "nodeGypDependencies": true
+    },
+    "ghcr.io/devcontainers/features/sqlite:1": {},
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "installZsh": false
     }
   },
   "postCreateCommand": "npm ci || npm install",
   "customizations": {
     "vscode": {
-      "extensions": [
-        "dbaeumer.vscode-eslint",
-        "esbenp.prettier-vscode"
-      ]
+      "extensions": ["dbaeumer.vscode-eslint", "esbenp.prettier-vscode"]
     }
   },
   "forwardPorts": [3001],
   "remoteUser": "node"
 }
-

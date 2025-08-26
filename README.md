@@ -292,3 +292,35 @@ CMD ["npm", "start"]
 ## Project Context
 
 Part of MS-14 (Technical Proof of Concept) - validates core client-server integration patterns before full MindMeld implementation. This server provides the backend foundation for the MindMeld mind mapping application.
+
+## Using VS Code Dev Containers (optional)
+
+This repository includes a Dev Container configuration for a fast, consistent local setup.
+
+Prerequisites:
+
+- VS Code
+- Dev Containers extension (ms-vscode-remote.remote-containers)
+- Docker Desktop or compatible Docker engine
+
+How to use:
+
+1. Open the repository in VS Code
+2. Run: “Dev Containers: Reopen in Container”
+3. The container will:
+   - Use a Node 18 base image (per .devcontainer/devcontainer.json)
+   - Install sqlite3 CLI and curl
+   - Run `npm ci` automatically (falls back to `npm install`)
+4. Start the server: `npm run dev` (port 3001 is forwarded)
+5. Debug in VS Code: use the “Launch MindMeld Server” configuration
+
+Environment:
+
+- Copy `.env.example` to `.env` and adjust as needed
+- Key vars: `PORT`, `CORS_ORIGIN`, `STATE_FILE_PATH`
+- To enable the /maps API (SQLite vertical slice): set `FEATURE_MAPS_API=1` and `SQLITE_FILE=./data/db.sqlite`
+
+Notes:
+
+- The production Dockerfile uses a non-root user and sets `SQLITE_FILE=/app/data/db.sqlite`
+- The Dev Container is intended for development only; CI runs on GitHub Actions without containers
