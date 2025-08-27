@@ -1,6 +1,6 @@
 # Testing Guide
 
-This guide explains how to manually test MindMeld Server using curl, Postman, or Insomnia. It covers starting the server, exercising the core endpoints, validating error responses (RFC 7807), and optionally testing the /maps API (SQLite vertical slice).
+This guide explains how to manually test MindMeld Server using curl, Postman/Bruno/Insomnia. It covers starting the server and exercising the /maps API (SQLite-backed), plus health checks. The legacy /api/state endpoints have been removed.
 
 ## Prerequisites
 
@@ -79,40 +79,31 @@ curl -s http://localhost:3001/health | jq .
 
 Expected 200 OK with status, uptime, and stats.
 
-### State API (as-is)
+### Maps API
 
-- Get current state
-
-```bash
-curl -s http://localhost:3001/api/state | jq .
-```
-
-- Save state (valid)
+- Create a map
 
 ```bash
-curl -s -X PUT http://localhost:3001/api/state \
+curl -s -X POST http://localhost:3001/maps \
   -H 'Content-Type: application/json' \
-  -d '{
-    "notes": [{ "id": "1", "content": "Note 1" }],
-    "connections": [],
-    "zoomLevel": 5
-  }' | jq .
+  -d '{ "name": "My Map", "data": { "notes": [{"id":"1","content":"Test"}], "connections": [], "zoomLevel": 5 } }' | jq .
 ```
 
-- Save state (invalid: missing notes)
+- Read a map
 
 ```bash
-curl -s -X PUT http://localhost:3001/api/state \
+curl -s http://localhost:3001/maps/<ID> | jq .
+```
+
+- Update a map with ETag
+
+```bash
+curl -i -s http://localhost:3001/maps/<ID> | grep -i etag
+# Use the ETag value in If-Match
+curl -s -X PUT http://localhost:3001/maps/<ID> \
   -H 'Content-Type: application/json' \
-  -d '{ "connections": [], "zoomLevel": 5 }' | jq .
-```
-
-Expected 400 with `application/problem+json` body (RFC 7807). During migration, a legacy `error` field may also be present for compatibility.
-
-- Get state stats
-
-```bash
-curl -s http://localhost:3001/api/state/stats | jq .
+  -H 'If-Match: "<ETAG_FROM_READ>"' \
+  -d '{ "name": "My Map v2", "data": { "notes": [{"id":"1","content":"Test"}], "connections": [], "zoomLevel": 6 } }' | jq .
 ```
 
 ### Error response format (RFC 7807)
@@ -182,8 +173,6 @@ The flows below work in both tools. Replace the base URL if necessary.
 
 - Tests: expect `notesCount`, `connectionsCount`, `isEmpty`.
 
-## Optional: /maps API (SQLite vertical slice)
-
 Enable the feature flag and point to a writable database file:
 
 ```bash
@@ -240,18 +229,12 @@ Run a small smoke test with curl:
 # Health
 curl -s http://localhost:3001/health | jq .
 
-# Save valid state
-curl -s -X PUT http://localhost:3001/api/state \
+# Create map
+MAP=$(curl -s -X POST http://localhost:3001/maps \
   -H 'Content-Type: application/json' \
-  -d '{
-    "notes": [{ "id": "1", "content": "Hello" }],
-    "connections": [],
-    "zoomLevel": 5
-  }' | jq .
+  -d '{"name":"Smoke","data":{"notes":[],"connections":[],"zoomLevel":1}}')
+ID=$(echo "$MAP" | jq -r .id)
 
-# Confirm state
-curl -s http://localhost:3001/api/state | jq .
-
-# Stats
-curl -s http://localhost:3001/api/state/stats | jq .
+# Read map
+curl -s http://localhost:3001/maps/$ID | jq .
 ```

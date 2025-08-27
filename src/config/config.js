@@ -8,10 +8,7 @@ const EnvSchema = z.object({
   NODE_ENV: z
     .enum(['development', 'production', 'test'])
     .default('development'),
-  STATE_FILE_PATH: z
-    .string()
-    .default(path.join(process.cwd(), 'data', 'state.json')),
-  // Planned (to-be): SQLite for /maps
+  // SQLite for /maps
   SQLITE_FILE: z.string().optional(),
   FEATURE_MAPS_API: z.string().optional(),
   LOG_LEVEL: z.string().optional(),
@@ -26,14 +23,15 @@ function buildConfig() {
   const config = {
     port: parseInt(parsed.PORT, 10),
     corsOrigin: parsed.CORS_ORIGIN,
-    stateFilePath: parsed.STATE_FILE_PATH,
     jsonLimit: parsed.JSON_LIMIT,
     nodeEnv: parsed.NODE_ENV,
     // Planned
     sqliteFile:
       parsed.SQLITE_FILE || path.join(process.cwd(), 'data', 'db.sqlite'),
-    featureMapsApi:
-      parsed.FEATURE_MAPS_API === '1' || parsed.FEATURE_MAPS_API === 'true',
+    // default ON unless explicitly disabled
+    featureMapsApi: !(
+      parsed.FEATURE_MAPS_API === '0' || parsed.FEATURE_MAPS_API === 'false'
+    ),
     logLevel:
       parsed.LOG_LEVEL || (parsed.NODE_ENV === 'production' ? 'info' : 'debug'),
     // MCP
