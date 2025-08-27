@@ -1,6 +1,6 @@
 # MindMeld Server
 
-Production-ready Express.js server for MindMeld mind mapping application, built following MindMeld client standards.
+Express.js server for MindMeld mind mapping application, built following MindMeld client standards.
 
 > Status: Active redesign in progress
 >
@@ -27,7 +27,7 @@ Minimal setup for Maps API (early production):
 
 - Node version: see .nvmrc (Node 24)
 - Enable maps API: FEATURE_MAPS_API=1
-- SQLite file path: SQLITE_FILE=./data/maps.sqlite
+- SQLite file path: SQLITE_FILE=./data/db.sqlite
 - Seed sample maps: npm run seed
 
 1. **Install dependencies**:
@@ -128,6 +128,27 @@ Returns state statistics for monitoring.
   "connectionsCount": 3,
   "zoomLevel": 5,
   "isEmpty": false
+}
+```
+
+### Error responses
+
+This API standardizes error responses using RFC 7807 (Problem Details). Errors are returned with Content-Type: application/problem+json and include fields like type, title, status, detail, and instance. During migration, a legacy error field mirrors the title for backward compatibility.
+
+Example 400 response:
+
+```json
+{
+  "type": "https://mindmeld.dev/problems/invalid-state",
+  "title": "Invalid state",
+  "status": 400,
+  "detail": "State must have notes array, State must have connections array",
+  "instance": "/api/state",
+  "errors": [
+    { "path": "notes", "message": "must be an array" },
+    { "path": "connections", "message": "must be an array" }
+  ],
+  "error": "Invalid state"
 }
 ```
 
@@ -238,6 +259,8 @@ Notes: planned implementation uses SQLite in WAL mode with transactional writes 
 
 ## Testing
 
+For a step-by-step manual testing walkthrough using curl and Postman/Insomnia, see docs/testing-guide.md.
+
 ### Test Types
 
 - **Unit Tests**: Business logic and validation (`tests/unit/`)
@@ -266,18 +289,27 @@ VERBOSE=true npm test   # Enable console logging
 ### Docker Example
 
 ```dockerfile
-FROM node:18-alpine
+FROM node:24-alpine
 WORKDIR /app
+ENV NODE_ENV=production
+ENV SQLITE_FILE=/app/data/db.sqlite
+RUN apk add --no-cache curl
 COPY package*.json ./
-RUN npm ci --only=production
-COPY src/ ./src/
+RUN npm ci --omit=dev || npm ci
+COPY src ./src
+COPY docs ./docs
+COPY design ./design
+RUN mkdir -p /app/data && chown -R node:node /app
+USER node
 EXPOSE 3001
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD curl -fsS http://localhost:3001/health || exit 1
 CMD ["npm", "start"]
 ```
 
 ## Technical Notes
 
-- **Node.js**: Requires Node.js 18+
+- **Node.js**: Requires Node.js 24+
 - **Atomic Writes**: Uses temporary files to prevent corruption
 - **State Validation**: Comprehensive validation of notes and connections
 - **CORS**: Configurable origin support
@@ -308,16 +340,18 @@ How to use:
 1. Open the repository in VS Code
 2. Run: “Dev Containers: Reopen in Container”
 3. The container will:
-   - Use a Node 18 base image (per .devcontainer/devcontainer.json)
-   - Install sqlite3 CLI and curl
-   - Run `npm ci` automatically (falls back to `npm install`)
+
+- Use a Node 24 base image (per .devcontainer/devcontainer.json)
+  - Install sqlite3 CLI and curl
+  - Run `npm ci` automatically (falls back to `npm install`)
+
 4. Start the server: `npm run dev` (port 3001 is forwarded)
 5. Debug in VS Code: use the “Launch MindMeld Server” configuration
 
 Environment:
 
 - Copy `.env.example` to `.env` and adjust as needed
-- Key vars: `PORT`, `CORS_ORIGIN`, `STATE_FILE_PATH`
+- Key vars: `PORT`, `CORS_ORIGIN` (default http://localhost:8080), `STATE_FILE_PATH`
 - To enable the /maps API (SQLite vertical slice): set `FEATURE_MAPS_API=1` and `SQLITE_FILE=./data/db.sqlite`
 
 Notes:
