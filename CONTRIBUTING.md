@@ -1,114 +1,112 @@
 # Contributing to MindMeld Server
 
-Thanks for helping improve the MindMeld Server. This document outlines how we work so your contributions land smoothly and remain maintainable.
+Thanks for helping improve the MindMeld Server. This guide aligns with our sibling project (../mindmeld) and documents how to develop, test, and submit changes that pass the same checks as CI.
 
-Quick start
+## Quick start
 
-- Prereqs: Node.js (see Node version policy below), npm, Git, SQLite tools (optional for local inspection)
-- Install: npm install
-- Dev: npm run dev
-- Validate before PR: npm run validate (lint, format:check, unit tests, OpenAPI lint)
+- Requirements: Node.js ≥ 24, npm, Git
+- Install: `npm install`
+- Develop: `npm run dev` (or `npm start`)
+- Run local checks (mirror CI):
 
-Repository goals
+```bash
+npm run lint
+npm run format:check
+npm run openapi:lint
+npm test -- --ci --reporters=default
+```
+
+Tip: `npm run validate` runs a subset (lint + format:check + jest).
+
+## Repository goals
 
 - Production-ready service for the MindMeld client
-- Simple, observable, and testable modules
+- Small, observable, testable modules
 - Clear API surface and error semantics
 
-Standards
+## Standards
 
 - Language: Modern JS (ES2022+)
 - Style: ESLint + Prettier
-- Naming: camelCase for variables, functions, and JSON fields; PascalCase for classes
-  - Exceptions: DB column names may be snake_case. Map to camelCase at boundaries.
-- Modules: Keep files small and focused. Avoid circular dependencies.
-- Errors: Throw typed errors in services, map to HTTP responses in handlers
-- Logging: Use pino/pino-http; no console.log in production paths
-- Security: Helmet, rate limiting, and validation via zod on all inputs
-- API: RESTful routes, explicit version field for optimistic concurrency where applicable
+- Naming: camelCase for variables/functions/JSON; PascalCase for classes
+  - DB columns may be snake_case; convert to camelCase at boundaries
+- Modules: Keep files focused; avoid circular dependencies
+- Errors: Throw typed errors in services; map to HTTP in routes
+- Logging: pino/pino-http; avoid console.log in prod paths
+- API: RESTful; ETag/If-Match and versioning for optimistic concurrency
 
-Node, tests, and DB
+## Node, tests, and DB
 
-- Node version policy:
-  - Baseline: Node 20 LTS for local dev and CI (stable, broad ecosystem support)
-  - Evaluation track: Node 24 for future adoption. Benefits include built-in test runner and stable WebSocket client. We will trial on a branch before switching the baseline.
-- Test framework:
-  - Jest (unit/integration) to stay consistent with the sister MindMeld client project.
-  - We may add a small number of node:test suites during Node 24 evaluation, but Jest remains the standard for now.
-- SQLite driver:
-  - Default: better-sqlite3 (synchronous, native, reliable performance)
-  - Alternative: pure-JS/wasm options (e.g., sql.js or @sqlite.org/sqlite-wasm) for environments where native builds are problematic
-  - Experimental: If we adopt Node 24+ and a stable node:sqlite emerges, we may evaluate it. Not a default today.
+- Node baseline: Node 24 (engines and CI)
+- Tests: Jest for unit and integration (supertest for HTTP)
+- SQLite: better-sqlite3 by default; schema created on startup. The server defaults SQLite path to `./data/db.sqlite` when not provided.
 
-Monorepo relationships
+## CI
 
-- Sister project: ../mindmeld (client)
-- Keep developer experience familiar between repos: Jest, ESLint/Prettier, similar branching and PR process
+GitHub Actions workflow “CI” runs on pushes and PRs with Node 24:
 
-Branching and commits
+- `npm ci`
+- `npm run lint`
+- `npm run format:check`
+- `npm run openapi:lint`
+- `npm test -- --ci --reporters=default`
+- `npm run test:coverage`
 
-- Branch naming: feature/short-desc, fix/short-desc, chore/short-desc
-- Commits: Conventional style recommended (feat:, fix:, chore:, docs:, test:, refactor:)
-- PRs: Small, focused, descriptive title and body. Link to issues.
+Please keep local checks green before opening a PR.
 
-Pull request checklist
+## Pre-commit hooks (Husky v10)
 
-- Lint and format: npm run lint && npm run format:check
-- Tests: npm test; add/update tests for new behavior
-- API docs: Update OpenAPI when endpoints or shapes change (design/to-be/openapi.yaml)
-- Security: No secrets in code; validate inputs with zod; consider rate limits for new routes
-- Docs: Update README and docs as needed
+This repo uses Husky to run CI‑equivalent checks before every commit:
 
-Pre-commit and pre-push
+- lint-staged (Prettier and ESLint fix on staged files)
+- `npm run lint`
+- `npm run format:check`
+- `npm run openapi:lint`
+- `npm test -- --ci --reporters=default`
 
-- We use Husky + lint-staged. On staged files:
-  - Prettier formatting
-  - ESLint autofix for src/ and tests/
-- On push: Run lint, format:check, unit tests, and spectral lint
+Hooks install via `postinstall`. If needed, re-init with `npx husky init`.
 
-How to run locally
+## Branching, commits, and PRs
 
-- Env: copy .env.example to .env and fill values
-- Start dev server: npm run dev
-- API docs (dev-only): /docs (Redoc)
+- Always raise a PR to merge into main (do not push directly to main).
+- If working on a Jira ticket, include the ticket ID in the branch name.
+  - Examples:
+    - `feat/PROJ-1234-remove-legacy-state`
+    - `fix/PROJ-5678-db-path-default`
+- Commit messages: Conventional style recommended (`feat:`, `fix:`, `chore:`, `docs:`, `test:`, `refactor:`).
+- PRs: Small and focused. In the description, state what changed, why, and how it was tested.
 
-Testing
+## Testing
 
-- Unit: npm test
-- Coverage: npm run test:coverage
-- Integration tests live in tests/integration
+- Unit tests: `tests/unit/`
+- Integration tests: `tests/integration/` (e.g., `/maps` API with ETag/If-Match)
+- Run all tests: `npm test`
+- Coverage: `npm run test:coverage`
 
-Coding patterns
+## OpenAPI
+
+- Spec lives at `design/to-be/openapi.yaml`
+- Lint with Spectral: `npm run openapi:lint`
+
+## Coding patterns
 
 - Services encapsulate business logic; repositories encapsulate DB access
-- Express routes should be thin, validate inputs, call services, and translate errors to HTTP
-- Feature flags may guard unfinished features
+- Routes are thin: validate input, call services, translate errors to HTTP
+- Prefer feature flags to guard unfinished work
 
-Error handling and HTTP mapping
+## Error handling and HTTP mapping
 
 - BadRequestError → 400
 - NotFoundError → 404
 - ConflictError (optimistic concurrency) → 409
-- Unexpected errors → 500 and log with request correlation info
+- Unexpected errors → 500 (log with correlation info)
 
-API naming guidance
+## Security and privacy
 
-- JSON field names are camelCase (e.g., updatedAt)
-- If DB columns are snake_case (updated_at), translate at the repo/service boundary
-- Avoid leaking persistence naming into API responses
-
-Security and privacy
-
-- Never log secrets or PII
+- Never commit secrets or log PII
 - Validate all inputs with zod
-- Default-deny CORS; explicitly configure allowed origins for deployments
+- CORS: allowlist explicit origins per environment
 
-Release process
+## Getting help
 
-- Semantic versioning via npm version (patch/minor/major)
-- Maintainers perform releases after PR merge
-
-Getting help
-
-- See docs/ for architecture and developer guide
-- Open an issue or ask in project discussions
+See code in `src/` and tests under `tests/` for examples. For questions, open an issue or a draft PR. Thanks for contributing! 🚀

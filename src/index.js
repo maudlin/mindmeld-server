@@ -15,8 +15,11 @@ const { config: CONFIG } = require('./config/config');
  * Ensure data directory exists
  */
 async function ensureDataDirectory() {
-  const dataDir = path.dirname(CONFIG.stateFilePath);
   try {
+    if (!CONFIG || CONFIG.featureMapsApi === false) {
+      return;
+    }
+    const dataDir = path.dirname(CONFIG.sqliteFile);
     await fs.mkdir(dataDir, { recursive: true });
     Logger.info(`Data directory ensured: ${dataDir}`);
   } catch (error) {
@@ -93,10 +96,9 @@ async function startServer() {
     // Start listening
     const server = app.listen(CONFIG.port, () => {
       Logger.info({ port: CONFIG.port }, '🚀 MindMeld Server running');
-      Logger.info({ stateFile: CONFIG.stateFilePath }, '📁 State file');
       Logger.info({ health: '/health', ready: '/ready' }, 'Probes available');
       Logger.info({ corsOrigin: CONFIG.corsOrigin }, '🌐 CORS origin');
-      Logger.info({ stats: '/api/state/stats' }, '📊 Stats endpoint');
+      Logger.info({ maps: '/maps' }, '🗺️ Maps API enabled');
 
       eventBus.emit('server.started', {
         port: CONFIG.port,

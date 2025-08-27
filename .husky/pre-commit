@@ -1,2 +1,18 @@
-#!/usr/bin/env sh
-npx --no-install lint-staged
+set -e
+
+# Run staged file linters/formatters first for quick feedback
+printf "\n[husky] Running lint-staged...\n"
+npx --no -- lint-staged
+
+# Mirror CI checks
+printf "\n[husky] Lint...\n"
+npm run lint
+
+printf "\n[husky] Format check...\n"
+npm run format:check
+
+printf "\n[husky] OpenAPI lint...\n"
+npm run openapi:lint
+
+printf "\n[husky] Tests (CI mode)...\n"
+npm test -- --ci --reporters=default

@@ -1,10 +1,8 @@
 /**
  * src/mcp/server.js
- * Minimal MCP server scaffold over stdio with read-only resources/tools for MS-41/MS-42.
- * Uses dynamic import to load the MCP SDK to avoid ESM/CJS friction.
+ * Minimal MCP server over stdio with read-only resources/tools (maps-first).
  */
 
-const createApp = require('../factories/server-factory');
 const { config: CONFIG } = require('../config/config');
 const logger = require('../utils/logger');
 
@@ -45,57 +43,20 @@ async function startMcpServer() {
 
   logger.info({ transport: CONFIG.mcpTransport }, 'Starting MCP server');
 
-  // Build DI graph without opening a TCP port
-  const app = createApp(CONFIG);
-  const services = app.locals && app.locals.services ? app.locals.services : {};
-  const stateService = services.stateService;
-
-  if (!stateService) {
-    throw new Error(
-      'stateService not available; server factory must expose app.locals.services.stateService'
-    );
-  }
-
   const { McpServer, StdioServerTransport } = await loadMcpSdk();
 
   // Construct high-level McpServer
   const mcp = new McpServer({ name: 'mindmeld-mcp', version: '0.1.0' });
 
-  // ---- MS-42: Resources (health + legacy state) ----
+  // Health resource only (maps tools/resources to be added separately)
   mcp.resource('health', 'mindmeld://health', async _extra => {
-    const stats = await stateService.getStats();
+    const payload = { status: 'ok', timestamp: new Date().toISOString() };
     return {
       contents: [
-        {
-          mimeType: 'application/json',
-          text: JSON.stringify({
-            status: 'ok',
-            timestamp: new Date().toISOString(),
-            stats
-          })
-        }
+        { mimeType: 'application/json', text: JSON.stringify(payload) }
       ]
     };
   });
-
-  mcp.resource('state', 'mindmeld://state', async _extra => {
-    const state = await stateService.readState();
-    return {
-      contents: [{ mimeType: 'application/json', text: JSON.stringify(state) }]
-    };
-  });
-
-  // ---- MS-42: Tools (state.get) ----
-  mcp.tool(
-    'state.get',
-    'Return the legacy single global state',
-    async _extra => {
-      const state = await stateService.readState();
-      return {
-        content: [{ type: 'text', text: JSON.stringify(state) }]
-      };
-    }
-  );
 
   const transport = new StdioServerTransport();
   await mcp.connect(transport);
