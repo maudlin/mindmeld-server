@@ -9,20 +9,22 @@ const { config: CONFIG } = require('../config/config');
 const logger = require('../utils/logger');
 
 async function loadMcpSdk() {
-  // Prefer ESM import; Node 24 supports dynamic import in CJS
-  const mod = await import('@modelcontextprotocol/sdk/server');
-  // Handle possible API shapes
-  const Server =
-    mod.Server || (mod.default && mod.default.Server) || mod.createServer;
+  // Prefer the high-level McpServer API for resources/tools
+  const mcpMod = await import('@modelcontextprotocol/sdk/server/mcp.js');
+  const stdioMod = await import('@modelcontextprotocol/sdk/server/stdio.js');
+
+  const McpServer =
+    mcpMod.McpServer || (mcpMod.default && mcpMod.default.McpServer);
   const StdioServerTransport =
-    mod.StdioServerTransport ||
-    (mod.default && mod.default.StdioServerTransport);
-  if (!Server || !StdioServerTransport) {
+    stdioMod.StdioServerTransport ||
+    (stdioMod.default && stdioMod.default.StdioServerTransport);
+
+  if (!McpServer || !StdioServerTransport) {
     throw new Error(
-      'Unsupported MCP SDK API: expected { Server, StdioServerTransport }'
+      'Unsupported MCP SDK API: expected named exports McpServer and StdioServerTransport'
     );
   }
-  return { Server, StdioServerTransport };
+  return { McpServer, StdioServerTransport };
 }
 
 function ensureMcpEnabled() {
@@ -54,57 +56,50 @@ async function startMcpServer() {
     );
   }
 
-  const { Server, StdioServerTransport } = await loadMcpSdk();
+  const { McpServer, StdioServerTransport } = await loadMcpSdk();
 
-  // Construct server
-  const server = new Server({ name: 'mindmeld-mcp', version: '0.1.0' });
+  // Construct high-level McpServer
+  const mcp = new McpServer({ name: 'mindmeld-mcp', version: '0.1.0' });
 
   // ---- MS-42: Resources (health + legacy state) ----
-  // Depending on SDK, this may be server.resources.add or similar. We guard and no-op if unavailable.
-  if (server.resources && typeof server.resources.add === 'function') {
-    server.resources.add({
-      uri: 'mindmeld://health',
-      mimeType: 'application/json',
-      async get() {
-        const stats = await stateService.getStats();
-        return { status: 'ok', timestamp: new Date().toISOString(), stats };
-      }
-    });
+  mcp.resource('health', 'mindmeld://health', async _extra => {
+    const stats = await stateService.getStats();
+    return {
+      contents: [
+        {
+          mimeType: 'application/json',
+          text: JSON.stringify({
+            status: 'ok',
+            timestamp: new Date().toISOString(),
+            stats
+          })
+        }
+      ]
+    };
+  });
 
-    server.resources.add({
-      uri: 'mindmeld://state',
-      mimeType: 'application/json',
-      async get() {
-        const state = await stateService.readState();
-        return state;
-      }
-    });
-  } else {
-    logger.warn(
-      'MCP SDK does not expose resources.add; skipping resource registration'
-    );
-  }
+  mcp.resource('state', 'mindmeld://state', async _extra => {
+    const state = await stateService.readState();
+    return {
+      contents: [{ mimeType: 'application/json', text: JSON.stringify(state) }]
+    };
+  });
 
   // ---- MS-42: Tools (state.get) ----
-  if (server.tools && typeof server.tools.add === 'function') {
-    server.tools.add({
-      name: 'state.get',
-      description: 'Return the legacy single global state',
-      parameters: {},
-      async invoke() {
-        const state = await stateService.readState();
-        return state;
-      }
-    });
-  } else {
-    logger.warn(
-      'MCP SDK does not expose tools.add; skipping tool registration'
-    );
-  }
+  mcp.tool(
+    'state.get',
+    'Return the legacy single global state',
+    async _extra => {
+      const state = await stateService.readState();
+      return {
+        content: [{ type: 'text', text: JSON.stringify(state) }]
+      };
+    }
+  );
 
   const transport = new StdioServerTransport();
-  await server.connect(transport);
-  return server;
+  await mcp.connect(transport);
+  return mcp;
 }
 
 module.exports = { startMcpServer };
