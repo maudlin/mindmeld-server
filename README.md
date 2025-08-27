@@ -1,292 +1,94 @@
 # MindMeld Server
 
-Express.js server for MindMeld mind mapping application, built following MindMeld client standards.
+A production-ready REST API for the MindMeld mind mapping application.
 
-> Status: Active redesign in progress
->
-> We’re migrating to an MVP that manages per-map resources via a /maps API backed by SQLite (better-sqlite3) with optimistic concurrency. The current implementation still serves a single global state and file storage. See:
->
-> - To-be architecture: design/to-be/README.md
-> - To-be OpenAPI: design/to-be/openapi.yaml
-> - ADRs: design/to-be/adr/
-> - Merge strategy: design/to-be/MERGE-STRATEGY.md
+The server is maps-first: each map is a first-class resource stored in SQLite (better-sqlite3) with optimistic concurrency (ETag/If-Match), structured logging, and RFC 7807 error responses.
 
 ## Features
 
-- **Event-Driven Architecture**: Central event bus with "noun.verb" event naming
-- **Service Layer Pattern**: Clean separation with dependency injection
-- **Atomic Writes**: Prevents state corruption during concurrent saves
-- **Comprehensive Validation**: State structure and content validation
-- **Production Ready**: ESLint, Prettier, Jest testing, graceful shutdown
-- **Monitoring**: Health checks, statistics, and detailed logging
-- **CORS Enabled**: Ready for frontend integration
+- Maps-first API with SQLite persistence (better-sqlite3)
+- Optimistic concurrency with ETag/If-Match on updates
+- RFC 7807 Problem Details for errors (application/problem+json)
+- Express 4 with hardened middleware (helmet, CORS, rate limiting)
+- Structured logging (pino + pino-http) with request IDs
+- Graceful shutdown and global error handlers
+- Node 24 baseline; ESLint, Prettier, Jest, Husky/lint-staged
 
-## Quick Start
+## Quick start
 
-Minimal setup for Maps API (early production):
+Prerequisites
 
-- Node version: see .nvmrc (Node 24)
-- Enable maps API: FEATURE_MAPS_API=1
-- SQLite file path: SQLITE_FILE=./data/db.sqlite
-- Seed sample maps: npm run seed
+- Node 24 (see .nvmrc)
+- npm 10+
 
-1. **Install dependencies**:
+Install and run (development)
 
-   ```bash
-   npm install
-   ```
+```bash
+npm install
+npm run dev
+```
 
-2. **Start server**:
+Run (production)
 
-   ```bash
-   npm start
-   ```
+```bash
+npm start
+```
 
-3. **Development mode** (auto-reload):
+Environment
 
-   ```bash
-   npm run dev
-   ```
-
-4. **Run tests**:
-
-   ```bash
-   npm test
-   ```
-
-5. **Code quality**:
-   ```bash
-   npm run validate  # lint + format + test
-   ```
+- PORT (default: 3001)
+- CORS_ORIGIN (default: http://localhost:8080)
+- JSON_LIMIT (default: 50mb)
+- SQLITE_FILE (default: ./data/db.sqlite)
+- FEATURE_MAPS_API (default: true; set to 0/false to disable)
 
 ## API
 
-### As-Is API (current code)
+Base URL: http://localhost:3001
 
-See design/as-is/openapi.yaml for full spec.
+- GET /health
+  - Returns basic status and uptime
+  - Response: { status, timestamp, uptime }
 
-### GET /health
+- GET /ready
+  - Readiness probe (simple ok response)
 
-Returns server status, uptime, and state statistics.
-
-**Response**:
-
-```json
-{
-  "status": "ok",
-  "timestamp": "2025-07-31T17:45:23.456Z",
-  "uptime": 12.345,
-  "stats": {
-    "notesCount": 5,
-    "connectionsCount": 3,
-    "zoomLevel": 5,
-    "isEmpty": false
-  }
-}
-```
-
-### GET /api/state
-
-Returns current mind map state. Returns empty state if no data exists.
-
-**Response**:
-
-```json
-{
-  "notes": [{ "id": "1", "content": "Note 1", "left": "100px", "top": "50px" }],
-  "connections": [{ "from": "1", "to": "2" }],
-  "zoomLevel": 5
-}
-```
-
-### PUT /api/state
-
-Saves mind map state with validation and atomic writes.
-
-**Request Body**: JSON state object  
-**Response**:
-
-```json
-{
-  "success": true,
-  "timestamp": "2025-07-31T17:45:23.456Z",
-  "notes": 5,
-  "connections": 3,
-  "zoomLevel": 3
-}
-```
-
-### GET /api/state/stats
-
-Returns state statistics for monitoring.
-
-**Response**:
-
-```json
-{
-  "notesCount": 5,
-  "connectionsCount": 3,
-  "zoomLevel": 5,
-  "isEmpty": false
-}
-```
-
-### Error responses
-
-This API standardizes error responses using RFC 7807 (Problem Details). Errors are returned with Content-Type: application/problem+json and include fields like type, title, status, detail, and instance. During migration, a legacy error field mirrors the title for backward compatibility.
-
-Example 400 response:
-
-```json
-{
-  "type": "https://mindmeld.dev/problems/invalid-state",
-  "title": "Invalid state",
-  "status": 400,
-  "detail": "State must have notes array, State must have connections array",
-  "instance": "/api/state",
-  "errors": [
-    { "path": "notes", "message": "must be an array" },
-    { "path": "connections", "message": "must be an array" }
-  ],
-  "error": "Invalid state"
-}
-```
-
-### Planned API (to-be)
-
-- GET /maps
 - POST /maps
+  - Create a map
+  - Request body: { name: string, data: object }
+  - Response: 201 Created, body includes { id, name, data, version?, updatedAt? }
+  - Headers: ETag set for the created payload
+
 - GET /maps/{id}
-- PUT /maps/{id} (with version or If-Match)
-- PATCH /maps/{id}/meta
-- DELETE /maps/{id}
+  - Fetch a map by id
+  - Headers: ETag set for the current payload
 
-See design/to-be/openapi.yaml for the draft spec.
+- PUT /maps/{id}
+  - Replace a map with optimistic concurrency
+  - Headers: If-Match: "<etag>" (required)
+  - Request body: { name?: string, data: object }
+  - On ETag mismatch: 409 Conflict (Problem Details)
 
-## Architecture
+Errors (RFC 7807)
 
-### Project Structure
-
-```
-src/
-├── core/           # Core application logic
-│   ├── api-routes.js      # RESTful API endpoints
-│   └── middleware.js      # Express middleware configuration
-├── services/       # Business logic layer
-│   └── state-service.js   # State management and validation
-├── data/          # Data persistence layer
-│   └── file-storage.js    # Atomic file operations
-├── utils/         # Utility functions
-│   ├── logger.js          # Centralized logging
-│   └── event-bus.js       # Event-driven architecture
-├── factories/     # Configuration factories
-│   └── server-factory.js  # Server creation with DI
-└── index.js       # Main entry point
-
-tests/
-├── integration/   # API integration tests
-├── unit/         # Unit tests for services
-└── setup.js      # Test configuration
-
-docs/             # Documentation
-data/             # State storage (created at runtime)
-```
-
-### Event System
-
-The server uses an event-driven architecture with standardized event naming:
-
-```javascript
-// State events
-eventBus.emit('state.saving', { notesCount: 5 });
-eventBus.emit('state.saved', { success: true, stats });
-eventBus.emit('state.error', { operation: 'save', error });
-
-// Request events
-eventBus.emit('request.started', { method: 'PUT', path: '/api/state' });
-eventBus.emit('request.completed', { statusCode: 200, duration: 45 });
-
-// Health events
-eventBus.emit('health.checked', { healthy: true, stats });
-```
+- Content-Type: application/problem+json
+- Fields: type, title, status, detail, instance, errors[] (optional)
 
 ## Configuration
 
-Environment variables:
+- CORS: configurable via CORS_ORIGIN
+- JSON payload limit: JSON_LIMIT (default 50mb)
+- SQLite file: SQLITE_FILE (default ./data/db.sqlite)
+- Maps API: FEATURE_MAPS_API (default enabled)
 
-### As-Is (file storage)
+## Observability
 
-- `PORT` - Server port (default: 3001)
-- `CORS_ORIGIN` - CORS origin (default: http://localhost:8080)
-- `STATE_FILE_PATH` - State file location (default: ./data/state.json)
-- `JSON_LIMIT` - Max JSON payload size (default: 50mb)
-- `NODE_ENV` - Environment (development/production)
+- Logging: pino + pino-http
+  - Level: LOG_LEVEL (default debug in dev, info in prod)
+  - Request log levels: 2xx/3xx info, 4xx warn, 5xx error
+- Health and readiness endpoints: /health, /ready
 
-### Planned (SQLite)
-
-- `SQLITE_FILE` - SQLite database file path (or use `DATABASE_URL`)
-- `PORT` - Server port (default: 3001)
-- `CORS_ORIGIN` - CORS origin (default: http://localhost:8080)
-- `JSON_LIMIT` - Max JSON payload size (default: 50mb)
-- `NODE_ENV` - Environment (development/production)
-
-Notes: planned implementation uses SQLite in WAL mode with transactional writes and optimistic concurrency (version/ETag).
-
-### Development
-
-- Pre-commit hooks run lint/format on staged files; on first install, husky is set up automatically.
-- CI runs lint, format check, tests, and OpenAPI lint on PRs.
-- Dev-only API docs are available at /docs (served via Redoc) when NODE_ENV != production.
-
-### Scripts
-
-- `npm start` - Start production server
-- `npm run dev` - Development mode with auto-reload
-- `npm run lint` - Run ESLint
-- `npm run format` - Format code with Prettier
-- `npm test` - Run Jest tests
-- `npm run test:watch` - Run tests in watch mode
-- `npm run test:coverage` - Generate coverage report
-- `npm run validate` - Run all quality checks
-
-### Code Standards
-
-- **ESLint**: Enforces MindMeld coding standards
-- **Prettier**: Consistent code formatting
-- **Jest**: Unit and integration testing
-- **Naming**: camelCase functions, PascalCase classes, UPPER_SNAKE_CASE constants
-- **Events**: "noun.verb" format (e.g., "state.saved")
-
-## Testing
-
-For a step-by-step manual testing walkthrough using curl and Postman/Insomnia, see docs/testing-guide.md.
-
-### Test Types
-
-- **Unit Tests**: Business logic and validation (`tests/unit/`)
-- **Integration Tests**: Full API endpoints (`tests/integration/`)
-- **Coverage**: Comprehensive test coverage reporting
-
-### Running Tests
-
-```bash
-npm test                # Run all tests
-npm run test:watch      # Watch mode for development
-npm run test:coverage   # Generate coverage report
-VERBOSE=true npm test   # Enable console logging
-```
-
-## Production Deployment
-
-### Features
-
-- **Graceful Shutdown**: Handles SIGTERM/SIGINT signals
-- **Error Handling**: Global uncaught exception handling
-- **Process Management**: Ready for PM2, Docker, or systemd
-- **Health Monitoring**: `/health` endpoint for load balancers
-- **Structured Logging**: JSON logs with correlation IDs
-
-### Docker Example
+## Docker
 
 ```dockerfile
 FROM node:24-alpine
@@ -307,54 +109,45 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
 CMD ["npm", "start"]
 ```
 
-## Technical Notes
+Run
 
-- **Node.js**: Requires Node.js 24+
-- **Atomic Writes**: Uses temporary files to prevent corruption
-- **State Validation**: Comprehensive validation of notes and connections
-- **CORS**: Configurable origin support
-- **File Storage**: Automatic data directory creation
-- **Event Bus**: Singleton event emitter for loose coupling
+```bash
+docker build -t mindmeld-server:local .
+docker run --rm -p 3001:3001 \
+  -e PORT=3001 \
+  -e CORS_ORIGIN=http://localhost:3000 \
+  -e SQLITE_FILE=/app/data/db.sqlite \
+  -v "$(pwd)/data:/app/data" \
+  mindmeld-server:local
+```
 
-## Related Projects
+## Development
 
-- **MindMeld Client**: https://github.com/maudlin/mindmeld
-- **Developer Guide**: https://github.com/maudlin/mindmeld/blob/main/docs/developer-guide.md
+Scripts
 
-## Project Context
+- npm run dev — start with auto-reload
+- npm start — production start
+- npm run validate — lint + format:check + test
+- npm test / npm run test:watch / npm run test:coverage
 
-Part of MS-14 (Technical Proof of Concept) - validates core client-server integration patterns before full MindMeld implementation. This server provides the backend foundation for the MindMeld mind mapping application.
+Project structure
 
-## Using VS Code Dev Containers (optional)
+```
+src/
+├── core/                 # Core routes and handlers (health/ready)
+├── modules/
+│   └── maps/             # Maps slice (db, repo, service, routes)
+├── utils/                # logger, event-bus, etag helpers
+├── factories/            # server-factory (composition)
+└── index.js              # entrypoint
+```
 
-This repository includes a Dev Container configuration for a fast, consistent local setup.
+## MCP (Model Context Protocol)
 
-Prerequisites:
+An experimental MCP stdio server is included and currently exposes a health resource. Maps resources/tools will be added next.
 
-- VS Code
-- Dev Containers extension (ms-vscode-remote.remote-containers)
-- Docker Desktop or compatible Docker engine
+- Start: npm run mcp:stdio
 
-How to use:
+## License
 
-1. Open the repository in VS Code
-2. Run: “Dev Containers: Reopen in Container”
-3. The container will:
-
-- Use a Node 24 base image (per .devcontainer/devcontainer.json)
-  - Install sqlite3 CLI and curl
-  - Run `npm ci` automatically (falls back to `npm install`)
-
-4. Start the server: `npm run dev` (port 3001 is forwarded)
-5. Debug in VS Code: use the “Launch MindMeld Server” configuration
-
-Environment:
-
-- Copy `.env.example` to `.env` and adjust as needed
-- Key vars: `PORT`, `CORS_ORIGIN` (default http://localhost:8080), `STATE_FILE_PATH`
-- To enable the /maps API (SQLite vertical slice): set `FEATURE_MAPS_API=1` and `SQLITE_FILE=./data/db.sqlite`
-
-Notes:
-
-- The production Dockerfile uses a non-root user and sets `SQLITE_FILE=/app/data/db.sqlite`
-- The Dev Container is intended for development only; CI runs on GitHub Actions without containers
+MIT

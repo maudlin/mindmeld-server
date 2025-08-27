@@ -21,8 +21,8 @@ Copy `.env.example` to `.env` and adjust as needed. Common variables:
 
 - `PORT` (default: `3001`)
 - `CORS_ORIGIN` (default: `http://localhost:8080`)
-- `STATE_FILE_PATH` (default: `./data/state.json`)
 - `JSON_LIMIT` (default: `50mb`)
+- `SQLITE_FILE` (default: `./data/db.sqlite`)
 
 Optional (for /maps vertical slice):
 
@@ -58,7 +58,6 @@ docker build -t mindmeld-server:local .
 docker run --rm -p 3001:3001 \
   -e PORT=3001 \
   -e CORS_ORIGIN=http://localhost:3000 \
-  -e STATE_FILE_PATH=/app/data/state.json \
   -e FEATURE_MAPS_API=1 \
   -e SQLITE_FILE=/app/data/db.sqlite \
   -v "$(pwd)/data:/app/data" \
@@ -77,7 +76,7 @@ Replace `http://localhost:3001` with your server URL if different.
 curl -s http://localhost:3001/health | jq .
 ```
 
-Expected 200 OK with status, uptime, and stats.
+Expected 200 OK with status and uptime.
 
 ### Maps API
 
@@ -108,22 +107,11 @@ curl -s -X PUT http://localhost:3001/maps/<ID> \
 
 ### Error response format (RFC 7807)
 
-Errors return `Content-Type: application/problem+json` and include:
+Errors return `Content-Type: application/problem+json` and include standard fields: `type`, `title`, `status`, `detail`, `instance`, and optionally `errors[]` for validation details.
 
-```json
-{
-  "type": "https://mindmeld.dev/problems/invalid-state",
-  "title": "Invalid state",
-  "status": 400,
-  "detail": "State must have notes array, State must have connections array",
-  "instance": "/api/state",
-  "errors": [{ "path": "notes", "message": "must be an array" }]
-}
-```
+## Manual testing with Bruno/Postman/Insomnia
 
-## Manual testing with Postman/Insomnia
-
-The flows below work in both tools. Replace the base URL if necessary.
+The flows below work in all tools. Replace the base URL if necessary.
 
 ### Collection setup (suggested)
 
@@ -134,44 +122,41 @@ The flows below work in both tools. Replace the base URL if necessary.
 
 1. GET {{baseUrl}}/health
 
-- Tests: expect `status` to be `ok` and `stats` object present.
+- Expect `status=ok` and `uptime`.
 
-2. GET {{baseUrl}}/api/state
-
-- Tests: expect empty state when no file exists; after saving, expect saved content.
-
-3. PUT {{baseUrl}}/api/state
+2. POST {{baseUrl}}/maps
 
 - Headers: `Content-Type: application/json`
-- Body (raw JSON):
+- Body:
 
 ```json
 {
-  "notes": [{ "id": "1", "content": "Test" }],
-  "connections": [],
-  "zoomLevel": 5
+  "name": "My Map",
+  "data": { "notes": [], "connections": [], "zoomLevel": 1 }
 }
 ```
 
-- Tests: expect 200 with `success: true` payload.
+- Expect 201 Created, response contains `id`. Capture response header `ETag` as `etag`.
 
-4. PUT {{baseUrl}}/api/state (invalid)
+3. GET {{baseUrl}}/maps/{{mapId}}
 
-- Headers: `Content-Type: application/json`
-- Body (raw JSON):
+- Expect 200 and `ETag` header.
+
+4. PUT {{baseUrl}}/maps/{{mapId}}
+
+- Headers:
+  - `Content-Type: application/json`
+  - `If-Match: {{etag}}`
+- Body:
 
 ```json
 {
-  "connections": [],
-  "zoomLevel": 5
+  "name": "My Map v2",
+  "data": { "notes": [], "connections": [], "zoomLevel": 2 }
 }
 ```
 
-- Tests: expect 400 with Problem Details (title/status/detail).
-
-5. GET {{baseUrl}}/api/state/stats
-
-- Tests: expect `notesCount`, `connectionsCount`, `isEmpty`.
+- Expect 200. A second PUT with the old ETag should return 409 (Problem Details).
 
 Enable the feature flag and point to a writable database file:
 
