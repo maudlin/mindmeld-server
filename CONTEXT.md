@@ -1,137 +1,100 @@
-# Context for Developers
+# Project Context
 
-This file captures the current state of the mindmeld-server and near-term TODOs, so new contributors can ramp quickly. For full docs, see CONTRIBUTING.md and docs/developer-guide.md.
+A concise, up-to-date overview of MindMeld Server for developers and reviewers. This summarizes current state, runtime, key components, and near-term plans.
 
-Overview
+## Current state (as of now)
 
-- Purpose: HTTP API for MindMeld client state management and future /maps feature
-- Status: Stable core API for file-based state; experimental /maps vertical slice behind a feature flag
-- Baseline branch: main; work proceeds on short-lived feature branches (prefix by type or Jira key)
+- Purpose: HTTP API for MindMeld client with a file-based state API and an optional /maps vertical slice backed by SQLite.
+- Status: Stable core endpoints; /maps feature behind a flag and covered by integration tests.
+- Branching: Work off main with short-lived topic branches merged via PR.
+- Documentation:
+  - Manual testing: docs/testing-guide.md
+  - To-be design: design/to-be/README.md and design/to-be/openapi.yaml
+  - README refined for production (Node 24, Docker, RFC 7807 errors)
 
-Runtime and dependencies
+## Runtime and tooling
 
-- Node: currently developing on Node 24.5.0; repo engines set to ">=18" (pending decision to pin)
-- Web framework: Express 4
-- Logging: pino, pino-http
-- Validation: zod
-- DB: better-sqlite3 ^12.2.0 (Node 24-compatible) for the /maps feature (feature-flagged)
+- Node.js: 24 only
+  - CI matrix: Node 24
+  - package.json engines: ">=24.0.0"
+  - .nvmrc: 24
+  - Docker: node:24-alpine runtime
+- Frameworks & libs:
+  - Express 4, better-sqlite3 ^12.2.0, zod, pino + pino-http
 - Tooling: ESLint, Prettier, Husky + lint-staged, Jest, Spectral (OpenAPI), Redoc (dev-only)
 
-Key paths
+## Key components and paths
 
 - Server factory: src/factories/server-factory.js
-- Core API routes: src/core/api-routes.js (file-based state)
 - Middleware: src/core/middleware.js
-- Config (planned centralization): src/config/config.js (validated via zod)
-- Maps (to-be): src/modules/maps/\* (db, repo, service, routes)
+- Global error handler (RFC 7807): src/core/error-handler.js
+- File storage and state service: src/data/file-storage.js, src/services/state-service.js
+- Core routes (file state): src/core/api-routes.js
+- Maps module (feature-flagged): src/modules/maps/\* (db, repo, service, routes)
+- Config (zod-validated): src/config/config.js
 - Tests: tests/unit/_, tests/integration/_
-- OpenAPI (to-be): design/to-be/openapi.yaml
 
-Feature flags
+## API surface (as-is)
 
-- featureMapsApi (boolean): when true, mounts /maps router (SQLite-backed). When false, route is absent.
+- GET /health — status and basic stats
+- GET /api/state — current state (falls back to empty state)
+- PUT /api/state — save state with validation and atomic writes
+- GET /api/state/stats — derived statistics
 
-Current decisions and conventions
+Errors are standardized via RFC 7807 (application/problem+json) by the global handler. During migration a legacy `error` field mirrors the title for backward compatibility.
 
-- API JSON casing: camelCase (e.g., updatedAt). DB columns may be snake_case; translate at the repo/service boundary.
-- Concurrency: integer version field with optimistic concurrency checks in /maps update flow.
-- Errors: service layer throws typed errors; routes map to HTTP codes (400/404/409/500).
-- ESLint rules: follows client project with a minor divergence to allow space before async arrow parens (asyncArrow: 'always').
-- Tests: Jest remains canonical to match the sister client project.
+## Feature flags
 
-Recent changes
+- FEATURE_MAPS_API (boolean): when true, mounts /maps routes. Requires SQLITE_FILE path (default ./data/db.sqlite if unset).
 
-- Pre-commit/CI:
-  - Husky + lint-staged added; Spectral OpenAPI lint integrated
-  - Dev-only API docs using Redoc at /docs
-- Maps vertical slice (behind feature flag):
-  - better-sqlite3 upgraded to ^12.2.0 for Node 24 support
-  - Repos/services use camelCase in code (updatedAt/stateJson); SQL uses updated_at/state_json
-  - Integration tests added for create/get/update/conflict
-  - Zod schemas accept arbitrary object state via z.object({}).passthrough()
-- ESLint/Prettier cleanup across codebase; tests and lints pass locally
-- ETag utilities refactored; unit tests added; groundwork for If-Match/ETag consistency
-- Error envelope normalization in progress (error -> message; optional code)
-- pino-http logging: customLogLevel corrected; verifying levels and duplicate logs
+## Recent changes (merged)
 
-Priorities and plan (lean, production-minded)
+- Node 24 alignment: CI, engines, .nvmrc, Docker base image
+- Global RFC 7807 error handler: standardized 4xx/5xx responses; 404 now returns problem+json
+- PUT /api/state now delegates errors to the global handler
+- Testing docs: added docs/testing-guide.md and linked from README
+- README improvements: production Docker example, error docs, Node 24 references
 
-Top priorities (next):
+## Planned work (near term)
 
-- Logging correctness and signal-to-noise:
-  - Ensure customLogLevel is respected; 2xx/3xx=info, 4xx=warn, 5xx=error; avoid duplicate request logs.
-- Error response consistency:
-  - Normalize to { message, code?, details? } in production; include stack only in development; update tests/OpenAPI.
-- Config as a single source of truth:
-  - Centralize env in src/config/config.js validated with zod; have server factory consume only this config.
-- Graceful shutdown and resource lifecycle:
-  - Handle SIGTERM/SIGINT; stop accepting new requests; flush logger; close SQLite; optional /ready endpoint.
-- Maps error handling alignment:
-  - Map typed errors to consistent payloads; include minimal codes (e.g., MAP_NOT_FOUND, VERSION_CONFLICT).
+1. Error handling maturity
 
-Near-term improvements:
+- Introduce typed errors across modules (BadRequestError, NotFoundError, ConflictError)
+- Map validation errors (e.g., from zod) to problem.errors[] with path/message
+- Update OpenAPI design/to-be/openapi.yaml with ProblemDetails schema and examples
 
-- API versioning shim:
-  - Mount maps at /api/v1/maps; keep /maps as alias; document deprecation.
-- Read caching:
-  - Support If-None-Match on GET /maps/:id to return 304.
-- Migrations hygiene:
-  - Add schema_version table and tiny linear migration runner at startup (synchronous).
-- Transitional field deprecation:
-  - Keep dual fields during transition; document removal timeline.
-- Focused unit tests:
-  - Add conflict-path test for If-Match vs version fallback.
+2. /maps vertical slice polish
 
-What we will not add right now (to stay lean):
+- Support If-None-Match on GET /maps/{id} (304 when ETag matches)
+- Add minimal migrations (schema_version) and indexes; keep SQLite simple
+- Confirm consistent camelCase in API with snake_case in SQL
 
-- No heavy auth (optional API key only, feature-flagged if needed).
-- No ORM or external migration framework.
-- No big observability stack; health + minimal logs are enough.
-- No additional rate-limiting complexity.
+3. Observability and docs
 
-Open questions / decisions pending
+- Include request id/correlation in problem details (optional problemId)
+- Expand README operations notes (backups, WAL, graceful shutdown)
 
-1. Node baseline
+4. Dev experience
 
-- Option A: Pin to Node 20 LTS (safer ecosystem, matches wider tooling)
-- Option B: Stay on Node 24 (built-in test runner and WebSocket client; workable since better-sqlite3 12.2.0 is compatible)
-- Current: Using Node 24 locally; engines still ">=18". If we choose A or B, update engines and CI accordingly.
+- Ensure config is single source of truth (src/config/config.js) and used consistently
+- Tighten pino-http logging levels (2xx/3xx=info, 4xx=warn, 5xx=error)
 
-2. Database direction for /maps
+## Out of scope (for now)
 
-- Current: better-sqlite3 (native).
-- Alternatives: pure JS/WASM (sql.js, @sqlite.org/sqlite-wasm) for environments where native builds are constrained.
-- Future: revisit if a first-party Node SQLite emerges.
+- Authentication/authorization (beyond potential API key flag)
+- ORMs or complex migration frameworks
+- Heavy observability stacks
 
-3. OpenAPI coverage
+## How to run and test
 
-- /maps endpoints are to-be; spec updates are needed to reflect current request/response shapes (camelCase fields, versioning).
+- Dev: npm run dev
+- Prod: npm start
+- Quality: npm run validate (lint, format:check, tests)
+- Manual testing: follow docs/testing-guide.md (curl + Postman/Insomnia flows)
+- Feature flag /maps: set FEATURE_MAPS_API=1 and SQLITE_FILE=./data/db.sqlite
 
-4. WebSocket usage
+## Notes for reviewers
 
-- Node 24 has built-in WebSocket client; evaluate if/when server-side or client-server live updates become a requirement.
-
-Short-term TODOs
-
-- Decide Node baseline (22 LTS vs 24) and update package.json engines + CI runtime matrix
-- Centralize config in src/config/config.js with zod; route all consumers through it
-- Finalize /maps API contract and update design/to-be/openapi.yaml; add Spectral rules
-- Implement If-None-Match on GET /api/v1/maps/:id; return 304 when matched
-- Add a minimal migrations runner and schema_version table; add indexes as needed (e.g., name, updated_at)
-- Align error payloads across routes and middleware; update tests and OpenAPI examples
-- Confirm CORS origins; document ops (SQLite backups, WAL, shutdown); add graceful shutdown hooks
-- Add unit tests for ETag/If-Match conflict path and logging level classification
-
-How to work locally
-
-- Install dependencies: npm install
-- Run dev server: npm run dev
-- Run checks: npm run validate (lint, format:check, tests)
-- Lint OpenAPI: npm run openapi:lint (spec at design/to-be/openapi.yaml)
-- Dev-only docs: GET /docs
-- Enable /maps in tests or dev by setting featureMapsApi: true (server factory config) and providing sqliteFile
-
-Notes for reviewers
-
-- The /maps API is isolated behind a flag and uses updatedAt in JSON. Client may need mapping if it expects snake_case.
-- Large refactors should maintain thin routes, service encapsulation, and repo boundary mapping (DB ↔ API).
+- The /maps API is isolated behind a feature flag and is safe to ship incrementally.
+- Error responses use Problem Details consistently across endpoints.
+- Keep routes thin; prefer service/repo boundaries and consistent mapping (DB ↔ API).
