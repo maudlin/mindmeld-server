@@ -14,7 +14,11 @@ const EnvSchema = z.object({
   // Planned (to-be): SQLite for /maps
   SQLITE_FILE: z.string().optional(),
   FEATURE_MAPS_API: z.string().optional(),
-  LOG_LEVEL: z.string().optional()
+  LOG_LEVEL: z.string().optional(),
+  // MCP (Model Context Protocol)
+  FEATURE_MCP: z.string().optional(),
+  MCP_TRANSPORT: z.enum(['stdio', 'ws']).optional(),
+  MCP_TOKEN: z.string().optional()
 });
 
 function buildConfig() {
@@ -31,7 +35,11 @@ function buildConfig() {
     featureMapsApi:
       parsed.FEATURE_MAPS_API === '1' || parsed.FEATURE_MAPS_API === 'true',
     logLevel:
-      parsed.LOG_LEVEL || (parsed.NODE_ENV === 'production' ? 'info' : 'debug')
+      parsed.LOG_LEVEL || (parsed.NODE_ENV === 'production' ? 'info' : 'debug'),
+    // MCP
+    featureMcp: parsed.FEATURE_MCP === '1' || parsed.FEATURE_MCP === 'true',
+    mcpTransport: parsed.MCP_TRANSPORT || 'stdio',
+    mcpToken: parsed.MCP_TOKEN || null
   };
   return config;
 }
