@@ -12,6 +12,8 @@ const EnvSchema = z.object({
   SQLITE_FILE: z.string().optional(),
   FEATURE_MAPS_API: z.string().optional(),
   LOG_LEVEL: z.string().optional(),
+  // Legacy state file (for MCP state resource)
+  STATE_FILE: z.string().optional(),
   // MCP (Model Context Protocol)
   FEATURE_MCP: z.string().optional(),
   MCP_TRANSPORT: z.enum(['stdio', 'ws']).optional(),
@@ -34,6 +36,9 @@ function buildConfig() {
     ),
     logLevel:
       parsed.LOG_LEVEL || (parsed.NODE_ENV === 'production' ? 'info' : 'debug'),
+    // Legacy state file path for MCP resource
+    stateFile:
+      parsed.STATE_FILE || path.join(process.cwd(), 'data', 'state.json'),
     // MCP
     featureMcp: parsed.FEATURE_MCP === '1' || parsed.FEATURE_MCP === 'true',
     mcpTransport: parsed.MCP_TRANSPORT || 'stdio',

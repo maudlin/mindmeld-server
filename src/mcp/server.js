@@ -5,6 +5,8 @@
 
 const { config: CONFIG } = require('../config/config');
 const logger = require('../utils/logger');
+const StateService = require('../services/state-service');
+const FileStorage = require('../data/file-storage');
 
 async function loadMcpSdk() {
   // Prefer the high-level McpServer API for resources/tools
@@ -48,13 +50,29 @@ async function startMcpServer() {
   // Construct high-level McpServer
   const mcp = new McpServer({ name: 'mindmeld-mcp', version: '0.1.0' });
 
-  // Health resource only (maps tools/resources to be added separately)
+  // Wire services used by resources/tools
+  const stateService = new StateService(new FileStorage(CONFIG.stateFile));
+
+  // Health resource: include basic status and current stats
   mcp.resource('health', 'mindmeld://health', async _extra => {
-    const payload = { status: 'ok', timestamp: new Date().toISOString() };
+    const stats = await stateService.getStateStats();
+    const payload = {
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      stats
+    };
     return {
       contents: [
         { mimeType: 'application/json', text: JSON.stringify(payload) }
       ]
+    };
+  });
+
+  // Legacy global state resource
+  mcp.resource('state', 'mindmeld://state', async _extra => {
+    const state = await stateService.getCurrentState();
+    return {
+      contents: [{ mimeType: 'application/json', text: JSON.stringify(state) }]
     };
   });
 
