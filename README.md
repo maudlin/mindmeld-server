@@ -144,7 +144,12 @@ src/
 
 ## MCP (Model Context Protocol)
 
-An experimental MCP stdio server is included and currently exposes a health resource. Maps resources/tools will be added next.
+An experimental MCP stdio server is included and currently exposes:
+
+- Resource: mindmeld://health → { status, timestamp, stats }
+- Resource: mindmeld://state → current legacy state (JSON)
+
+Maps resources/tools will be added next.
 
 - Start: npm run mcp:stdio
 
