@@ -4,6 +4,7 @@
  */
 
 const express = require('express');
+const path = require('path');
 
 const createApiRoutes = require('../core/api-routes');
 const createMiddleware = require('../core/middleware');
@@ -42,7 +43,9 @@ function createServer(config = {}) {
   // /maps router (enabled by default)
   if (!config || config.featureMapsApi !== false) {
     const createMapsRouter = require('../modules/maps/routes');
-    app.use('/maps', createMapsRouter({ sqliteFile: config.sqliteFile }));
+    const sqliteFile =
+      config.sqliteFile || path.join(process.cwd(), 'data', 'db.sqlite');
+    app.use('/maps', createMapsRouter({ sqliteFile }));
   }
 
   // Dev-only docs (Redoc)
