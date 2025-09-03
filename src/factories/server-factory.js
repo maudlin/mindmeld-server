@@ -9,6 +9,8 @@ const path = require('path');
 const createApiRoutes = require('../core/api-routes');
 const createMiddleware = require('../core/middleware');
 const createDocsRouter = require('../core/docs-route');
+const { createMcpRoutes } = require('../core/mcp-routes');
+const { createMcpSseEndpoint } = require('../core/mcp-sse');
 const Logger = require('../utils/logger');
 
 /**
@@ -40,12 +42,28 @@ function createServer(config = {}) {
   const apiRoutes = createApiRoutes();
   app.use('/', apiRoutes);
 
-  // /maps router (enabled by default)
+  // /maps router and MCP endpoints (enabled by default)
   if (!config || config.featureMapsApi !== false) {
     const createMapsRouter = require('../modules/maps/routes');
+    const MapsService = require('../modules/maps/service');
     const sqliteFile =
       config.sqliteFile || path.join(process.cwd(), 'data', 'db.sqlite');
+
+    // REST API for MindMeld client
     app.use('/maps', createMapsRouter({ sqliteFile }));
+
+    // MCP endpoints for LLM agents (uses same service layer)
+    const mapsService = new MapsService(sqliteFile);
+    const mcpRoutes = createMcpRoutes({ mapsService });
+    const mcpSseRoutes = createMcpSseEndpoint({ mapsService });
+    app.use('/mcp', mcpRoutes);
+    app.use('/mcp', mcpSseRoutes);
+
+    // Log endpoints without exposing filesystem paths
+    Logger.info('Maps API and MCP endpoints enabled', {
+      endpoints: ['/maps', '/mcp', '/mcp/sse'],
+      database: 'sqlite'
+    });
   }
 
   // Dev-only docs (Redoc)
