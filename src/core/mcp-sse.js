@@ -14,54 +14,58 @@ function createMcpResponse(id, result, error = null) {
     jsonrpc: '2.0',
     id
   };
-  
+
   if (error) {
     response.error = error;
   } else {
     response.result = result;
   }
-  
+
   return response;
 }
 
 // Helper to create MCP error
 function createMcpError(code, message, data = null) {
   const error = { code, message };
-  if (data) error.data = data;
+  if (data) {
+    error.data = data;
+  }
   return error;
 }
 
 function createMcpSseEndpoint(apiServices) {
   const router = express.Router();
   const { mapsService } = apiServices;
-  
+
   // Store active SSE connections
   const connections = new Map();
 
   // SSE endpoint for MCP remote connections
   router.get('/sse', (req, res) => {
     const connectionId = randomUUID();
-    
+
     logger.info(`MCP SSE connection established: ${connectionId}`);
-    
+
     // Set SSE headers
     res.writeHead(200, {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive',
+      Connection: 'keep-alive',
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Headers': 'Cache-Control'
     });
 
     // Store connection
     connections.set(connectionId, { res, req });
-    
+
     // Send initial connection event
-    res.write(`data: ${JSON.stringify({
-      type: 'connection',
-      id: connectionId,
-      timestamp: new Date().toISOString()
-    })}\n\n`);
+    res.write(
+      `data: ${JSON.stringify({
+        type: 'connection',
+        id: connectionId,
+        timestamp: new Date().toISOString()
+      })}\n\n`
+    );
 
     // Handle client disconnect
     req.on('close', () => {
@@ -69,7 +73,7 @@ function createMcpSseEndpoint(apiServices) {
       connections.delete(connectionId);
     });
 
-    req.on('error', (error) => {
+    req.on('error', error => {
       logger.error(`MCP SSE connection error: ${connectionId}`, error);
       connections.delete(connectionId);
     });
@@ -90,8 +94,19 @@ function createMcpSseEndpoint(apiServices) {
       const { jsonrpc, id, method, params = {} } = req.body;
 
       if (jsonrpc !== '2.0') {
-        return res.status(400).json(createMcpResponse(id, null, 
-          createMcpError(-32600, 'Invalid Request', 'Not a valid JSON-RPC 2.0 request')));
+        return res
+          .status(400)
+          .json(
+            createMcpResponse(
+              id,
+              null,
+              createMcpError(
+                -32600,
+                'Invalid Request',
+                'Not a valid JSON-RPC 2.0 request'
+              )
+            )
+          );
       }
 
       logger.info(`MCP SSE JSON-RPC call: ${method}`, { id, params });
@@ -119,13 +134,15 @@ function createMcpSseEndpoint(apiServices) {
           const tools = [
             {
               name: 'maps.list',
-              description: 'List all mind maps accessible to the user with pagination',
+              description:
+                'List all mind maps accessible to the user with pagination',
               inputSchema: {
                 type: 'object',
                 properties: {
                   limit: {
                     type: 'number',
-                    description: 'Maximum number of maps to return (1-100, default: 50)',
+                    description:
+                      'Maximum number of maps to return (1-100, default: 50)',
                     minimum: 1,
                     maximum: 100
                   },
@@ -165,7 +182,8 @@ function createMcpSseEndpoint(apiServices) {
                   },
                   data: {
                     type: 'object',
-                    description: 'Initial map data structure (nodes and connections)'
+                    description:
+                      'Initial map data structure (nodes and connections)'
                   }
                 },
                 required: ['name', 'data']
@@ -180,14 +198,14 @@ function createMcpSseEndpoint(apiServices) {
 
         case 'tools/call': {
           const { name, arguments: args = {} } = params;
-          
+
           switch (name) {
             case 'maps.list': {
               const limit = Math.min(Math.max(args.limit || 50, 1), 100);
               const offset = Math.max(args.offset || 0, 0);
-              
+
               const maps = mapsService.list({ limit, offset });
-              
+
               const result = {
                 maps,
                 total: maps.length,
@@ -197,10 +215,12 @@ function createMcpSseEndpoint(apiServices) {
               };
 
               const response = createMcpResponse(id, {
-                content: [{
-                  type: 'text',
-                  text: JSON.stringify(result, null, 2)
-                }]
+                content: [
+                  {
+                    type: 'text',
+                    text: JSON.stringify(result, null, 2)
+                  }
+                ]
               });
               res.json(response);
               break;
@@ -208,8 +228,11 @@ function createMcpSseEndpoint(apiServices) {
 
             case 'maps.get': {
               if (!args.id) {
-                const response = createMcpResponse(id, null,
-                  createMcpError(-32602, 'Invalid params', 'Map ID is required'));
+                const response = createMcpResponse(
+                  id,
+                  null,
+                  createMcpError(-32602, 'Invalid params', 'Map ID is required')
+                );
                 res.json(response);
                 return;
               }
@@ -217,16 +240,25 @@ function createMcpSseEndpoint(apiServices) {
               try {
                 const map = mapsService.get(args.id);
                 const response = createMcpResponse(id, {
-                  content: [{
-                    type: 'text',
-                    text: JSON.stringify(map, null, 2)
-                  }]
+                  content: [
+                    {
+                      type: 'text',
+                      text: JSON.stringify(map, null, 2)
+                    }
+                  ]
                 });
                 res.json(response);
               } catch (serviceError) {
                 if (serviceError.name === 'NotFoundError') {
-                  const response = createMcpResponse(id, null,
-                    createMcpError(-32602, 'Map not found', `Map ${args.id} not found or not accessible`));
+                  const response = createMcpResponse(
+                    id,
+                    null,
+                    createMcpError(
+                      -32602,
+                      'Map not found',
+                      `Map ${args.id} not found or not accessible`
+                    )
+                  );
                   res.json(response);
                   return;
                 }
@@ -237,8 +269,15 @@ function createMcpSseEndpoint(apiServices) {
 
             case 'maps.create': {
               if (!args.name || !args.data) {
-                const response = createMcpResponse(id, null,
-                  createMcpError(-32602, 'Invalid params', 'Name and data are required'));
+                const response = createMcpResponse(
+                  id,
+                  null,
+                  createMcpError(
+                    -32602,
+                    'Invalid params',
+                    'Name and data are required'
+                  )
+                );
                 res.json(response);
                 return;
               }
@@ -249,22 +288,35 @@ function createMcpSseEndpoint(apiServices) {
               });
 
               const response = createMcpResponse(id, {
-                content: [{
-                  type: 'text',
-                  text: JSON.stringify({
-                    success: true,
-                    map: newMap,
-                    message: `Created map "${newMap.name}" with ID ${newMap.id}`
-                  }, null, 2)
-                }]
+                content: [
+                  {
+                    type: 'text',
+                    text: JSON.stringify(
+                      {
+                        success: true,
+                        map: newMap,
+                        message: `Created map "${newMap.name}" with ID ${newMap.id}`
+                      },
+                      null,
+                      2
+                    )
+                  }
+                ]
               });
               res.json(response);
               break;
             }
 
             default: {
-              const response = createMcpResponse(id, null,
-                createMcpError(-32601, 'Method not found', `Unknown tool: ${name}`));
+              const response = createMcpResponse(
+                id,
+                null,
+                createMcpError(
+                  -32601,
+                  'Method not found',
+                  `Unknown tool: ${name}`
+                )
+              );
               res.json(response);
               break;
             }
@@ -295,7 +347,7 @@ function createMcpSseEndpoint(apiServices) {
 
         case 'resources/read': {
           const { uri } = params;
-          
+
           if (uri === 'mindmeld://health') {
             const content = {
               status: 'ok',
@@ -310,11 +362,13 @@ function createMcpSseEndpoint(apiServices) {
             };
 
             const response = createMcpResponse(id, {
-              contents: [{
-                uri,
-                mimeType: 'application/json',
-                text: JSON.stringify(content, null, 2)
-              }]
+              contents: [
+                {
+                  uri,
+                  mimeType: 'application/json',
+                  text: JSON.stringify(content, null, 2)
+                }
+              ]
             });
             res.json(response);
             return;
@@ -322,40 +376,63 @@ function createMcpSseEndpoint(apiServices) {
 
           if (uri === 'mindmeld://maps') {
             const maps = mapsService.list({ limit: 50, offset: 0 });
-            
+
             const response = createMcpResponse(id, {
-              contents: [{
-                uri,
-                mimeType: 'application/json',
-                text: JSON.stringify({
-                  maps,
-                  total: maps.length,
-                  message: 'All mind maps accessible to the user'
-                }, null, 2)
-              }]
+              contents: [
+                {
+                  uri,
+                  mimeType: 'application/json',
+                  text: JSON.stringify(
+                    {
+                      maps,
+                      total: maps.length,
+                      message: 'All mind maps accessible to the user'
+                    },
+                    null,
+                    2
+                  )
+                }
+              ]
             });
             res.json(response);
             return;
           }
 
           // Unknown resource
-          const response = createMcpResponse(id, null,
-            createMcpError(-32602, 'Invalid params', `Unknown resource URI: ${uri}`));
+          const response = createMcpResponse(
+            id,
+            null,
+            createMcpError(
+              -32602,
+              'Invalid params',
+              `Unknown resource URI: ${uri}`
+            )
+          );
           res.json(response);
           break;
         }
 
         default: {
-          const response = createMcpResponse(id, null,
-            createMcpError(-32601, 'Method not found', `Unknown method: ${method}`));
+          const response = createMcpResponse(
+            id,
+            null,
+            createMcpError(
+              -32601,
+              'Method not found',
+              `Unknown method: ${method}`
+            )
+          );
           res.json(response);
           break;
         }
       }
     } catch (error) {
       logger.error('MCP SSE JSON-RPC error:', error);
-      const response = createMcpResponse(req.body.id, null,
-        createMcpError(-32603, 'Internal error', error.message));
+      const response = createMcpResponse(
+        req.body.id,
+        null,
+        createMcpError(-32603, 'Internal error', error.message)
+      );
       res.status(500).json(response);
     }
   });

@@ -6,6 +6,8 @@
 // To start the server with MCP support, simply run:
 // FEATURE_MCP=1 npm start
 
-throw new Error('Standalone MCP HTTP server has been removed. MCP is now integrated into the main server.');
-
 module.exports = {};
+
+throw new Error(
+  'Standalone MCP HTTP server has been removed. MCP is now integrated into the main server.'
+);

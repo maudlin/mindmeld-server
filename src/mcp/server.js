@@ -3,6 +3,8 @@
 // See src/mcp/http-server.js for SSE implementation.
 // See src/core/mcp-routes.js for HTTP JSON-RPC fallback.
 
-throw new Error('STDIO MCP transport has been removed. Use SSE or HTTP transports instead.');
-
 module.exports = {};
+
+throw new Error(
+  'STDIO MCP transport has been removed. Use SSE or HTTP transports instead.'
+);

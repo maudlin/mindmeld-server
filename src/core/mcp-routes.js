@@ -13,25 +13,27 @@ function createMcpResponse(id, result, error = null) {
     jsonrpc: '2.0',
     id
   };
-  
+
   if (error) {
     response.error = error;
   } else {
     response.result = result;
   }
-  
+
   return response;
 }
 
 // Helper to create MCP error
 function createMcpError(code, message, data = null) {
   const error = { code, message };
-  if (data) error.data = data;
+  if (data) {
+    error.data = data;
+  }
   return error;
 }
 
 // Extract user context from request (for future auth integration)
-function extractUserContext(req) {
+function extractUserContext(_req) {
   // TODO: Extract user from JWT/session/OAuth token
   // For now, return null (no auth)
   return {
@@ -51,11 +53,15 @@ function createMcpRoutes(apiServices) {
     if (!req.body.jsonrpc || req.body.jsonrpc !== '2.0') {
       return res.status(400).json({
         jsonrpc: '2.0',
-        error: createMcpError(-32600, 'Invalid Request', 'Not a valid JSON-RPC 2.0 request'),
+        error: createMcpError(
+          -32600,
+          'Invalid Request',
+          'Not a valid JSON-RPC 2.0 request'
+        ),
         id: null
       });
     }
-    
+
     // Attach user context for auth (future)
     req.userContext = extractUserContext(req);
     next();
@@ -64,7 +70,7 @@ function createMcpRoutes(apiServices) {
   // MCP Server Initialization
   router.post('/initialize', (req, res) => {
     logger.info('MCP client initializing');
-    
+
     const response = createMcpResponse(req.body.id, {
       protocolVersion: '2024-11-05',
       capabilities: {
@@ -78,7 +84,7 @@ function createMcpRoutes(apiServices) {
         description: 'MindMeld mind mapping server with MCP support'
       }
     });
-    
+
     res.json(response);
   });
 
@@ -105,8 +111,11 @@ function createMcpRoutes(apiServices) {
       res.json(response);
     } catch (error) {
       logger.error('MCP resources/list error:', error);
-      const response = createMcpResponse(req.body.id, null, 
-        createMcpError(-32603, 'Internal error', error.message));
+      const response = createMcpResponse(
+        req.body.id,
+        null,
+        createMcpError(-32603, 'Internal error', error.message)
+      );
       res.json(response);
     }
   });
@@ -115,7 +124,7 @@ function createMcpRoutes(apiServices) {
   router.post('/resources/read', (req, res) => {
     try {
       const { uri } = req.body.params;
-      
+
       if (uri === 'mindmeld://health') {
         const content = {
           status: 'ok',
@@ -130,11 +139,13 @@ function createMcpRoutes(apiServices) {
         };
 
         const response = createMcpResponse(req.body.id, {
-          contents: [{
-            uri,
-            mimeType: 'application/json',
-            text: JSON.stringify(content, null, 2)
-          }]
+          contents: [
+            {
+              uri,
+              mimeType: 'application/json',
+              text: JSON.stringify(content, null, 2)
+            }
+          ]
         });
         res.json(response);
         return;
@@ -142,22 +153,28 @@ function createMcpRoutes(apiServices) {
 
       if (uri === 'mindmeld://maps') {
         // Use the API service (will respect auth when implemented)
-        const maps = mapsService.list({ 
-          limit: 50, 
-          offset: 0,
+        const maps = mapsService.list({
+          limit: 50,
+          offset: 0
           // userContext: req.userContext (future auth)
         });
-        
+
         const response = createMcpResponse(req.body.id, {
-          contents: [{
-            uri,
-            mimeType: 'application/json',
-            text: JSON.stringify({
-              maps,
-              total: maps.length,
-              message: 'All mind maps accessible to the user'
-            }, null, 2)
-          }]
+          contents: [
+            {
+              uri,
+              mimeType: 'application/json',
+              text: JSON.stringify(
+                {
+                  maps,
+                  total: maps.length,
+                  message: 'All mind maps accessible to the user'
+                },
+                null,
+                2
+              )
+            }
+          ]
         });
         res.json(response);
         return;
@@ -166,26 +183,35 @@ function createMcpRoutes(apiServices) {
       // Individual map resource: mindmeld://maps/{id}
       if (uri.startsWith('mindmeld://maps/')) {
         const mapId = uri.replace('mindmeld://maps/', '');
-        
+
         try {
           // Use API service (respects permissions, validation, etc.)
           const map = mapsService.get(mapId, {
             // userContext: req.userContext (future auth)
           });
-          
+
           const response = createMcpResponse(req.body.id, {
-            contents: [{
-              uri,
-              mimeType: 'application/json',
-              text: JSON.stringify(map, null, 2)
-            }]
+            contents: [
+              {
+                uri,
+                mimeType: 'application/json',
+                text: JSON.stringify(map, null, 2)
+              }
+            ]
           });
           res.json(response);
           return;
         } catch (serviceError) {
           if (serviceError.name === 'NotFoundError') {
-            const response = createMcpResponse(req.body.id, null,
-              createMcpError(-32602, 'Resource not found', `Map ${mapId} not found or not accessible`));
+            const response = createMcpResponse(
+              req.body.id,
+              null,
+              createMcpError(
+                -32602,
+                'Resource not found',
+                `Map ${mapId} not found or not accessible`
+              )
+            );
             res.json(response);
             return;
           }
@@ -195,14 +221,19 @@ function createMcpRoutes(apiServices) {
       }
 
       // Unknown resource
-      const response = createMcpResponse(req.body.id, null,
-        createMcpError(-32602, 'Invalid params', `Unknown resource URI: ${uri}`));
+      const response = createMcpResponse(
+        req.body.id,
+        null,
+        createMcpError(-32602, 'Invalid params', `Unknown resource URI: ${uri}`)
+      );
       res.json(response);
-
     } catch (error) {
       logger.error('MCP resources/read error:', error);
-      const response = createMcpResponse(req.body.id, null,
-        createMcpError(-32603, 'Internal error', error.message));
+      const response = createMcpResponse(
+        req.body.id,
+        null,
+        createMcpError(-32603, 'Internal error', error.message)
+      );
       res.json(response);
     }
   });
@@ -213,13 +244,15 @@ function createMcpRoutes(apiServices) {
       const tools = [
         {
           name: 'maps.list',
-          description: 'List all mind maps accessible to the user with pagination',
+          description:
+            'List all mind maps accessible to the user with pagination',
           inputSchema: {
             type: 'object',
             properties: {
               limit: {
                 type: 'number',
-                description: 'Maximum number of maps to return (1-100, default: 50)',
+                description:
+                  'Maximum number of maps to return (1-100, default: 50)',
                 minimum: 1,
                 maximum: 100
               },
@@ -259,7 +292,8 @@ function createMcpRoutes(apiServices) {
               },
               data: {
                 type: 'object',
-                description: 'Initial map data structure (nodes and connections)'
+                description:
+                  'Initial map data structure (nodes and connections)'
               }
             },
             required: ['name', 'data']
@@ -267,7 +301,8 @@ function createMcpRoutes(apiServices) {
         },
         {
           name: 'maps.update',
-          description: 'Update an existing map with optimistic concurrency control',
+          description:
+            'Update an existing map with optimistic concurrency control',
           inputSchema: {
             type: 'object',
             properties: {
@@ -283,7 +318,8 @@ function createMcpRoutes(apiServices) {
               version: {
                 type: 'number',
                 minimum: 1,
-                description: 'Current version for optimistic concurrency control'
+                description:
+                  'Current version for optimistic concurrency control'
               }
             },
             required: ['id', 'data', 'version']
@@ -310,8 +346,11 @@ function createMcpRoutes(apiServices) {
       res.json(response);
     } catch (error) {
       logger.error('MCP tools/list error:', error);
-      const response = createMcpResponse(req.body.id, null,
-        createMcpError(-32603, 'Internal error', error.message));
+      const response = createMcpResponse(
+        req.body.id,
+        null,
+        createMcpError(-32603, 'Internal error', error.message)
+      );
       res.json(response);
     }
   });
@@ -320,21 +359,24 @@ function createMcpRoutes(apiServices) {
   router.post('/tools/call', (req, res) => {
     try {
       const { name, arguments: args = {} } = req.body.params;
-      
-      logger.info(`MCP tool called: ${name}`, { args, user: req.userContext?.userId });
+
+      logger.info(`MCP tool called: ${name}`, {
+        args,
+        user: req.userContext?.userId
+      });
 
       switch (name) {
         case 'maps.list': {
           const limit = Math.min(Math.max(args.limit || 50, 1), 100);
           const offset = Math.max(args.offset || 0, 0);
-          
+
           // Use API service - will respect user permissions when auth is added
-          const maps = mapsService.list({ 
-            limit, 
-            offset,
+          const maps = mapsService.list({
+            limit,
+            offset
             // userContext: req.userContext (future auth)
           });
-          
+
           const result = {
             maps,
             total: maps.length,
@@ -344,10 +386,12 @@ function createMcpRoutes(apiServices) {
           };
 
           const response = createMcpResponse(req.body.id, {
-            content: [{
-              type: 'text',
-              text: JSON.stringify(result, null, 2)
-            }]
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(result, null, 2)
+              }
+            ]
           });
           res.json(response);
           break;
@@ -355,8 +399,11 @@ function createMcpRoutes(apiServices) {
 
         case 'maps.get': {
           if (!args.id) {
-            const response = createMcpResponse(req.body.id, null,
-              createMcpError(-32602, 'Invalid params', 'Map ID is required'));
+            const response = createMcpResponse(
+              req.body.id,
+              null,
+              createMcpError(-32602, 'Invalid params', 'Map ID is required')
+            );
             res.json(response);
             return;
           }
@@ -366,18 +413,27 @@ function createMcpRoutes(apiServices) {
             const map = mapsService.get(args.id, {
               // userContext: req.userContext (future auth)
             });
-            
+
             const response = createMcpResponse(req.body.id, {
-              content: [{
-                type: 'text',
-                text: JSON.stringify(map, null, 2)
-              }]
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify(map, null, 2)
+                }
+              ]
             });
             res.json(response);
           } catch (serviceError) {
             if (serviceError.name === 'NotFoundError') {
-              const response = createMcpResponse(req.body.id, null,
-                createMcpError(-32602, 'Map not found', `Map ${args.id} not found or not accessible`));
+              const response = createMcpResponse(
+                req.body.id,
+                null,
+                createMcpError(
+                  -32602,
+                  'Map not found',
+                  `Map ${args.id} not found or not accessible`
+                )
+              );
               res.json(response);
               return;
             }
@@ -388,8 +444,15 @@ function createMcpRoutes(apiServices) {
 
         case 'maps.create': {
           if (!args.name || !args.data) {
-            const response = createMcpResponse(req.body.id, null,
-              createMcpError(-32602, 'Invalid params', 'Name and data are required'));
+            const response = createMcpResponse(
+              req.body.id,
+              null,
+              createMcpError(
+                -32602,
+                'Invalid params',
+                'Name and data are required'
+              )
+            );
             res.json(response);
             return;
           }
@@ -397,19 +460,25 @@ function createMcpRoutes(apiServices) {
           // Use API service - handles validation, user assignment, etc.
           const newMap = mapsService.create({
             name: args.name,
-            data: args.data,
+            data: args.data
             // userContext: req.userContext (future auth)
           });
 
           const response = createMcpResponse(req.body.id, {
-            content: [{
-              type: 'text',
-              text: JSON.stringify({
-                success: true,
-                map: newMap,
-                message: `Created map "${newMap.name}" with ID ${newMap.id}`
-              }, null, 2)
-            }]
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    success: true,
+                    map: newMap,
+                    message: `Created map "${newMap.name}" with ID ${newMap.id}`
+                  },
+                  null,
+                  2
+                )
+              }
+            ]
           });
           res.json(response);
           break;
@@ -417,8 +486,15 @@ function createMcpRoutes(apiServices) {
 
         case 'maps.update': {
           if (!args.id || !args.data || typeof args.version !== 'number') {
-            const response = createMcpResponse(req.body.id, null,
-              createMcpError(-32602, 'Invalid params', 'ID, data, and version are required'));
+            const response = createMcpResponse(
+              req.body.id,
+              null,
+              createMcpError(
+                -32602,
+                'Invalid params',
+                'ID, data, and version are required'
+              )
+            );
             res.json(response);
             return;
           }
@@ -427,31 +503,51 @@ function createMcpRoutes(apiServices) {
             // Use API service - handles permissions, optimistic concurrency, etc.
             const updatedMap = mapsService.update(args.id, {
               data: args.data,
-              version: args.version,
+              version: args.version
               // userContext: req.userContext (future auth)
             });
 
             const response = createMcpResponse(req.body.id, {
-              content: [{
-                type: 'text',
-                text: JSON.stringify({
-                  success: true,
-                  map: updatedMap,
-                  message: `Updated map "${updatedMap.name}" to version ${updatedMap.version}`
-                }, null, 2)
-              }]
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify(
+                    {
+                      success: true,
+                      map: updatedMap,
+                      message: `Updated map "${updatedMap.name}" to version ${updatedMap.version}`
+                    },
+                    null,
+                    2
+                  )
+                }
+              ]
             });
             res.json(response);
           } catch (serviceError) {
             if (serviceError.name === 'NotFoundError') {
-              const response = createMcpResponse(req.body.id, null,
-                createMcpError(-32602, 'Map not found', `Map ${args.id} not found or not accessible`));
+              const response = createMcpResponse(
+                req.body.id,
+                null,
+                createMcpError(
+                  -32602,
+                  'Map not found',
+                  `Map ${args.id} not found or not accessible`
+                )
+              );
               res.json(response);
               return;
             }
             if (serviceError.name === 'ConflictError') {
-              const response = createMcpResponse(req.body.id, null,
-                createMcpError(-32602, 'Version conflict', 'Map has been modified by another client'));
+              const response = createMcpResponse(
+                req.body.id,
+                null,
+                createMcpError(
+                  -32602,
+                  'Version conflict',
+                  'Map has been modified by another client'
+                )
+              );
               res.json(response);
               return;
             }
@@ -462,8 +558,11 @@ function createMcpRoutes(apiServices) {
 
         case 'maps.delete': {
           if (!args.id) {
-            const response = createMcpResponse(req.body.id, null,
-              createMcpError(-32602, 'Invalid params', 'Map ID is required'));
+            const response = createMcpResponse(
+              req.body.id,
+              null,
+              createMcpError(-32602, 'Invalid params', 'Map ID is required')
+            );
             res.json(response);
             return;
           }
@@ -475,19 +574,32 @@ function createMcpRoutes(apiServices) {
             });
 
             const response = createMcpResponse(req.body.id, {
-              content: [{
-                type: 'text',
-                text: JSON.stringify({
-                  success: true,
-                  message: `Deleted map ${args.id}`
-                }, null, 2)
-              }]
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify(
+                    {
+                      success: true,
+                      message: `Deleted map ${args.id}`
+                    },
+                    null,
+                    2
+                  )
+                }
+              ]
             });
             res.json(response);
           } catch (serviceError) {
             if (serviceError.name === 'NotFoundError') {
-              const response = createMcpResponse(req.body.id, null,
-                createMcpError(-32602, 'Map not found', `Map ${args.id} not found or not accessible`));
+              const response = createMcpResponse(
+                req.body.id,
+                null,
+                createMcpError(
+                  -32602,
+                  'Map not found',
+                  `Map ${args.id} not found or not accessible`
+                )
+              );
               res.json(response);
               return;
             }
@@ -497,16 +609,22 @@ function createMcpRoutes(apiServices) {
         }
 
         default: {
-          const response = createMcpResponse(req.body.id, null,
-            createMcpError(-32601, 'Method not found', `Unknown tool: ${name}`));
+          const response = createMcpResponse(
+            req.body.id,
+            null,
+            createMcpError(-32601, 'Method not found', `Unknown tool: ${name}`)
+          );
           res.json(response);
           break;
         }
       }
     } catch (error) {
       logger.error('MCP tools/call error:', error);
-      const response = createMcpResponse(req.body.id, null,
-        createMcpError(-32603, 'Internal error', error.message));
+      const response = createMcpResponse(
+        req.body.id,
+        null,
+        createMcpError(-32603, 'Internal error', error.message)
+      );
       res.json(response);
     }
   });

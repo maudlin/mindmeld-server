@@ -48,17 +48,17 @@ function createServer(config = {}) {
     const MapsService = require('../modules/maps/service');
     const sqliteFile =
       config.sqliteFile || path.join(process.cwd(), 'data', 'db.sqlite');
-    
+
     // REST API for MindMeld client
     app.use('/maps', createMapsRouter({ sqliteFile }));
-    
+
     // MCP endpoints for LLM agents (uses same service layer)
     const mapsService = new MapsService(sqliteFile);
     const mcpRoutes = createMcpRoutes({ mapsService });
     const mcpSseRoutes = createMcpSseEndpoint({ mapsService });
     app.use('/mcp', mcpRoutes);
     app.use('/mcp', mcpSseRoutes);
-    
+
     // Log endpoints without exposing filesystem paths
     Logger.info('Maps API and MCP endpoints enabled', {
       endpoints: ['/maps', '/mcp', '/mcp/sse'],

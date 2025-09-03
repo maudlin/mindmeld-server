@@ -21,7 +21,7 @@ async function ensureDataDirectory() {
     }
     const dataDir = path.dirname(CONFIG.sqliteFile);
     await fs.mkdir(dataDir, { recursive: true });
-    
+
     // Log relative path only (not full filesystem path)
     const relativePath = path.relative(process.cwd(), dataDir) || 'data';
     Logger.info(`Data directory ensured: ${relativePath}`);
