@@ -1,18 +1,16 @@
 # MindMeld Server
 
-A production-ready REST API for the MindMeld mind mapping application.
-
-The server is maps-first: each map is a first-class resource stored in SQLite (better-sqlite3) with optimistic concurrency (ETag/If-Match), structured logging, and RFC 7807 error responses.
+A production-ready REST API for the MindMeld mind mapping application with integrated MCP (Model Context Protocol) support for AI assistants.
 
 ## Features
 
-- Maps-first API with SQLite persistence (better-sqlite3)
-- Optimistic concurrency with ETag/If-Match on updates
-- RFC 7807 Problem Details for errors (application/problem+json)
-- Express 4 with hardened middleware (helmet, CORS, rate limiting)
-- Structured logging (pino + pino-http) with request IDs
-- Graceful shutdown and global error handlers
-- Node 24 baseline; ESLint, Prettier, Jest, Husky/lint-staged
+- 🗺️ **Maps-first API** with SQLite persistence (better-sqlite3)
+- 🔒 **Optimistic concurrency** with ETag/If-Match on updates
+- 🤖 **MCP Integration** for AI assistants (Warp, Claude Desktop, etc.)
+- 📋 **RFC 7807 Problem Details** for structured error responses
+- 🛡️ **Production hardening** with helmet, CORS, rate limiting
+- 📊 **Structured logging** (pino + pino-http) with request IDs
+- 🏗️ **Node 24 baseline** with ESLint, Prettier, Jest, Husky/lint-staged
 
 ## Quick start
 
@@ -142,16 +140,41 @@ src/
 └── index.js              # entrypoint
 ```
 
-## MCP (Model Context Protocol)
+## MCP (Model Context Protocol) Integration
 
-An experimental MCP stdio server is included and currently exposes:
+🤖 **AI Assistant Ready!** MindMeld server includes production-ready MCP support for AI assistants.
 
-- Resource: mindmeld://health → { status, timestamp, stats }
-- Resource: mindmeld://state → current legacy state (JSON)
+### Quick Start
+```bash
+# Start with MCP enabled
+FEATURE_MCP=1 npm start
 
-Maps resources/tools will be added next.
+# Available at: http://localhost:3001/mcp/sse
+```
 
-- Start: npm run mcp:stdio
+### Available Operations
+- 📋 **List maps** - "List my mind maps"
+- 🔍 **Get map** - "Show me map details for [id]"
+- ✏️ **Create map** - "Create a new mind map called 'Project'"
+- 🗑️ **Delete map** - "Delete the map called 'Test'"
+- ❤️ **Health check** - "Show server health status"
+
+## Documentation
+
+📚 **Comprehensive guides available in [`docs/`](docs/):**
+
+- 🚀 **[Quick Start](docs/mcp-quick-start.md)** - 30-second MCP setup
+- 🔧 **[Developer Guide](docs/mcp-developer-guide.md)** - Integration examples (Node.js, Python, etc.)
+- 🖥️ **[Warp Configuration](docs/warp-mcp-config.md)** - Warp Terminal setup
+- 🔗 **[Warp Integration](docs/warp-integration.md)** - Legacy Warp notes
+- 📝 **[Development Todo](docs/todo.md)** - Project roadmap
+
+## Contributing
+
+1. **Fork** the repository
+2. **Create** a feature branch
+3. **Run tests**: `npm run validate`
+4. **Submit** a pull request
 
 ## License
 

@@ -14,9 +14,8 @@ const EnvSchema = z.object({
   LOG_LEVEL: z.string().optional(),
   // Legacy state file (for MCP state resource)
   STATE_FILE: z.string().optional(),
-  // MCP (Model Context Protocol)
+  // MCP (Model Context Protocol) - always uses integrated SSE + HTTP transports
   FEATURE_MCP: z.string().optional(),
-  MCP_TRANSPORT: z.enum(['stdio', 'ws']).optional(),
   MCP_TOKEN: z.string().optional()
 });
 
@@ -39,9 +38,8 @@ function buildConfig() {
     // Legacy state file path for MCP resource
     stateFile:
       parsed.STATE_FILE || path.join(process.cwd(), 'data', 'state.json'),
-    // MCP
+    // MCP - integrated SSE + HTTP transports (no separate transport config needed)
     featureMcp: parsed.FEATURE_MCP === '1' || parsed.FEATURE_MCP === 'true',
-    mcpTransport: parsed.MCP_TRANSPORT || 'stdio',
     mcpToken: parsed.MCP_TOKEN || null
   };
   return config;

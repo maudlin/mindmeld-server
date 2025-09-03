@@ -21,7 +21,10 @@ async function ensureDataDirectory() {
     }
     const dataDir = path.dirname(CONFIG.sqliteFile);
     await fs.mkdir(dataDir, { recursive: true });
-    Logger.info(`Data directory ensured: ${dataDir}`);
+    
+    // Log relative path only (not full filesystem path)
+    const relativePath = path.relative(process.cwd(), dataDir) || 'data';
+    Logger.info(`Data directory ensured: ${relativePath}`);
   } catch (error) {
     Logger.error('Failed to create data directory:', error);
     throw error;
@@ -82,7 +85,16 @@ function setupErrorHandlers() {
  */
 async function startServer() {
   try {
-    Logger.info({ CONFIG }, 'Starting MindMeld Server...');
+    // Log sanitized config (no file paths in production)
+    const sanitizedConfig = {
+      port: CONFIG.port,
+      corsOrigin: CONFIG.corsOrigin,
+      nodeEnv: CONFIG.nodeEnv,
+      featureMapsApi: CONFIG.featureMapsApi,
+      featureMcp: CONFIG.featureMcp,
+      mcpTransport: CONFIG.mcpTransport
+    };
+    Logger.info({ config: sanitizedConfig }, 'Starting MindMeld Server...');
 
     // Setup error handling
     setupErrorHandlers();
@@ -103,7 +115,11 @@ async function startServer() {
       eventBus.emit('server.started', {
         port: CONFIG.port,
         timestamp: new Date().toISOString(),
-        config: CONFIG
+        nodeEnv: CONFIG.nodeEnv,
+        features: {
+          maps: CONFIG.featureMapsApi,
+          mcp: CONFIG.featureMcp
+        }
       });
     });
 

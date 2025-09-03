@@ -1,59 +1,48 @@
 module.exports = {
   env: {
+    browser: false,
+    commonjs: true,
+    es6: true,
     node: true,
-    es2021: true,
     jest: true
   },
   extends: ['eslint:recommended'],
   parserOptions: {
-    ecmaVersion: 'latest',
-    sourceType: 'module'
+    ecmaVersion: 2022,
+    sourceType: 'commonjs'
   },
   rules: {
-    // Code quality
+    // Possible Errors
+    'no-console': 'off', // We use pino logger but allow console for dev
+    'no-debugger': 'warn',
     'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
-    'no-console': 'off', // Allow console for server logging
-    'prefer-const': 'error',
-    'no-var': 'error',
-
-    // Code style (matches MindMeld client standards)
-    indent: ['error', 2],
-    'linebreak-style': ['error', 'unix'],
-    quotes: ['error', 'single'],
-    semi: ['error', 'always'],
-    'comma-dangle': ['error', 'never'],
-    'object-curly-spacing': ['error', 'always'],
-    'array-bracket-spacing': ['error', 'never'],
-    'space-before-function-paren': [
-      'error',
-      { anonymous: 'never', named: 'never', asyncArrow: 'always' }
-    ],
-    'keyword-spacing': ['error', { before: true, after: true }],
-
-    // Naming conventions
-    camelcase: ['error', { properties: 'always' }],
-
-    // Best practices
-    eqeqeq: ['error', 'always'],
-    curly: ['error', 'all'],
-    'brace-style': ['error', '1tbs'],
-    'no-trailing-spaces': 'error',
-    'eol-last': ['error', 'always'],
-
-    // Security
+    
+    // Best Practices
+    'curly': ['error', 'all'],
+    'eqeqeq': ['error', 'always'],
     'no-eval': 'error',
     'no-implied-eval': 'error',
-    'no-new-func': 'error'
+    'no-return-assign': 'error',
+    'no-self-compare': 'error',
+    'no-throw-literal': 'error',
+    'radix': 'error',
+    
+    // Stylistic Issues
+    'comma-dangle': ['error', 'never'],
+    'indent': ['error', 2, { SwitchCase: 1 }],
+    'linebreak-style': ['error', 'unix'],
+    'quotes': ['error', 'single', { avoidEscape: true }],
+    'semi': ['error', 'always'],
+    'space-before-function-paren': ['error', {
+      anonymous: 'always',
+      named: 'never',
+      asyncArrow: 'always'
+    }],
+    'space-in-parens': ['error', 'never'],
+    'object-curly-spacing': ['error', 'always'],
+    'array-bracket-spacing': ['error', 'never']
   },
-  overrides: [
-    {
-      files: ['tests/**/*.js'],
-      env: {
-        jest: true
-      },
-      rules: {
-        'no-unused-expressions': 'off'
-      }
-    }
-  ]
+  globals: {
+    // Add any global variables here if needed
+  }
 };

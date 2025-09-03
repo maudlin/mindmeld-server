@@ -1,0 +1,56 @@
+{
+  "mindmeld-server": {
+    "command": "npx",
+    "args": [
+      "-y", 
+      "mcp-remote",
+      "http://localhost:3001/mcp/sse"
+    ],
+    "env": {},
+    "working_directory": null
+  },
+  "_metadata": {
+    "description": "MindMeld mind mapping server - Create, manage, and explore mind maps with AI assistance",
+    "version": "0.1.0",
+    "protocol_version": "2024-11-05",
+    "transport": "mcp-remote + SSE",
+    "tested_with": "Warp Terminal"
+  },
+  "_available_resources": [
+    {
+      "uri": "mindmeld://health",
+      "name": "Server Health", 
+      "description": "Server status and health information"
+    },
+    {
+      "uri": "mindmeld://maps",
+      "name": "All Maps",
+      "description": "List of all accessible mind maps"
+    }
+  ],
+  "_available_tools": [
+    "maps.list - List all maps with pagination (limit: 1-100, offset: 0+)",
+    "maps.get - Get specific map by UUID (id: required)",
+    "maps.create - Create new mind map (name: string, data: object)",
+    "maps.update - Update existing map (id: UUID, data: object, version: number)",
+    "maps.delete - Delete map permanently (id: UUID)"
+  ],
+  "_example_commands": [
+    "List my mind maps",
+    "Show server health status",
+    "Create a new mind map called 'Project Planning'",
+    "Get the details of map [map-id]",
+    "Delete the map called [map-name]"
+  ],
+  "_setup_instructions": [
+    "1. Start the MindMeld server: FEATURE_MCP=1 npm start",
+    "2. Add this JSON config to your Warp MCP settings",
+    "3. Server will be available at http://localhost:3001/mcp/sse",
+    "4. Uses mcp-remote for reliable SSE connection handling"
+  ],
+  "_server_endpoints": {
+    "primary": "http://localhost:3001/mcp/sse",
+    "fallback": "http://localhost:3001/mcp/*",
+    "health": "http://localhost:3001/health"
+  }
+}
