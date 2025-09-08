@@ -43,8 +43,8 @@ function createMapsRouter({ sqliteFile }) {
   // Get map by id
   router.get('/:id', (req, res, next) => {
     try {
-      const map = service.get(req.params.id);
-      const payload = map.data ?? map.state ?? {};
+      const map = service.getById(req.params.id);
+      const payload = JSON.parse(map.stateJson);
       const etag = computeEtag(payload);
       res.set('ETag', `"${etag}"`);
       res.json(map);
@@ -60,8 +60,8 @@ function createMapsRouter({ sqliteFile }) {
       const ifMatch = req.get('If-Match');
 
       if (ifMatch) {
-        const current = service.get(id);
-        const currentPayload = current.data ?? current.state ?? {};
+        const current = service.getById(id);
+        const currentPayload = JSON.parse(current.stateJson);
         const currentEtag = computeEtag(currentPayload);
         const provided = stripQuotes(ifMatch);
         if (provided !== currentEtag) {
@@ -72,7 +72,7 @@ function createMapsRouter({ sqliteFile }) {
       const updated = service.update(id, req.body || {});
       const payload = updated && (req.body?.data ?? req.body?.state);
       const nextPayload =
-        payload !== undefined ? payload : (service.get(id).data ?? {});
+        payload !== undefined ? payload : (service.getById(id).data ?? {});
       const nextEtag = computeEtag(nextPayload);
       res.set('ETag', `"${nextEtag}"`);
       res.json(updated);

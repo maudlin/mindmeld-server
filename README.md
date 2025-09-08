@@ -125,6 +125,8 @@ Scripts
 
 - npm run dev — start with auto-reload
 - npm start — production start
+- npm run test:e2e — Playwright E2E API tests
+- npm run seed — create sample maps for testing
 - npm run validate — lint + format:check + test
 - npm test / npm run test:watch / npm run test:coverage
 
@@ -145,6 +147,7 @@ src/
 🤖 **AI Assistant Ready!** MindMeld server includes production-ready MCP support for AI assistants.
 
 ### Quick Start
+
 ```bash
 # Start with MCP enabled
 FEATURE_MCP=1 npm start
@@ -153,6 +156,7 @@ FEATURE_MCP=1 npm start
 ```
 
 ### Available Operations
+
 - 📋 **List maps** - "List my mind maps"
 - 🔍 **Get map** - "Show me map details for [id]"
 - ✏️ **Create map** - "Create a new mind map called 'Project'"

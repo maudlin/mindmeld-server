@@ -30,10 +30,10 @@ describe('Maps API (to-be) integration', () => {
   });
 
   it('should create, get, update, and detect conflict', async () => {
-    // Create
+    // Create - using strict format: state: { n: [], c: [] }
     const createRes = await request(app)
       .post('/maps')
-      .send({ name: 'Test Map', state: { notes: [], connections: [] } })
+      .send({ name: 'Test Map', state: { n: [], c: [] } })
       .expect(201);
 
     expect(createRes.body.id).toEqual(expect.any(String));
@@ -52,10 +52,13 @@ describe('Maps API (to-be) integration', () => {
     // ETag should be present on GET
     expect(getRes.headers).toHaveProperty('etag', expect.any(String));
 
-    // Update ok (version-only path still works)
+    // Update - using strict format: data: { n: [...], c: [] }
     const putRes = await request(app)
       .put(`/maps/${id}`)
-      .send({ state: { notes: [{ id: '1' }], connections: [] }, version: 1 })
+      .send({
+        data: { n: [{ i: '1', p: [0, 0], c: 'Note 1' }], c: [] },
+        version: 1
+      })
       .expect(200);
     expect(putRes.body.id).toBe(id);
     expect(putRes.body.version).toBe(2);
@@ -65,15 +68,18 @@ describe('Maps API (to-be) integration', () => {
     // Conflict with stale version
     await request(app)
       .put(`/maps/${id}`)
-      .send({ state: { notes: [{ id: '2' }], connections: [] }, version: 1 })
+      .send({
+        data: { n: [{ i: '2', p: [0, 0], c: 'Note 2' }], c: [] },
+        version: 1
+      })
       .expect(409);
   });
 
   it('should support ETag + If-Match optimistic concurrency', async () => {
-    // Create initial map
+    // Create initial map - using strict format
     const createRes = await request(app)
       .post('/maps')
-      .send({ name: 'IfMatch Map', data: { n: [], c: [] } })
+      .send({ name: 'IfMatch Map', state: { n: [], c: [] } })
       .expect(201);
     const id = createRes.body.id;
     const etag1 = createRes.headers.etag; // quoted value
@@ -86,7 +92,10 @@ describe('Maps API (to-be) integration', () => {
     const putOk = await request(app)
       .put(`/maps/${id}`)
       .set('If-Match', etag1)
-      .send({ data: { n: [{ id: 'x' }], c: [] }, version: 1 })
+      .send({
+        data: { n: [{ i: 'x', p: [10, 20], c: 'Test note' }], c: [] },
+        version: 1
+      })
       .expect(200);
     const etag2 = putOk.headers.etag;
     expect(etag2).toEqual(expect.any(String));
@@ -96,7 +105,10 @@ describe('Maps API (to-be) integration', () => {
     await request(app)
       .put(`/maps/${id}`)
       .set('If-Match', etag1)
-      .send({ data: { n: [{ id: 'y' }], c: [] }, version: 2 })
+      .send({
+        data: { n: [{ i: 'y', p: [30, 40], c: 'Another note' }], c: [] },
+        version: 2
+      })
       .expect(409);
 
     // GET now returns the new ETag
@@ -109,12 +121,12 @@ describe('Maps API (to-be) integration', () => {
       .post('/maps')
       .send({
         name: 'Map One',
-        state: { notes: [{ id: 'n1' }], connections: [] }
+        state: { n: [{ i: 'n1', p: [0, 0], c: 'First note' }], c: [] }
       })
       .expect(201);
     await request(app)
       .post('/maps')
-      .send({ name: 'Map Two', state: { notes: [], connections: [] } })
+      .send({ name: 'Map Two', state: { n: [], c: [] } })
       .expect(201);
 
     const listRes = await request(app).get('/maps').expect(200);
@@ -124,6 +136,6 @@ describe('Maps API (to-be) integration', () => {
     expect(item).toHaveProperty('id', expect.any(String));
     expect(item).toHaveProperty('version', expect.any(Number));
     expect(item).toHaveProperty('updatedAt', expect.any(String));
-    expect(item).toHaveProperty('size', expect.any(Number));
+    expect(item).toHaveProperty('sizeBytes', expect.any(Number));
   });
 });
