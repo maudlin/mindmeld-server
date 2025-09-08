@@ -186,7 +186,9 @@ function createMcpRoutes(apiServices) {
 
         try {
           // Use API service (respects permissions, validation, etc.)
-          const map = mapsService.getById(mapId);
+          const map = mapsService.get(mapId, {
+            // userContext: req.userContext (future auth)
+          });
 
           const response = createMcpResponse(req.body.id, {
             contents: [
@@ -458,7 +460,7 @@ function createMcpRoutes(apiServices) {
           // Use API service - handles validation, user assignment, etc.
           const newMap = mapsService.create({
             name: args.name,
-            state: args.data
+            data: args.data
             // userContext: req.userContext (future auth)
           });
 
@@ -500,7 +502,7 @@ function createMcpRoutes(apiServices) {
           try {
             // Use API service - handles permissions, optimistic concurrency, etc.
             const updatedMap = mapsService.update(args.id, {
-              state: args.data,
+              data: args.data,
               version: args.version
               // userContext: req.userContext (future auth)
             });

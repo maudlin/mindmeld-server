@@ -204,7 +204,7 @@ function createMcpSseEndpoint(apiServices) {
               const limit = Math.min(Math.max(args.limit || 50, 1), 100);
               const offset = Math.max(args.offset || 0, 0);
 
-              const maps = mapsService.list({ limit, offset });
+              const maps = mapsService.list();
 
               const result = {
                 maps,
@@ -238,7 +238,7 @@ function createMcpSseEndpoint(apiServices) {
               }
 
               try {
-                const map = mapsService.get(args.id);
+                const map = mapsService.getById(args.id);
                 const response = createMcpResponse(id, {
                   content: [
                     {
@@ -284,7 +284,7 @@ function createMcpSseEndpoint(apiServices) {
 
               const newMap = mapsService.create({
                 name: args.name,
-                data: args.data
+                state: args.data
               });
 
               const response = createMcpResponse(id, {
@@ -375,7 +375,7 @@ function createMcpSseEndpoint(apiServices) {
           }
 
           if (uri === 'mindmeld://maps') {
-            const maps = mapsService.list({ limit: 50, offset: 0 });
+            const maps = mapsService.list();
 
             const response = createMcpResponse(id, {
               contents: [
