@@ -1,384 +1,221 @@
-# MCP Developer Integration Guide
-
-## Connecting to MindMeld Server via MCP
-
-This guide shows developers how to integrate with the MindMeld server using the Model Context Protocol (MCP). Our server follows industry standards used by companies like Atlassian.
+# MCP Developer Guide
 
 ## Architecture Overview
 
+MindMeld server implements MCP (Model Context Protocol) v2024-11-05 with dual transport support:
+
 ```
-Your App/Tool → mcp-remote → MindMeld Server (SSE endpoint)
-```
-
-**Why this architecture?**
-- ✅ **Battle-tested**: Same pattern used by Atlassian for Jira MCP integration
-- ✅ **Reliable**: `mcp-remote` handles connection management, retries, and SSE complexities
-- ✅ **Standard**: Compatible with all MCP-aware tools (Warp, Claude Desktop, etc.)
-- ✅ **Simple**: No custom SSE client code needed
-
-## Server Endpoints
-
-- **Primary**: `http://localhost:3001/mcp/sse` (Server-Sent Events)
-- **Fallback**: `http://localhost:3001/mcp/*` (HTTP JSON-RPC)
-- **Health**: `http://localhost:3001/health`
-
-## Quick Setup
-
-### 1. Start the MindMeld Server
-
-```bash
-# Enable MCP support
-FEATURE_MCP=1 npm start
+Client → mcp-remote → MindMeld Server
+                          ├── SSE Transport (/mcp/sse)
+                          └── HTTP JSON-RPC (/mcp/*)
 ```
 
-### 2. Test Direct Connection
+## Implementation Details
 
-```bash
-# Install mcp-remote globally (optional)
-npm install -g mcp-remote
+### Service Layer Integration
 
-# Test the connection
-npx mcp-remote http://localhost:3001/mcp/sse
+MCP endpoints integrate directly with the existing Maps service:
+
+```javascript
+// src/factories/server-factory.js
+const mapsService = new MapsService(sqliteFile);
+app.use('/mcp', createMcpRoutes({ mapsService })); // HTTP
+app.use('/mcp', createMcpSseEndpoint({ mapsService })); // SSE
 ```
 
-## Integration Examples
+### Method Mapping
 
-### Warp Terminal
+| MCP Tool      | Service Method                              | Notes                       |
+| ------------- | ------------------------------------------- | --------------------------- |
+| `maps.list`   | `mapsService.list()`                        | Pagination in MCP layer     |
+| `maps.get`    | `mapsService.getById(id)`                   | Fixed method name mismatch  |
+| `maps.create` | `mapsService.create({ name, state })`       | Parameter: `data` → `state` |
+| `maps.update` | `mapsService.update(id, { data, version })` | Optimistic concurrency      |
+| `maps.delete` | `mapsService.delete(id)`                    | Direct mapping              |
 
-Add to your Warp MCP configuration:
+## API Reference
+
+### Tools (Read-Write Operations)
+
+#### `maps.get` - Get Map by ID
 
 ```json
 {
-  "mindmeld-server": {
-    "command": "npx",
-    "args": [
-      "-y", 
-      "mcp-remote",
-      "http://localhost:3001/mcp/sse"
-    ],
-    "env": {},
-    "working_directory": null
-  }
+  "name": "maps.get",
+  "arguments": { "id": "uuid-here" }
 }
 ```
 
-### Claude Desktop
+Returns full map object with `stateJson` containing node/connection data.
 
-Add to `claude_desktop_config.json`:
+#### `maps.create` - Create New Map
 
 ```json
 {
-  "mcpServers": {
-    "mindmeld": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "mcp-remote", 
-        "http://localhost:3001/mcp/sse"
-      ]
+  "name": "maps.create",
+  "arguments": {
+    "name": "Map Name",
+    "data": {
+      "n": [{ "i": "root", "c": "Central Idea", "p": [400, 300] }],
+      "c": []
     }
   }
 }
 ```
 
-### Custom Application (Node.js)
+#### `maps.list` - List All Maps
+
+```json
+{
+  "name": "maps.list",
+  "arguments": {
+    "limit": 10, // Optional: 1-100, default 50
+    "offset": 0 // Optional: default 0
+  }
+}
+```
+
+### Resources (Read-Only)
+
+#### `mindmeld://health` - Server Status
+
+Working on both SSE and HTTP transports.
+
+#### `mindmeld://maps` - Maps List
+
+Working on both transports. Returns summary view of all maps.
+
+#### `mindmeld://maps/{id}` - Individual Map
+
+**Status**: HTTP ✅ | SSE 🔧  
+**Workaround**: Use `maps.get` tool instead.
+
+## Data Format
+
+### Mind Map Structure
+
+```json
+{
+  "n": [
+    {
+      "i": "node-id",        // Node identifier
+      "c": "Node Content",   // Text content
+      "p": [x, y],          // Position [x, y]
+      "cl": "color"         // Optional color
+    }
+  ],
+  "c": [
+    ["from-id", "to-id", 1]  // [source, target, type]
+  ]
+}
+```
+
+## Testing & Integration
+
+### Direct HTTP Testing
+
+```bash
+# Initialize
+curl -X POST http://localhost:3001/mcp/initialize \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{"tools":{}}}}'
+
+# List maps
+curl -X POST http://localhost:3001/mcp/tools/call \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"maps.list","arguments":{"limit":5}}}'
+```
+
+### Custom Client (Node.js)
 
 ```javascript
-const { spawn } = require('child_process');
+import { spawn } from 'child_process';
 
-// Spawn mcp-remote as subprocess
-const mcpClient = spawn('npx', [
-  '-y', 
-  'mcp-remote',
-  'http://localhost:3001/mcp/sse'
-], {
-  stdio: ['pipe', 'pipe', 'pipe']
-});
+const mcp = spawn('npx', ['-y', 'mcp-remote', 'http://localhost:3001/mcp/sse']);
 
-// Send JSON-RPC requests via stdin
-function sendMcpRequest(method, params = {}) {
+function sendMcpRequest(method, params) {
   const request = {
     jsonrpc: '2.0',
     id: Date.now(),
     method,
     params
   };
-  
-  mcpClient.stdin.write(JSON.stringify(request) + '\n');
+  mcp.stdin.write(JSON.stringify(request) + '\n');
 }
-
-// Handle responses via stdout
-mcpClient.stdout.on('data', (data) => {
-  const response = JSON.parse(data.toString());
-  console.log('MCP Response:', response);
-});
 
 // Initialize connection
 sendMcpRequest('initialize', {
   protocolVersion: '2024-11-05',
-  capabilities: {
-    tools: {}
-  }
+  capabilities: { tools: {} }
 });
 
-// List available tools
-sendMcpRequest('tools/list');
-
-// Call a tool
+// List maps
 sendMcpRequest('tools/call', {
   name: 'maps.list',
   arguments: { limit: 10 }
 });
 ```
 
-### Custom Application (Python)
-
-```python
-import subprocess
-import json
-import sys
-
-class MindMeldMcpClient:
-    def __init__(self):
-        self.process = subprocess.Popen([
-            'npx', '-y', 'mcp-remote', 
-            'http://localhost:3001/mcp/sse'
-        ], 
-        stdin=subprocess.PIPE, 
-        stdout=subprocess.PIPE, 
-        stderr=subprocess.PIPE,
-        text=True, bufsize=0)
-    
-    def send_request(self, method, params=None):
-        request = {
-            'jsonrpc': '2.0',
-            'id': 1,
-            'method': method,
-            'params': params or {}
-        }
-        
-        self.process.stdin.write(json.dumps(request) + '\n')
-        self.process.stdin.flush()
-        
-        # Read response
-        response = self.process.stdout.readline()
-        return json.loads(response)
-    
-    def initialize(self):
-        return self.send_request('initialize', {
-            'protocolVersion': '2024-11-05',
-            'capabilities': {'tools': {}}
-        })
-    
-    def list_maps(self, limit=10):
-        return self.send_request('tools/call', {
-            'name': 'maps.list',
-            'arguments': {'limit': limit}
-        })
-
-# Usage
-client = MindMeldMcpClient()
-client.initialize()
-maps = client.list_maps()
-print(json.dumps(maps, indent=2))
-```
-
-## Available Resources
-
-| URI | Description | Content |
-|-----|-------------|---------|
-| `mindmeld://health` | Server status | Health info, uptime, features |
-| `mindmeld://maps` | All maps | List of accessible mind maps |
-
-## Available Tools
-
-| Tool | Description | Parameters |
-|------|-------------|------------|
-| `maps.list` | List all maps with pagination | `limit` (1-100), `offset` (0+) |
-| `maps.get` | Get specific map by UUID | `id` (required UUID) |
-| `maps.create` | Create new mind map | `name` (string), `data` (object) |
-| `maps.update` | Update existing map | `id` (UUID), `data` (object), `version` (number) |
-| `maps.delete` | Delete map permanently | `id` (required UUID) |
-
-## Example API Calls
-
-### Get Server Health
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "method": "resources/read",
-  "params": {
-    "uri": "mindmeld://health"
-  }
-}
-```
-
-### List Mind Maps
-```json
-{
-  "jsonrpc": "2.0", 
-  "id": 2,
-  "method": "tools/call",
-  "params": {
-    "name": "maps.list",
-    "arguments": {
-      "limit": 10,
-      "offset": 0
-    }
-  }
-}
-```
-
-### Create New Map
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 3, 
-  "method": "tools/call",
-  "params": {
-    "name": "maps.create",
-    "arguments": {
-      "name": "My Project",
-      "data": {
-        "n": [
-          {
-            "i": "root",
-            "c": "My Project", 
-            "p": [400, 300],
-            "cl": "blue"
-          }
-        ],
-        "c": []
-      }
-    }
-  }
-}
-```
-
-## Mind Map Data Format
-
-Our server uses a compact JSON format:
-
-```json
-{
-  "n": [
-    {
-      "i": "unique-id",       // Node ID
-      "c": "Node text",       // Content  
-      "p": [x, y],           // Position [x, y]
-      "cl": "color"          // Color (optional)
-    }
-  ],
-  "c": [
-    ["from-id", "to-id", 1] // Connection [from, to, type]
-  ]
-}
-```
-
 ## Error Handling
 
-The server returns RFC 7807 Problem Details for errors:
+Service errors are translated to MCP error codes:
 
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "error": {
-    "code": -32602,
-    "message": "Invalid params",
-    "data": "Map ID is required"
-  }
-}
-```
+- `NotFoundError` → `-32602` (Invalid params)
+- `ConflictError` → `-32602` (Version conflict)
+- `ValidationError` → `-32602` (Invalid params)
+- `Generic Error` → `-32603` (Internal error)
 
-Common error codes:
-- `-32600`: Invalid Request
-- `-32601`: Method not found  
-- `-32602`: Invalid params
-- `-32603`: Internal error
-
-## Testing Your Integration
-
-### 1. Test Server Health
-```bash
-curl http://localhost:3001/health
-```
-
-### 2. Test MCP Connection
-```bash
-# This should show initialization handshake
-npx -y mcp-remote http://localhost:3001/mcp/sse
-```
-
-### 3. Use Our Test Script
-```bash
-npm run mcp:test
-```
-
-## Production Deployment
+## Configuration
 
 ### Environment Variables
-- `FEATURE_MCP=1` - Enable MCP support
-- `PORT=3001` - Server port (default: 3001)  
-- `CORS_ORIGIN` - CORS origin (default: http://localhost:8080)
+
+```bash
+# MCP enabled automatically with Maps API
+FEATURE_MAPS_API=true
+PORT=3001
+CORS_ORIGIN=http://localhost:8080
+```
 
 ### Health Monitoring
-Monitor the `/health` endpoint:
-```json
-{
-  "status": "ok",
-  "timestamp": "2025-01-03T16:18:11.837Z",
-  "uptime": 125.234
-}
-```
 
-### Docker Deployment
-```dockerfile
-FROM node:24-alpine
-WORKDIR /app
-ENV FEATURE_MCP=1
-ENV PORT=3001
-COPY package*.json ./
-RUN npm ci --omit=dev
-COPY src ./src
-EXPOSE 3001
-CMD ["npm", "start"]
-```
-
-## Troubleshooting
-
-### Connection Issues
-1. Ensure server is running with `FEATURE_MCP=1`
-2. Check firewall settings for port 3001
-3. Verify `/health` endpoint responds
-
-### mcp-remote Issues
 ```bash
-# Test mcp-remote installation
-npx -y mcp-remote --version
-
-# Test with verbose logging
-DEBUG=* npx -y mcp-remote http://localhost:3001/mcp/sse
+curl http://localhost:3001/health
+curl -X POST http://localhost:3001/mcp/resources/read \
+  -d '{"jsonrpc":"2.0","id":1,"method":"resources/read","params":{"uri":"mindmeld://health"}}'
 ```
 
-### Server Logs
-```bash
-# Run with debug logging
-FEATURE_MCP=1 LOG_LEVEL=debug npm start
-```
+## Known Issues
 
-Look for these log entries:
-- `MCP SSE JSON-RPC call: initialize` - Connection established
-- `MCP SSE JSON-RPC call: resources/list` - Resources discovered
-- `MCP SSE JSON-RPC call: tools/list` - Tools discovered
+### SSE Individual Map Resources
 
-## Support
+- **Issue**: `mindmeld://maps/{id}` not accessible via SSE
+- **Workaround**: Use `maps.get` tool (identical functionality)
+- **Status**: Under investigation
 
-- **GitHub Issues**: [Report bugs or request features]
-- **Documentation**: See `../README.md` for general server info
-- **Configuration**: See `warp-mcp-config.md` for Warp-specific setup
+### Pagination
 
-## License
+- **Current**: Client-side pagination in MCP layer
+- **Future**: Service-layer pagination planned
 
-MIT - Same as the MindMeld Server project.
+## File Locations
+
+- **HTTP JSON-RPC**: `src/core/mcp-routes.js`
+- **SSE Transport**: `src/core/mcp-sse.js`
+- **Service Integration**: `src/factories/server-factory.js`
+- **Tests**: `tests/integration/maps.test.js`
+
+## Contributing
+
+When modifying MCP functionality:
+
+1. Update both SSE and HTTP transports
+2. Maintain service layer integration patterns
+3. Update integration tests
+4. Test with real MCP clients (Warp, Claude Desktop)
+
+---
+
+**See Also:**
+
+- [MCP User Guide](mcp-user-guide.md) - Setup for end users
+- [Maps API Documentation](maps-api.md) - Core API reference

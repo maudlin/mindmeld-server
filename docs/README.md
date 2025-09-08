@@ -4,20 +4,28 @@ This directory contains comprehensive documentation for the MindMeld Server, wit
 
 ## 📖 Documentation Index
 
-### Getting Started
+### For End Users
 
-- **[Quick Start Guide](mcp-quick-start.md)** - Get up and running in 30 seconds
-- **[Warp Terminal Setup](warp-mcp-config.md)** - Configure Warp for MindMeld integration
+- **[MCP User Guide](mcp-user-guide.md)** - Step-by-step setup for Warp, Claude Desktop, and other AI assistants
+  - What is MCP and what can you do with it
+  - Quick setup instructions
+  - Example interactions
+  - Troubleshooting guide
 
-### Developer Resources
+### For Developers
 
-- **[MCP Developer Guide](mcp-developer-guide.md)** - Complete integration reference
-  - Node.js integration examples
-  - Python integration examples
-  - Claude Desktop configuration
-  - Custom application development
-  - API reference and error handling
-  - Production deployment guidance
+- **[MCP Developer Guide](mcp-developer-guide.md)** - Technical implementation reference
+  - Architecture overview and transport layers
+  - API reference for tools and resources
+  - Integration examples (Node.js, HTTP testing)
+  - Error handling and data formats
+  - Configuration and deployment
+
+### System Documentation
+
+- **[Architecture Guide](architecture.md)** - Overall system design and patterns
+- **[Maps API Documentation](maps-api.md)** - Core REST API that MCP extends
+- **[Developer Guide](developer-guide.md)** - General development patterns and workflows
 
 ### Testing & Quality Assurance
 
@@ -27,40 +35,26 @@ This directory contains comprehensive documentation for the MindMeld Server, wit
   - Manual testing with curl/Postman
   - CI/CD integration examples
 
-### Integration Guides
-
-- **[Warp Integration Notes](warp-integration.md)** - Legacy integration documentation
-- **[Development Roadmap](todo.md)** - Project planning and feature roadmap
-
 ## 🏗️ Architecture Overview
 
 ```
-AI Assistant (Warp/Claude) → mcp-remote → MindMeld Server (SSE)
-                                      ↗
-                                   HTTP fallback
+AI Assistant (Warp/Claude) → mcp-remote → MindMeld Server
+                                              ├── SSE Transport (/mcp/sse)
+                                              └── HTTP JSON-RPC (/mcp/*)
 ```
-
-## 🔧 Configuration Files
-
-Located in project root:
-
-- `warp-mcp.json` - Proven Warp MCP configuration
-- `package.json` - Server dependencies and scripts
-- `test-mcp.js` - MCP integration test suite
 
 ## 🚀 Quick Reference
 
 ### Start Server
 
 ```bash
-FEATURE_MCP=1 npm start
+npm start  # MCP enabled automatically with Maps API
 ```
 
 ### Test Connection
 
 ```bash
 curl http://localhost:3001/health
-npm run mcp:test
 ```
 
 ### Warp Configuration
@@ -83,10 +77,11 @@ npm run mcp:test
 ```
 docs/
 ├── README.md                    # This index file
-├── mcp-quick-start.md          # 30-second setup
-├── mcp-developer-guide.md      # Complete integration guide
-├── warp-mcp-config.md          # Warp Terminal configuration
-├── warp-integration.md         # Legacy Warp notes
+├── mcp-user-guide.md           # User-friendly setup guide
+├── mcp-developer-guide.md      # Technical implementation guide
+├── architecture.md             # Overall system architecture
+├── maps-api.md                 # Maps API documentation
+├── developer-guide.md          # General development guide
 └── todo.md                     # Development roadmap
 ```
 
@@ -97,14 +92,28 @@ docs/
 3. Include working examples and tested configurations
 4. Link between documents for easy navigation
 
+### MCP Integration Status
+
+✅ **Working Features:**
+
+- All MCP tools: `maps.list`, `maps.get`, `maps.create`, `maps.update`, `maps.delete`
+- MCP resources: `mindmeld://health`, `mindmeld://maps`
+- Both SSE and HTTP transports
+- Integration with Warp Terminal and Claude Desktop
+
+🔧 **Known Issues:**
+
+- SSE individual map resources (`mindmeld://maps/{id}`) under investigation
+- Use `maps.get` tool as workaround (provides identical functionality)
+
 ## 📞 Support
 
 - **Issues**: Create GitHub issues for bugs or feature requests
-- **Questions**: Check the developer guide first, then create a discussion
-- **Testing**: Use `npm run mcp:test` to validate your setup
+- **Questions**: Check the user/developer guides first, then create a discussion
+- **Testing**: Use `curl http://localhost:3001/health` to validate server status
 
 ---
 
-**Last Updated**: January 2025  
+**Last Updated**: September 2025  
 **MCP Protocol Version**: 2024-11-05  
 **Tested Integrations**: Warp Terminal, Claude Desktop
