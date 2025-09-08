@@ -23,7 +23,14 @@ class MapsRepo {
   }
 
   list(limit = 50, offset = 0) {
-    return this.stmtList.all(limit, offset);
+    const rows = this.stmtList.all(limit, offset);
+    return rows.map(row => ({
+      id: row.id,
+      name: row.name,
+      version: row.version,
+      updatedAt: row.updated_at,
+      sizeBytes: row.size_bytes
+    }));
   }
 
   create({ id, name, version, updatedAt, stateJson, sizeBytes }) {

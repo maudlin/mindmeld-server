@@ -3,67 +3,69 @@ const { randomUUID } = require('crypto');
 const MapsRepo = require('./repo');
 const { NotFoundError, ConflictError, BadRequestError } = require('./errors');
 
-// Strict schema definitions for mind map data structures
-const NoteSchema = z
-  .object({
-    i: z.string().min(1), // Note ID
-    p: z.tuple([z.number(), z.number()]), // Position [x, y]
-    c: z.string() // Content
-  })
-  .passthrough(); // Allow additional properties for future extensibility
-
-const ConnectionSchema = z
-  .object({
-    f: z.string().min(1), // From note ID
-    t: z.string().min(1) // To note ID
-  })
-  .passthrough(); // Allow additional properties for future extensibility
-
-// Map data structure (for both create.state and update.data)
-const MapDataSchema = z
-  .object({
-    n: z.array(NoteSchema), // Notes array
-    c: z.array(ConnectionSchema) // Connections array
-  })
-  .strict();
-
-// CREATE: { name: string, state: MapData }
 const MapCreateSchema = z
   .object({
     name: z.string().min(1),
-    state: MapDataSchema
+    data: z.object({}).passthrough().optional(),
+    state: z.object({}).passthrough().optional()
   })
-  .strict();
+  .refine(v => v.data || v.state, {
+    message: 'Invalid create request: missing data',
+    path: ['data']
+  })
+  .refine(v => {
+    // Check for double-wrapped data in either data or state fields
+    const payload = v.data || v.state;
+    if (payload && payload.data) {
+      return false; // Reject if data contains nested "data" field
+    }
+    return true;
+  }, {
+    message: 'Double-wrapped data structure detected - this indicates a client-side bug',
+    path: ['data']
+  });
 
-// UPDATE: { data: MapData, version: number }
 const MapUpdateSchema = z
   .object({
-    data: MapDataSchema,
+    data: z.object({}).passthrough().optional(),
+    state: z.object({}).passthrough().optional(),
     version: z.number().int().min(1)
   })
-  .strict();
+  .refine(v => v.data || v.state, {
+    message: 'Invalid update request: missing data',
+    path: ['data']
+  })
+  .refine(v => {
+    // Check for double-wrapped data in either data or state fields
+    const payload = v.data || v.state;
+    if (payload && payload.data) {
+      return false; // Reject if data contains nested "data" field
+    }
+    return true;
+  }, {
+    message: 'Double-wrapped data structure detected - this indicates a client-side bug',
+    path: ['data']
+  });
 
 class MapsService {
   constructor(sqliteFile) {
     this.repo = new MapsRepo(sqliteFile);
   }
 
-  create({ name, state }) {
-    const parsed = MapCreateSchema.safeParse({ name, state });
+  create({ name, data, state }) {
+    const parsed = MapCreateSchema.safeParse({ name, data, state });
     if (!parsed.success) {
       const error = new BadRequestError('Invalid create request');
       error.zodErrors = parsed.error.errors;
       throw error;
     }
-
-    const payload = parsed.data.state;
+    const payload = parsed.data.data ?? parsed.data.state;
     const id = randomUUID();
     const version = 1;
     const updatedAt = new Date().toISOString();
     const stateJson = JSON.stringify(payload);
     const sizeBytes = Buffer.byteLength(stateJson, 'utf8');
-
-    this.repo.create({
+    const result = this.repo.create({
       id,
       name,
       version,
@@ -71,33 +73,30 @@ class MapsService {
       stateJson,
       sizeBytes
     });
-
-    // Update successful, return the updated resource
-    return this.repo.get(id);
+    return result;
   }
 
   getById(id) {
-    const result = this.repo.get(id);
+    const result = this.repo.getById(id);
     if (!result) {
       throw new NotFoundError('Map not found');
     }
-    // Update successful, return the updated resource
-    return this.repo.get(id);
+    return result;
   }
 
   list() {
     return this.repo.list();
   }
 
-  update(id, { data, version }) {
-    const parsed = MapUpdateSchema.safeParse({ data, version });
+  update(id, { data, state, version }) {
+    const parsed = MapUpdateSchema.safeParse({ data, state, version });
     if (!parsed.success) {
       const error = new BadRequestError('Invalid update request');
       error.zodErrors = parsed.error.errors;
       throw error;
     }
 
-    const existing = this.repo.get(id);
+    const existing = this.repo.getById(id);
     if (!existing) {
       throw new NotFoundError('Map not found');
     }
@@ -106,32 +105,24 @@ class MapsService {
       throw new ConflictError('Version conflict');
     }
 
-    const payload = parsed.data.data;
+    const payload = parsed.data.data ?? parsed.data.state;
     const newVersion = version + 1;
     const updatedAt = new Date().toISOString();
     const stateJson = JSON.stringify(payload);
     const sizeBytes = Buffer.byteLength(stateJson, 'utf8');
 
-    const result = this.repo.update({
-      id,
-      nextVersion: newVersion,
-      expectedVersion: version,
+    const result = this.repo.update(id, {
+      version: newVersion,
       updatedAt,
       stateJson,
-      name: existing.name, // preserve existing name
       sizeBytes
     });
 
-    if (result === 0) {
-      throw new ConflictError('Version conflict');
-    }
-
-    // Update successful, return the updated resource
-    return this.repo.get(id);
+    return result;
   }
 
   delete(id) {
-    const existing = this.repo.get(id);
+    const existing = this.repo.getById(id);
     if (!existing) {
       throw new NotFoundError('Map not found');
     }

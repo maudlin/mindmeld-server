@@ -1,6 +1,80 @@
 # Testing Guide
 
-This guide explains how to manually test MindMeld Server using curl, Postman/Bruno/Insomnia. It covers starting the server and exercising the /maps API (SQLite-backed), plus health checks. The legacy /api/state endpoints have been removed.
+This guide covers all testing approaches for MindMeld Server:
+
+- **Automated Testing**: Jest unit/integration tests and Playwright E2E API tests
+- **Manual Testing**: Using curl, Postman/Bruno/Insomnia to test the Maps API
+- **Development Testing**: Quick smoke tests and debugging
+
+The server provides a Maps API (SQLite-backed) with optimistic concurrency via ETag/If-Match headers. The legacy /api/state endpoints have been removed.
+
+## Automated Testing
+
+### Jest Tests (Unit & Integration)
+
+Run the comprehensive test suite:
+
+```bash
+# All tests
+npm test
+
+# Integration tests only
+npm test -- tests/integration/
+
+# Unit tests only
+npm test -- tests/unit/
+
+# With coverage
+npm run test:coverage
+
+# Watch mode (development)
+npm run test:watch
+```
+
+**What's tested:**
+
+- ✅ **Unit tests**: ETag utilities, service layer logic
+- ✅ **Integration tests**: Full Maps API workflows with real SQLite database
+- ✅ **Optimistic concurrency**: ETag/If-Match conflict detection
+- ✅ **Error handling**: RFC 7807 problem details responses
+
+### Playwright E2E API Tests
+
+Run comprehensive end-to-end API testing with production-like HTTP requests:
+
+```bash
+# Run E2E API tests
+npm run test:e2e
+
+# View test report
+npm run test:e2e:report
+```
+
+**What's tested:**
+
+- ✅ **Complete CRUD workflows**: Create → Read → Update → Verify cycles
+- ✅ **HTTP status codes & headers**: ETag, CORS, rate limiting validation
+- ✅ **Conflict detection**: 409 responses with stale ETags
+- ✅ **Error scenarios**: 404, 400, RFC 7807 problem details
+- ✅ **Data persistence**: Updates correctly stored and retrieved
+
+**Playwright Benefits:**
+
+- 🚀 **Production-like requests** (real HTTP, not mocked)
+- 🔄 **Built-in retry logic** and timeouts
+- 📊 **HTML test reports** with request/response details
+- ⚡ **Parallel execution** for faster CI/CD
+- 🐛 **Better debugging** with trace collection
+
+### Test Coverage
+
+```bash
+# Generate coverage report
+npm run test:coverage
+
+# View in browser
+open coverage/lcov-report/index.html
+```
 
 ## Prerequisites
 
@@ -85,7 +159,7 @@ Expected 200 OK with status and uptime.
 ```bash
 curl -s -X POST http://localhost:3001/maps \
   -H 'Content-Type: application/json' \
-  -d '{ "name": "My Map", "data": { "notes": [{"id":"1","content":"Test"}], "connections": [], "zoomLevel": 5 } }' | jq .
+  -d '{ "name": "My Map", "data": { "n": [{"i":"1","p":[100,100],"c":"Test note","cl":"blue"}], "c": [] } }' | jq .
 ```
 
 - Read a map
@@ -102,7 +176,7 @@ curl -i -s http://localhost:3001/maps/<ID> | grep -i etag
 curl -s -X PUT http://localhost:3001/maps/<ID> \
   -H 'Content-Type: application/json' \
   -H 'If-Match: "<ETAG_FROM_READ>"' \
-  -d '{ "name": "My Map v2", "data": { "notes": [{"id":"1","content":"Test"}], "connections": [], "zoomLevel": 6 } }' | jq .
+  -d '{ "data": { "n": [{"i":"1","p":[150,150],"c":"Updated note","cl":"green"}], "c": [] }, "version": 1 }' | jq .
 ```
 
 ### Error response format (RFC 7807)
@@ -132,7 +206,10 @@ The flows below work in all tools. Replace the base URL if necessary.
 ```json
 {
   "name": "My Map",
-  "data": { "notes": [], "connections": [], "zoomLevel": 1 }
+  "data": {
+    "n": [{ "i": "1", "p": [100, 100], "c": "Initial note", "cl": "blue" }],
+    "c": []
+  }
 }
 ```
 
@@ -151,75 +228,143 @@ The flows below work in all tools. Replace the base URL if necessary.
 
 ```json
 {
-  "name": "My Map v2",
-  "data": { "notes": [], "connections": [], "zoomLevel": 2 }
+  "data": {
+    "n": [
+      { "i": "1", "p": [100, 100], "c": "Initial note", "cl": "blue" },
+      { "i": "2", "p": [200, 200], "c": "Updated note", "cl": "green" }
+    ],
+    "c": [["1", "2", 1]]
+  },
+  "version": 1
 }
 ```
 
 - Expect 200. A second PUT with the old ETag should return 409 (Problem Details).
 
-Enable the feature flag and point to a writable database file:
+## Development Testing
+
+### Quick Smoke Test
+
+Run a built-in smoke test to verify basic functionality:
 
 ```bash
-export FEATURE_MAPS_API=1
-export SQLITE_FILE=./data/db.sqlite
-npm run dev
+# Ensure server is running first
+npm run dev &
+
+# Run smoke test
+npm run smoke
+
+# Or manual smoke test
+node manual-test.js
 ```
 
-### Create (POST /maps)
+### Create Test Data
+
+Populate the database with sample maps for testing:
 
 ```bash
-curl -s -X POST http://localhost:3001/maps \
-  -H 'Content-Type: application/json' \
-  -d '{ "name": "My Map", "data": { "nodes": [] } }' | jq .
+npm run seed
 ```
 
-Response includes `id`, `etag`, `version`, `updatedAt`.
+This creates sample maps that can be used for client integration testing.
 
-### Read (GET /maps/{id})
+### Database Inspection
+
+View the SQLite database directly:
 
 ```bash
-curl -s http://localhost:3001/maps/<ID> | jq .
+# Install sqlite3 if needed
+sudo apt-get install sqlite3  # Ubuntu/Debian
+brew install sqlite3          # macOS
+
+# Inspect database
+sqlite3 data/db.sqlite
+.tables
+.schema maps
+SELECT id, name, version FROM maps;
+.quit
 ```
-
-### Update with ETag concurrency (PUT /maps/{id})
-
-1. Read the map and copy the ETag from the response headers or body.
-2. Send an update with `If-Match: "<etag>"` header:
-
-```bash
-curl -s -X PUT http://localhost:3001/maps/<ID> \
-  -H 'Content-Type: application/json' \
-  -H 'If-Match: "<ETAG_FROM_READ>"' \
-  -d '{ "name": "My Map v2", "data": { "nodes": [ {"id": 1} ] } }' | jq .
-```
-
-3. Try updating again with the stale ETag to confirm a 409 Conflict is returned.
-
-Expected 409 with `application/problem+json` body (type `conflict`).
 
 ## Troubleshooting
 
 - 404 Not Found: Verify the route and method; check base URL and port.
 - 400 Invalid JSON: Ensure `Content-Type: application/json` and valid JSON body.
-- 400 Invalid state: Ensure `notes` and `connections` are arrays and `zoomLevel` is a number.
+- 400 Invalid data: Ensure `n` (notes) and `c` (connections) are arrays in correct format.
+- 409 Conflict: ETag mismatch - reload the map to get current ETag before updating.
 - CORS issues: If testing from a browser app on a different port, set `CORS_ORIGIN` accordingly.
+- Rate limiting: Server limits writes to 60 per minute - space out requests if hitting limits.
 - Permissions: When using Docker with bind mounts, ensure the `/app/data` directory is writable by the `node` user.
 
-## Appendix: Quick smoke script
+## CI/CD Integration
 
-Run a small smoke test with curl:
+### GitHub Actions Example
+
+```yaml
+- name: Run Tests
+  run: |
+    npm ci
+    npm run validate  # lint + format + jest tests
+
+- name: Start Server & Run E2E Tests
+  run: |
+    npm run dev &
+    sleep 5  # Wait for server startup
+    npm run test:e2e
+```
+
+### Test Scripts Reference
+
+```json
+{
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:report": "playwright show-report test-results/html",
+    "validate": "npm run lint && npm run format:check && npm run test"
+  }
+}
+```
+
+## Appendix: Test Data Formats
+
+### Mind Map Data Structure
+
+```json
+{
+  "n": [
+    {
+      "i": "unique-id",      // Note ID
+      "p": [x, y],          // Position [x, y]
+      "c": "Note text",     // Content
+      "cl": "color-name"    // Color (optional)
+    }
+  ],
+  "c": [
+    ["from-id", "to-id", connection-type]  // Connections
+  ]
+}
+```
+
+### Sample Test Data
 
 ```bash
-# Health
-curl -s http://localhost:3001/health | jq .
-
-# Create map
-MAP=$(curl -s -X POST http://localhost:3001/maps \
+# Create comprehensive test map
+curl -X POST http://localhost:3001/maps \
   -H 'Content-Type: application/json' \
-  -d '{"name":"Smoke","data":{"notes":[],"connections":[],"zoomLevel":1}}')
-ID=$(echo "$MAP" | jq -r .id)
-
-# Read map
-curl -s http://localhost:3001/maps/$ID | jq .
+  -d '{
+    "name": "Comprehensive Test",
+    "data": {
+      "n": [
+        {"i":"1","p":[100,100],"c":"Central Idea","cl":"blue"},
+        {"i":"2","p":[200,150],"c":"Branch A","cl":"green"},
+        {"i":"3","p":[200,50],"c":"Branch B","cl":"red"}
+      ],
+      "c": [
+        ["1","2",1],
+        ["1","3",1]
+      ]
+    }
+  }'
 ```

@@ -5,19 +5,30 @@ This directory contains comprehensive documentation for the MindMeld Server, wit
 ## 📖 Documentation Index
 
 ### Getting Started
+
 - **[Quick Start Guide](mcp-quick-start.md)** - Get up and running in 30 seconds
 - **[Warp Terminal Setup](warp-mcp-config.md)** - Configure Warp for MindMeld integration
 
 ### Developer Resources
+
 - **[MCP Developer Guide](mcp-developer-guide.md)** - Complete integration reference
   - Node.js integration examples
-  - Python integration examples  
+  - Python integration examples
   - Claude Desktop configuration
   - Custom application development
   - API reference and error handling
   - Production deployment guidance
 
+### Testing & Quality Assurance
+
+- **[Testing Guide](testing-guide.md)** - Comprehensive testing documentation
+  - Jest unit & integration tests
+  - Playwright E2E API tests
+  - Manual testing with curl/Postman
+  - CI/CD integration examples
+
 ### Integration Guides
+
 - **[Warp Integration Notes](warp-integration.md)** - Legacy integration documentation
 - **[Development Roadmap](todo.md)** - Project planning and feature roadmap
 
@@ -32,6 +43,7 @@ AI Assistant (Warp/Claude) → mcp-remote → MindMeld Server (SSE)
 ## 🔧 Configuration Files
 
 Located in project root:
+
 - `warp-mcp.json` - Proven Warp MCP configuration
 - `package.json` - Server dependencies and scripts
 - `test-mcp.js` - MCP integration test suite
@@ -39,17 +51,20 @@ Located in project root:
 ## 🚀 Quick Reference
 
 ### Start Server
+
 ```bash
 FEATURE_MCP=1 npm start
 ```
 
 ### Test Connection
+
 ```bash
 curl http://localhost:3001/health
 npm run mcp:test
 ```
 
 ### Warp Configuration
+
 ```json
 {
   "mindmeld-server": {
@@ -64,6 +79,7 @@ npm run mcp:test
 ## 🛠️ Development
 
 ### Project Structure
+
 ```
 docs/
 ├── README.md                    # This index file
