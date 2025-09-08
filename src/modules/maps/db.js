@@ -12,7 +12,20 @@ function ensureDir(filePath) {
 function openDatabase(sqliteFile) {
   ensureDir(sqliteFile);
   const db = new Database(sqliteFile);
-  db.pragma('journal_mode = WAL');
+
+  // Try WAL mode first for better performance, but fall back to DELETE mode
+  // if WAL fails (common in CI environments with restricted filesystems)
+  try {
+    db.pragma('journal_mode = WAL');
+  } catch (error) {
+    // WAL mode failed - likely due to filesystem limitations in CI
+    console.warn(
+      'WAL mode failed, falling back to DELETE journal mode:',
+      error.message
+    );
+    db.pragma('journal_mode = DELETE');
+  }
+
   db.pragma('synchronous = NORMAL');
   db.pragma('foreign_keys = ON');
   return db;
