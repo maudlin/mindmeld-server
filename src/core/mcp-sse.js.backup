@@ -347,14 +347,13 @@ function createMcpSseEndpoint(apiServices) {
 
         case 'resources/read': {
           const { uri } = params;
-          console.log('SSE resources/read request for URI:', uri);
 
           if (uri === 'mindmeld://health') {
             const content = {
               status: 'ok',
               timestamp: new Date().toISOString(),
               version: '0.1.0',
-              transport: 'sse-debug',
+              transport: 'sse',
               features: {
                 maps: true,
                 mcp: true,
@@ -399,41 +398,6 @@ function createMcpSseEndpoint(apiServices) {
             return;
           }
 
-          // Individual map resource: mindmeld://maps/{id}
-          if (uri.startsWith('mindmeld://maps/')) {
-            const mapId = uri.replace('mindmeld://maps/', '');
-
-            try {
-              const map = mapsService.getById(mapId);
-
-              const response = createMcpResponse(id, {
-                contents: [
-                  {
-                    uri,
-                    mimeType: 'application/json',
-                    text: JSON.stringify(map, null, 2)
-                  }
-                ]
-              });
-              res.json(response);
-              return;
-            } catch (serviceError) {
-              if (serviceError.name === 'NotFoundError') {
-                const response = createMcpResponse(
-                  id,
-                  null,
-                  createMcpError(
-                    -32602,
-                    'Resource not found',
-                    `Map ${mapId} not found or not accessible`
-                  )
-                );
-                res.json(response);
-                return;
-              }
-              throw serviceError;
-            }
-          }
           // Unknown resource
           const response = createMcpResponse(
             id,
