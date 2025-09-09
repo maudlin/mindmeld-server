@@ -1,12 +1,13 @@
 # MindMeld Server Documentation
 
-This directory contains comprehensive documentation for the MindMeld Server, with a focus on MCP (Model Context Protocol) integration for AI assistants.
+This directory contains comprehensive documentation for the MindMeld Server.
 
 ## 📖 Documentation Index
 
 ### Getting Started
 
-- **[Quick Start Guide](mcp-quick-start.md)** - Get up and running in 30 seconds
+- **[MCP Client Integration](mcp-client-integration.md)** - MCP client integration for AI assistants
+- **[REST Client Integration](rest-client-integration.md)** - REST API client integration patterns
 
 ### Developer Resources
 
@@ -17,10 +18,6 @@ This directory contains comprehensive documentation for the MindMeld Server, wit
   - Custom application development
   - API reference and error handling
   - Production deployment guidance
-
-### Integration Guides
-
-- **[Client Integration Guide](client-integration.md)** - Client-server integration patterns
 
 ## 🏗️ Architecture Overview
 
@@ -73,9 +70,9 @@ npm run mcp:test
 ```
 docs/
 ├── README.md                    # This index file
-├── mcp-quick-start.md          # 30-second setup
+├── mcp-client-integration.md   # MCP client integration for AI assistants
 ├── mcp-developer-guide.md      # Complete integration guide
-├── client-integration.md       # Client-server integration patterns
+├── rest-client-integration.md  # REST API client integration patterns
 ├── architecture.md             # System architecture
 ├── developer-guide.md          # Development workflows
 └── testing-guide.md            # Testing strategies

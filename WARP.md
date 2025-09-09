@@ -234,11 +234,11 @@ The API actively rejects double-wrapped data structures:
 
 Comprehensive guides available in `docs/`:
 
-- `mcp-quick-start.md` - 30-second MCP setup
+- `mcp-client-integration.md` - MCP client integration for AI assistants
 - `mcp-developer-guide.md` - Complete integration reference
 - `architecture.md` - System design and patterns
 - `developer-guide.md` - Development workflows and best practices
-- `client-integration.md` - Client-server integration patterns
+- `rest-client-integration.md` - REST API client integration patterns
 - `testing-guide.md` - Testing strategies and examples
 
 Always update documentation when making architectural changes or adding new features.
