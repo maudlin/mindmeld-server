@@ -4,67 +4,24 @@ This guide explains how to manually test MindMeld Server using curl, Postman/Bru
 
 ## Prerequisites
 
-- Node.js 24+ (see `.nvmrc`)
-- npm 10+
-- One of the following HTTP clients:
-  - curl (CLI)
-  - Postman or Insomnia (GUI)
-- Optional: Docker (to run via container)
+Before manual testing, ensure the server is running. See [Developer Guide](developer-guide.md) for setup details.
 
-## Starting the server
+HTTP clients for testing:
 
-You can run the server in development (with auto-reload) or production mode.
+- curl (CLI)
+- Postman, Bruno, or Insomnia (GUI)
+- Optional: Docker for containerized testing
 
-### 1) Configure environment
+## Server Setup
 
-Copy `.env.example` to `.env` and adjust as needed. Common variables:
+For server setup and configuration, see the [Developer Guide](developer-guide.md#get-started).
 
-- `PORT` (default: `3001`)
-- `CORS_ORIGIN` (default: `http://localhost:8080`)
-- `JSON_LIMIT` (default: `50mb`)
-- `SQLITE_FILE` (default: `./data/db.sqlite`)
-
-Optional (for /maps vertical slice):
-
-- `FEATURE_MAPS_API=1`
-- `SQLITE_FILE=./data/db.sqlite`
-
-### 2) Install dependencies
+Quick start for testing:
 
 ```bash
-npm ci || npm install
+npm install
+npm run dev  # Starts server on http://localhost:3001
 ```
-
-### 3a) Run in development mode (auto-reload)
-
-```bash
-npm run dev
-```
-
-Logs show the server starting on the configured port (default 3001).
-
-### 3b) Run in production mode
-
-```bash
-npm start
-```
-
-### 3c) Run using Docker (optional)
-
-Build and run:
-
-```bash
-docker build -t mindmeld-server:local .
-docker run --rm -p 3001:3001 \
-  -e PORT=3001 \
-  -e CORS_ORIGIN=http://localhost:3000 \
-  -e FEATURE_MAPS_API=1 \
-  -e SQLITE_FILE=/app/data/db.sqlite \
-  -v "$(pwd)/data:/app/data" \
-  mindmeld-server:local
-```
-
-The container exposes `/health` for health checks.
 
 ## Manual testing with curl
 
@@ -158,45 +115,15 @@ The flows below work in all tools. Replace the base URL if necessary.
 
 - Expect 200. A second PUT with the old ETag should return 409 (Problem Details).
 
-Enable the feature flag and point to a writable database file:
+## Automated Testing
+
+For automated tests (unit/integration), see the [Developer Guide](developer-guide.md#testing-strategy). Run tests with:
 
 ```bash
-export FEATURE_MAPS_API=1
-export SQLITE_FILE=./data/db.sqlite
-npm run dev
+npm test              # All tests
+npm run test:coverage # With coverage
+npm run test:watch    # Watch mode
 ```
-
-### Create (POST /maps)
-
-```bash
-curl -s -X POST http://localhost:3001/maps \
-  -H 'Content-Type: application/json' \
-  -d '{ "name": "My Map", "data": { "nodes": [] } }' | jq .
-```
-
-Response includes `id`, `etag`, `version`, `updatedAt`.
-
-### Read (GET /maps/{id})
-
-```bash
-curl -s http://localhost:3001/maps/<ID> | jq .
-```
-
-### Update with ETag concurrency (PUT /maps/{id})
-
-1. Read the map and copy the ETag from the response headers or body.
-2. Send an update with `If-Match: "<etag>"` header:
-
-```bash
-curl -s -X PUT http://localhost:3001/maps/<ID> \
-  -H 'Content-Type: application/json' \
-  -H 'If-Match: "<ETAG_FROM_READ>"' \
-  -d '{ "name": "My Map v2", "data": { "nodes": [ {"id": 1} ] } }' | jq .
-```
-
-3. Try updating again with the stale ETag to confirm a 409 Conflict is returned.
-
-Expected 409 with `application/problem+json` body (type `conflict`).
 
 ## Troubleshooting
 
