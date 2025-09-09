@@ -27,41 +27,19 @@ AI Assistant (Warp/Claude) → mcp-remote → MindMeld Server (SSE)
                                    HTTP fallback
 ```
 
-## 🔧 Configuration Files
+## 🎨 Documentation Types
 
-Located in project root:
+- **Integration Guides**: Step-by-step setup for clients (REST and MCP)
+- **Reference Guides**: Architecture, development workflows, testing strategies
+- **Examples**: Working code samples and configuration files
 
-- `warp-mcp.json` - Proven Warp MCP configuration
-- `package.json` - Server dependencies and scripts
-- `test-mcp.js` - MCP integration test suite
+## 🚀 Quick Navigation by Use Case
 
-## 🚀 Quick Reference
-
-### Start Server
-
-```bash
-FEATURE_MCP=1 npm start
-```
-
-### Test Connection
-
-```bash
-curl http://localhost:3001/health
-npm run mcp:test
-```
-
-### Warp Configuration
-
-```json
-{
-  "mindmeld-server": {
-    "command": "npx",
-    "args": ["-y", "mcp-remote", "http://localhost:3001/mcp/sse"],
-    "env": {},
-    "working_directory": null
-  }
-}
-```
+- **Web/Mobile App Development**: Start with [REST Client Integration](rest-client-integration.md)
+- **AI Assistant Integration**: Start with [MCP Client Integration](mcp-client-integration.md)
+- **Server Development**: Start with [Developer Guide](developer-guide.md)
+- **Manual API Testing**: Start with [Testing Guide](testing-guide.md)
+- **System Architecture**: See [Architecture Guide](architecture.md)
 
 ## 🛠️ Development
 
@@ -85,14 +63,12 @@ docs/
 3. Include working examples and tested configurations
 4. Link between documents for easy navigation
 
-## 📞 Support
+## 📞 Getting Help
 
+- **Server Setup**: See the main [README](../README.md) for quick start
+- **Development**: Check [Developer Guide](developer-guide.md) for workflows
 - **Issues**: Create GitHub issues for bugs or feature requests
-- **Questions**: Check the developer guide first, then create a discussion
-- **Testing**: Use `npm run mcp:test` to validate your setup
 
 ---
 
-**Last Updated**: January 2025  
-**MCP Protocol Version**: 2024-11-05  
-**Tested Integrations**: Warp Terminal, Claude Desktop
+**Complete guide index for the MindMeld Server documentation suite.**

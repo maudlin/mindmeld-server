@@ -165,10 +165,11 @@ FEATURE_MCP=1 npm start
 
 📚 **Comprehensive guides available in [`docs/`](docs/):**
 
-- 🚀 **[Quick Start](docs/mcp-quick-start.md)** - 30-second MCP setup
-- 🔧 **[Developer Guide](docs/mcp-developer-guide.md)** - Integration examples (Node.js, Python, etc.)
+- 🤖 **[MCP Client Integration](docs/mcp-client-integration.md)** - AI assistant integration for Warp, Claude Desktop
+- 🌐 **[REST Client Integration](docs/rest-client-integration.md)** - REST API client integration patterns
+- 🔧 **[Developer Guide](docs/developer-guide.md)** - Development workflows and testing
 - 🏗️ **[Architecture Guide](docs/architecture.md)** - System design and patterns
-- 📝 **[Client Integration](docs/client-integration.md)** - Client-server integration patterns
+- 📝 **[Testing Guide](docs/testing-guide.md)** - Manual API testing workflows
 
 ## Contributing
 
