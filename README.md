@@ -145,6 +145,7 @@ src/
 🤖 **AI Assistant Ready!** MindMeld server includes production-ready MCP support for AI assistants.
 
 ### Quick Start
+
 ```bash
 # Start with MCP enabled
 FEATURE_MCP=1 npm start
@@ -153,6 +154,7 @@ FEATURE_MCP=1 npm start
 ```
 
 ### Available Operations
+
 - 📋 **List maps** - "List my mind maps"
 - 🔍 **Get map** - "Show me map details for [id]"
 - ✏️ **Create map** - "Create a new mind map called 'Project'"
@@ -167,7 +169,7 @@ FEATURE_MCP=1 npm start
 - 🔧 **[Developer Guide](docs/mcp-developer-guide.md)** - Integration examples (Node.js, Python, etc.)
 - 🖥️ **[Warp Configuration](docs/warp-mcp-config.md)** - Warp Terminal setup
 - 🔗 **[Warp Integration](docs/warp-integration.md)** - Legacy Warp notes
-- 📝 **[Development Todo](docs/todo.md)** - Project roadmap
+- 🏗️ **[Architecture Guide](docs/architecture.md)** - System design and patterns
 
 ## Contributing
 
