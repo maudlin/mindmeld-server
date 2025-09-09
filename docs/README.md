@@ -7,7 +7,6 @@ This directory contains comprehensive documentation for the MindMeld Server, wit
 ### Getting Started
 
 - **[Quick Start Guide](mcp-quick-start.md)** - Get up and running in 30 seconds
-- **[Warp Terminal Setup](warp-mcp-config.md)** - Configure Warp for MindMeld integration
 
 ### Developer Resources
 
@@ -21,7 +20,6 @@ This directory contains comprehensive documentation for the MindMeld Server, wit
 
 ### Integration Guides
 
-- **[Warp Integration Notes](warp-integration.md)** - Legacy integration documentation
 - **[Client Integration Guide](client-integration.md)** - Client-server integration patterns
 
 ## 🏗️ Architecture Overview
@@ -77,8 +75,6 @@ docs/
 ├── README.md                    # This index file
 ├── mcp-quick-start.md          # 30-second setup
 ├── mcp-developer-guide.md      # Complete integration guide
-├── warp-mcp-config.md          # Warp Terminal configuration
-├── warp-integration.md         # Legacy Warp notes
 ├── client-integration.md       # Client-server integration patterns
 ├── architecture.md             # System architecture
 ├── developer-guide.md          # Development workflows
