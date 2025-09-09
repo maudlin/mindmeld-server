@@ -240,6 +240,5 @@ Comprehensive guides available in `docs/`:
 - `developer-guide.md` - Development workflows and best practices
 - `client-integration.md` - Client-server integration patterns
 - `testing-guide.md` - Testing strategies and examples
-- `warp-mcp-config.md` - Warp Terminal configuration
 
 Always update documentation when making architectural changes or adding new features.
