@@ -171,7 +171,7 @@ FEATURE_MCP=1 npm start
 - 🔧 **[Developer Guide](docs/mcp-developer-guide.md)** - Integration examples (Node.js, Python, etc.)
 - 🖥️ **[Warp Configuration](docs/warp-mcp-config.md)** - Warp Terminal setup
 - 🔗 **[Warp Integration](docs/warp-integration.md)** - Legacy Warp notes
-- 📝 **[Development Todo](docs/todo.md)** - Project roadmap
+- 🏗️ **[Architecture Guide](docs/architecture.md)** - System design and patterns
 
 ## Contributing
 
