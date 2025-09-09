@@ -18,11 +18,10 @@ Node version strategy
 
 Testing strategy
 
-- Unit/integration: Jest
+- Automated: Jest (unit/integration tests in tests/unit/ and tests/integration/)
+- Manual API testing: See [Testing Guide](testing-guide.md) for curl/Postman workflows
 - Coverage: npm run test:coverage
-- E2E: Not applicable in this repo; API integration tests live under tests/integration
-- Test directories: tests/unit/ and tests/integration/
-- Additional test commands: npm run test:watch, npm run test:e2e
+- Test commands: npm test, npm run test:watch, npm run test:e2e
 
 Database strategy
 
@@ -82,11 +81,10 @@ Security
 - Helmet, rate limiting, and CORS configured per environment
 - No secrets in code; use environment variables and secure storage
 
-Local tips
+Local development tips
 
 - API docs route (dev-only): GET /docs
-- Seed test data: npm run seed
-- Environment check: node scripts/env-check.js
+- Manual API testing: See [Testing Guide](testing-guide.md)
 - Run a single test: npm test -- path/to/test
 
 CI/CD
