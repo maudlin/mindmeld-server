@@ -4,30 +4,30 @@ This guide helps you set up, develop, test, and contribute to the MindMeld Serve
 
 Get started
 
-- Prereqs: Node 20 LTS (baseline), npm, Git
+- Prereqs: Node 24 LTS (baseline), npm, Git
 - Clone and install: npm install
 - Run dev server: npm run dev
-- Validate: npm run validate (lint, format:check, unit tests, OpenAPI lint)
+- Validate: npm run validate (lint, format:check, unit tests)
+- OpenAPI lint: npm run openapi:lint (separate command)
 
 Node version strategy
 
-- Baseline: Node 20 LTS for all contributors and CI
-- Evaluation: Node 24 trial branch to explore built-in test runner and WebSocket client
-- Switch criteria: green CI across platforms, dependency compatibility (including DB driver), and DX parity; if satisfied, we will update engines.node and CI to Node 24
+- Baseline: Node 24 LTS for all contributors and CI
+- Package.json engines: ">=24.0.0" enforced across development and production
+- All dependencies including better-sqlite3 are compatible with Node 24
 
 Testing strategy
 
-- Unit/integration: Jest (same as sister project)
+- Automated: Jest (unit/integration tests in tests/unit/ and tests/integration/)
+- Manual API testing: See [Testing Guide](testing-guide.md) for curl/Postman workflows
 - Coverage: npm run test:coverage
-- E2E: Not applicable in this repo; API integration tests live under tests/integration
-- Optional: When evaluating Node 24, we may add node:test suites alongside Jest (Jest remains canonical)
+- Test commands: npm test, npm run test:watch, npm run test:e2e
 
 Database strategy
 
 - Default: better-sqlite3 (fast, safe synchronous API)
-- Fallbacks:
-  - If native builds are problematic (e.g., Node 24 incompatibilities), pin Node to 20 in dev/CI
-  - For constrained environments, consider sql.js or SQLite WASM (trade-offs in startup size and performance)
+- Compatible with Node 24 (current production version)
+- For constrained environments, consider sql.js or SQLite WASM (trade-offs in startup size and performance)
 - Future: If Node introduces a stable built-in SQLite module, we will assess migration
 
 API and service architecture
@@ -81,10 +81,10 @@ Security
 - Helmet, rate limiting, and CORS configured per environment
 - No secrets in code; use environment variables and secure storage
 
-Local tips
+Local development tips
 
 - API docs route (dev-only): GET /docs
-- Initialize DB (if helper scripts available): npm run db:init
+- Manual API testing: See [Testing Guide](testing-guide.md)
 - Run a single test: npm test -- path/to/test
 
 CI/CD
@@ -96,10 +96,9 @@ Versioning and releases
 
 - Semantic versioning; maintainers run releases
 
-Appendix: resolving SQLite native build issues
+Additional utilities
 
-- Symptom: better-sqlite3 fails to build on Node 24
-- Options:
-  1. Use Node 20 locally and in CI (preferred)
-  2. Upgrade better-sqlite3 to a version compatible with Node 24 when available
-  3. Use a pure JS/WASM SQLite temporarily for development
+- Smoke test: npm run smoke (validates server startup)
+- MCP testing: npm run mcp:test (Model Context Protocol)
+- Database seeding: npm run seed (create test data)
+- Environment validation: node scripts/env-check.js

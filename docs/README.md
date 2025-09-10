@@ -1,39 +1,29 @@
 # MindMeld Server Documentation
 
-This directory contains comprehensive documentation for the MindMeld Server, with a focus on MCP (Model Context Protocol) integration for AI assistants.
+This directory contains comprehensive documentation for the MindMeld Server.
 
 ## 📖 Documentation Index
 
-### For End Users
+### Getting Started
 
-- **[MCP User Guide](mcp-user-guide.md)** - Step-by-step setup for Warp, Claude Desktop, and other AI assistants
-  - What is MCP and what can you do with it
-  - Quick setup instructions
-  - Example interactions
-  - Troubleshooting guide
+- **[MCP Client Integration](mcp-client-integration.md)** - MCP client integration for AI assistants
+- **[REST Client Integration](rest-client-integration.md)** - REST API client integration patterns
 
-### For Developers
+### Developer Resources
 
-- **[MCP Developer Guide](mcp-developer-guide.md)** - Technical implementation reference
-  - Architecture overview and transport layers
-  - API reference for tools and resources
-  - Integration examples (Node.js, HTTP testing)
-  - Error handling and data formats
-  - Configuration and deployment
+- **[MCP Developer Guide](mcp-developer-guide.md)** - Complete integration reference
+  - Node.js integration examples
+  - Python integration examples
+  - Claude Desktop configuration
+  - Custom application development
+  - API reference and error handling
+  - Production deployment guidance
 
 ### System Documentation
 
-- **[Architecture Guide](architecture.md)** - Overall system design and patterns
-- **[Maps API Documentation](maps-api.md)** - Core REST API that MCP extends
-- **[Developer Guide](developer-guide.md)** - General development patterns and workflows
-
-### Testing & Quality Assurance
-
-- **[Testing Guide](testing-guide.md)** - Comprehensive testing documentation
-  - Jest unit & integration tests
-  - Playwright E2E API tests
-  - Manual testing with curl/Postman
-  - CI/CD integration examples
+- **[Architecture Guide](architecture.md)** - System design and patterns
+- **[Developer Guide](developer-guide.md)** - Development workflows and testing
+- **[Testing Guide](testing-guide.md)** - Manual API testing workflows
 
 ## 🏗️ Architecture Overview
 
@@ -77,12 +67,12 @@ curl http://localhost:3001/health
 ```
 docs/
 ├── README.md                    # This index file
-├── mcp-user-guide.md           # User-friendly setup guide
-├── mcp-developer-guide.md      # Technical implementation guide
-├── architecture.md             # Overall system architecture
-├── maps-api.md                 # Maps API documentation
-├── developer-guide.md          # General development guide
-└── todo.md                     # Development roadmap
+├── mcp-client-integration.md   # MCP client integration for AI assistants
+├── mcp-developer-guide.md      # Complete integration reference
+├── rest-client-integration.md  # REST API client integration patterns
+├── architecture.md             # System architecture
+├── developer-guide.md          # Development workflows
+└── testing-guide.md            # Testing strategies
 ```
 
 ### Contributing to Documentation
