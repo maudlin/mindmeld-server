@@ -81,6 +81,17 @@ function createMapsRouter({ sqliteFile }) {
     }
   });
 
+  // Delete map
+  router.delete('/:id', (req, res, next) => {
+    try {
+      const id = req.params.id;
+      service.delete(id);
+      res.json({ message: `Map ${id} deleted successfully` });
+    } catch (err) {
+      next(err);
+    }
+  });
+
   return router;
 }
 
