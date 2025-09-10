@@ -20,6 +20,7 @@ class MapsRepo {
     this.stmtList = this.db.prepare(
       'SELECT id, name, version, updated_at, size_bytes FROM maps ORDER BY updated_at DESC LIMIT ? OFFSET ?'
     );
+    this.stmtDelete = this.db.prepare('DELETE FROM maps WHERE id = ?');
   }
 
   list(limit = 50, offset = 0) {
@@ -72,6 +73,11 @@ class MapsRepo {
       expectedVersion
     );
     return info.changes; // 1 if updated, 0 if version mismatch
+  }
+
+  delete(id) {
+    const info = this.stmtDelete.run(id);
+    return info.changes; // 1 if deleted, 0 if not found
   }
 }
 

@@ -88,6 +88,21 @@ const maps = await response.json();
 // Response: [{ id, name, version, updatedAt, sizeBytes }]
 ```
 
+### Delete Map
+
+```javascript
+const response = await fetch(`${API_BASE_URL}/maps/${mapId}`, {
+  method: 'DELETE'
+});
+
+if (response.status === 200) {
+  const result = await response.json();
+  console.log(result.message); // "Map {id} deleted successfully"
+} else if (response.status === 404) {
+  console.log('Map not found or already deleted');
+}
+```
+
 ## Data Format
 
 ### Map Data Structure
@@ -112,8 +127,8 @@ const maps = await response.json();
 
 ### HTTP Status Codes
 
-- **200 OK**: Successful operation
-- **201 Created**: Map created successfully
+- **200 OK**: Successful operation (GET, PUT, DELETE)
+- **201 Created**: Map created successfully (POST)
 - **404 Not Found**: Map doesn't exist
 - **409 Conflict**: Version/ETag mismatch (conflict)
 - **422 Unprocessable Entity**: Invalid data format
@@ -139,6 +154,65 @@ async function saveMapWithConflictHandling(mapId, data, version, etag) {
     }
     throw error;
   }
+}
+```
+
+## Complete Workflow Example
+
+```javascript
+// Complete CRUD workflow
+async function demonstrateFullWorkflow() {
+  // CREATE
+  const createResponse = await fetch(`${API_BASE_URL}/maps`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: 'Demo Map',
+      data: { n: [], c: [] }
+    })
+  });
+
+  const map = await createResponse.json();
+  const mapId = map.id;
+  const etag = createResponse.headers.get('ETag');
+  console.log(`Created map: ${mapId}`);
+
+  // READ
+  const getResponse = await fetch(`${API_BASE_URL}/maps/${mapId}`);
+  const loadedMap = await getResponse.json();
+  console.log(`Loaded map: ${loadedMap.name}`);
+
+  // UPDATE
+  const updateResponse = await fetch(`${API_BASE_URL}/maps/${mapId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'If-Match': etag
+    },
+    body: JSON.stringify({
+      data: {
+        n: [{ i: '1', p: [100, 100], c: 'Updated note' }],
+        c: []
+      },
+      version: 1
+    })
+  });
+  const updatedMap = await updateResponse.json();
+  console.log(`Updated map to version: ${updatedMap.version}`);
+
+  // DELETE
+  const deleteResponse = await fetch(`${API_BASE_URL}/maps/${mapId}`, {
+    method: 'DELETE'
+  });
+
+  if (deleteResponse.status === 200) {
+    const result = await deleteResponse.json();
+    console.log(result.message);
+  }
+
+  // Verify deletion
+  const verifyResponse = await fetch(`${API_BASE_URL}/maps/${mapId}`);
+  console.log(`Verification status: ${verifyResponse.status}`); // Should be 404
 }
 ```
 

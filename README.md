@@ -67,6 +67,11 @@ Base URL: http://localhost:3001
   - Request body: { name?: string, data: object }
   - On ETag mismatch: 409 Conflict (Problem Details)
 
+- DELETE /maps/{id}
+  - Delete a map by id
+  - Response: 200 OK with { message: "Map {id} deleted successfully" }
+  - On map not found: 404 Not Found (Problem Details)
+
 Errors (RFC 7807)
 
 - Content-Type: application/problem+json

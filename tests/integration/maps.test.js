@@ -138,4 +138,72 @@ describe('Maps API (to-be) integration', () => {
     expect(item).toHaveProperty('updatedAt', expect.any(String));
     expect(item).toHaveProperty('sizeBytes', expect.any(Number));
   });
+
+  describe('DELETE /maps/:id', () => {
+    it('should delete an existing map and return 200', async () => {
+      // Create a map first
+      const createRes = await request(app)
+        .post('/maps')
+        .send({ name: 'To Be Deleted', state: { n: [], c: [] } })
+        .expect(201);
+      const id = createRes.body.id;
+
+      // Verify it exists
+      await request(app).get(`/maps/${id}`).expect(200);
+
+      // Delete the map
+      const deleteRes = await request(app).delete(`/maps/${id}`).expect(200);
+
+      expect(deleteRes.body).toEqual({
+        message: `Map ${id} deleted successfully`
+      });
+
+      // Verify it's gone
+      await request(app).get(`/maps/${id}`).expect(404);
+    });
+
+    it('should return 404 when trying to delete non-existent map', async () => {
+      const nonExistentId = 'non-existent-uuid';
+
+      const deleteRes = await request(app)
+        .delete(`/maps/${nonExistentId}`)
+        .expect(404);
+
+      expect(deleteRes.headers['content-type']).toMatch(
+        /application\/problem\+json/
+      );
+      expect(deleteRes.body).toMatchObject({
+        type: expect.any(String),
+        title: expect.any(String),
+        status: 404,
+        detail: expect.any(String),
+        instance: expect.any(String)
+      });
+    });
+
+    it('should not affect other maps when deleting one', async () => {
+      // Create two maps
+      const createRes1 = await request(app)
+        .post('/maps')
+        .send({ name: 'Keep This', state: { n: [], c: [] } })
+        .expect(201);
+      const createRes2 = await request(app)
+        .post('/maps')
+        .send({ name: 'Delete This', state: { n: [], c: [] } })
+        .expect(201);
+
+      const keepId = createRes1.body.id;
+      const deleteId = createRes2.body.id;
+
+      // Delete one map
+      await request(app).delete(`/maps/${deleteId}`).expect(200);
+
+      // Verify the other still exists
+      const getRes = await request(app).get(`/maps/${keepId}`).expect(200);
+      expect(getRes.body.name).toBe('Keep This');
+
+      // Verify the deleted one is gone
+      await request(app).get(`/maps/${deleteId}`).expect(404);
+    });
+  });
 });
