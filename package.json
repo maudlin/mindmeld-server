@@ -19,7 +19,12 @@
     "openapi:lint": "spectral lint design/to-be/openapi.yaml",
     "smoke": "node scripts/smoke.js",
     "seed": "node scripts/seed.js",
-    "mcp:test": "node test-mcp.js"
+    "mcp:test": "node test-mcp.js",
+    "db:backup": "node scripts/admin/db-backup.js",
+    "db:restore": "node scripts/admin/db-restore.js",
+    "server:health:deep": "node scripts/admin/server-health.js",
+    "test:admin": "jest tests/admin --testTimeout=30000",
+    "test:admin:watch": "jest tests/admin --watch --testTimeout=30000"
   },
   "dependencies": {
     "better-sqlite3": "^12.2.0",
@@ -30,6 +35,7 @@
     "helmet": "^7.1.0",
     "pino": "^9.4.0",
     "pino-http": "^10.1.0",
+    "uuid": "^11.1.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {

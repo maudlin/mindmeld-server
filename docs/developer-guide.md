@@ -102,3 +102,10 @@ Additional utilities
 - MCP testing: npm run mcp:test (Model Context Protocol)
 - Database seeding: npm run seed (create test data)
 - Environment validation: node scripts/env-check.js
+
+Admin commands
+
+- Database backup: npm run db:backup (timestamped backups with optional compression)
+- Health diagnostics: npm run server:health:deep (comprehensive server health checks)
+- Admin tests: npm run test:admin (test admin command implementations)
+- See [Server Administration Guide](server-admin.md) for complete documentation

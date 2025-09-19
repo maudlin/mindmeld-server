@@ -80,8 +80,20 @@ Hooks install via `postinstall`. If needed, re-init with `npx husky init`.
 
 - Unit tests: `tests/unit/`
 - Integration tests: `tests/integration/` (e.g., `/maps` API with ETag/If-Match)
+- Admin command tests: `tests/admin/` (database backup, health diagnostics, etc.)
 - Run all tests: `npm test`
+- Run admin tests: `npm run test:admin`
 - Coverage: `npm run test:coverage`
+
+### Admin Command Development
+
+Server administration commands require comprehensive testing due to their operational importance:
+
+- **Tier 1 commands** (e.g., `db:backup`, `db:restore`): Full integration testing required
+- **Test environment**: Use `AdminTestEnvironment` class for isolated testing
+- **Real dependencies**: Test with actual SQLite databases and file operations
+- **Error scenarios**: Test failure conditions and recovery
+- See `docs/admin-testing.md` for detailed guidelines
 
 ## OpenAPI
 
