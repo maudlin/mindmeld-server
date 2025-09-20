@@ -1,7 +1,8 @@
 const fs = require('fs').promises;
 const path = require('path');
 const os = require('os');
-const { v4: uuidv4 } = require('uuid');
+const crypto = require('crypto');
+const uuidv4 = crypto.randomUUID;
 const Database = require('better-sqlite3');
 const { openDatabase, ensureSchema } = require('../../../src/modules/maps/db');
 
@@ -171,7 +172,7 @@ class AdminTestEnvironment {
     // Check if file exists first
     try {
       require('fs').accessSync(backupPath);
-    } catch (error) {
+    } catch {
       return [];
     }
 
@@ -218,11 +219,11 @@ class AdminTestEnvironment {
           require('fs').unlinkSync(tempPath);
 
           return result.integrity_check === 'ok';
-        } catch (error) {
+        } catch {
           // Clean up temp file on error
           try {
             require('fs').unlinkSync(tempPath);
-          } catch (cleanupError) {
+          } catch {
             // Ignore cleanup errors
           }
           return false;
@@ -234,7 +235,7 @@ class AdminTestEnvironment {
         backupDb.close();
         return result.integrity_check === 'ok';
       }
-    } catch (error) {
+    } catch {
       return false;
     }
   }

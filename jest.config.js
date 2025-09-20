@@ -9,5 +9,9 @@ module.exports = {
   testPathIgnorePatterns: ['<rootDir>/tests/e2e/', '<rootDir>/node_modules/'],
   collectCoverageFrom: ['src/**/*.js', '!src/index.js', '!**/node_modules/**'],
   coverageDirectory: 'coverage',
-  coverageReporters: ['text', 'lcov', 'html']
+  coverageReporters: ['text', 'lcov', 'html'],
+  // Allow uuid package to be transformed by Jest since it's using ES modules in v13
+  transformIgnorePatterns: [
+    'node_modules/(?!(uuid)/)' // Transform uuid package
+  ]
 };
