@@ -36,7 +36,7 @@ npm start
 Environment
 
 - PORT (default: 3001)
-- CORS_ORIGIN (default: http://localhost:8080, supports localhost/127.0.0.1 variants and HTTPS)
+- CORS_ORIGIN (default: http://localhost:8080) - Flexible CORS with localhost/127.0.0.1 variants and HTTPS upgrades
 - JSON_LIMIT (default: 50mb)
 - SQLITE_FILE (default: ./data/db.sqlite)
 - FEATURE_MAPS_API (default: true; set to 0/false to disable)
@@ -80,10 +80,27 @@ Errors (RFC 7807)
 
 ## Configuration
 
-- CORS: flexible origin support via CORS_ORIGIN (localhost/127.0.0.1 variants, HTTPS upgrades)
-- JSON payload limit: JSON_LIMIT (default 50mb)
-- SQLite file: SQLITE_FILE (default ./data/db.sqlite)
-- Maps API: FEATURE_MAPS_API (default enabled)
+### CORS Configuration
+
+Flexible origin support via `CORS_ORIGIN` environment variable:
+
+- **Exact matching**: Configure specific origin (e.g., `http://localhost:3000`)
+- **Localhost variants**: Automatic cross-resolution between `localhost` and `127.0.0.1` on same port
+- **HTTPS upgrades**: Allows `https://` requests when config is `http://` for local development
+- **No-origin requests**: Supports requests without Origin header (Postman, mobile apps)
+
+```bash
+# Examples - all work with CORS_ORIGIN=http://localhost:3000:
+CORS_ORIGIN=http://localhost:3000    # Allows localhost:3000 AND 127.0.0.1:3000
+CORS_ORIGIN=http://127.0.0.1:8080    # Allows 127.0.0.1:8080 AND localhost:8080
+CORS_ORIGIN=http://localhost:3000    # Also allows https://localhost:3000
+```
+
+### Other Configuration
+
+- **JSON payload limit**: JSON_LIMIT (default 50mb)
+- **SQLite file**: SQLITE_FILE (default ./data/db.sqlite)
+- **Maps API**: FEATURE_MAPS_API (default enabled)
 
 ## Observability
 
