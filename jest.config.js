@@ -3,7 +3,8 @@ module.exports = {
   setupFilesAfterEnv: ['<rootDir>/tests/setup.js'],
   testMatch: [
     '<rootDir>/tests/unit/**/*.test.js',
-    '<rootDir>/tests/integration/**/*.test.js'
+    '<rootDir>/tests/integration/**/*.test.js',
+    '<rootDir>/tests/admin/**/*.test.js'
   ],
   testPathIgnorePatterns: ['<rootDir>/tests/e2e/', '<rootDir>/node_modules/'],
   collectCoverageFrom: ['src/**/*.js', '!src/index.js', '!**/node_modules/**'],

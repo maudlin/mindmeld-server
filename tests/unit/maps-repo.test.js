@@ -1,18 +1,27 @@
 const fs = require('fs').promises;
 const path = require('path');
+const os = require('os');
 const MapsRepo = require('../../src/modules/maps/repo');
 
 describe('MapsRepo', () => {
   let repo;
   let dbFile;
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    // Use system temp directory in CI environments, local test-data otherwise
+    const testDir = process.env.CI
+      ? os.tmpdir()
+      : path.join(process.cwd(), 'test-data');
+
     // Create a unique test database file
     dbFile = path.join(
-      process.cwd(),
-      'test-data',
-      `maps-repo-${Date.now()}.sqlite`
+      testDir,
+      `maps-repo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.sqlite`
     );
+
+    // Ensure the test directory exists
+    await fs.mkdir(path.dirname(dbFile), { recursive: true });
+
     repo = new MapsRepo(dbFile);
   });
 

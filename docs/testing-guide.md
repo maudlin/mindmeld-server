@@ -66,6 +66,33 @@ npm run test:e2e:report
 - ⚡ **Parallel execution** for faster CI/CD
 - 🐛 **Better debugging** with trace collection
 
+### Admin Command Tests
+
+Test server administration commands and tools:
+
+```bash
+# Run admin command test suite
+npm run test:admin
+
+# Watch mode for admin tests
+npm run test:admin:watch
+```
+
+**What's tested:**
+
+- ✅ **Database backup**: Complete backup workflows, compression, verification
+- ✅ **Health diagnostics**: All 8 health checks, timeout handling, output formats
+- ✅ **Error resilience**: Graceful error handling and recovery scenarios
+- ✅ **Performance**: Command execution timing and resource usage
+- ✅ **CLI options**: All command-line interface options and help text
+
+**Test Environment:**
+
+- 🗄️ **Isolated test databases** (temporary SQLite files)
+- 📁 **Temporary directories** for file operations
+- 🧪 **AdminTestEnvironment class** for test setup/teardown
+- 📋 **55+ comprehensive tests** per command
+
 ### Test Coverage
 
 ```bash

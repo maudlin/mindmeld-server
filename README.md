@@ -10,6 +10,7 @@ A production-ready REST API for the MindMeld mind mapping application with integ
 - 📋 **RFC 7807 Problem Details** for structured error responses
 - 🛡️ **Production hardening** with helmet, CORS, rate limiting
 - 📊 **Structured logging** (pino + pino-http) with request IDs
+- ⚙️ **Admin Commands** with database backup and deep health diagnostics
 - 🏗️ **Node 24 baseline** with ESLint, Prettier, Jest, Husky/lint-staged
 
 ## Quick start
@@ -135,6 +136,12 @@ Scripts
 - npm run validate — lint + format:check + test
 - npm test / npm run test:watch / npm run test:coverage
 
+Admin Commands
+
+- npm run db:backup — create timestamped database backup with optional compression
+- npm run server:health:deep — comprehensive health diagnostics with detailed reporting
+- npm run test:admin — run admin command test suite
+
 Project structure
 
 ```
@@ -177,6 +184,7 @@ FEATURE_MCP=1 npm start
 - 🔧 **[Developer Guide](docs/developer-guide.md)** - Development workflows and testing
 - 🏗️ **[Architecture Guide](docs/architecture.md)** - System design and patterns
 - 📝 **[Testing Guide](docs/testing-guide.md)** - Manual API testing workflows
+- ⚙️ **[Server Administration](docs/server-admin.md)** - Database backup, health monitoring, and admin tools
 
 ## Contributing
 
