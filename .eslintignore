@@ -1,9 +1,0 @@
-node_modules/
-dist/
-build/
-coverage/
-data/
-*.min.js
-.env
-.env.local
-.env.production
