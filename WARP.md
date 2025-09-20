@@ -109,7 +109,7 @@ src/
 ```bash
 # Core settings
 PORT=3001                           # Server port
-CORS_ORIGIN=http://localhost:8080   # CORS configuration
+CORS_ORIGIN=http://localhost:8080   # CORS configuration (supports localhost/127.0.0.1 variants)
 JSON_LIMIT=50mb                     # Request payload limit
 
 # Database
@@ -122,6 +122,28 @@ FEATURE_MCP=true                    # MCP integration
 # Development
 NODE_ENV=development                # Environment
 LOG_LEVEL=debug                     # Logging level
+```
+
+### CORS Configuration
+
+The server provides flexible CORS support for development:
+
+- **Exact match**: Configured origin is always allowed
+- **localhost ↔ 127.0.0.1**: Automatic cross-resolution with same port/protocol
+- **HTTPS upgrade**: HTTP origins automatically accept HTTPS variants
+- **No origin**: Requests without origin header (Postman, mobile apps) are allowed
+
+**Examples:**
+
+```bash
+# Set CORS_ORIGIN to localhost:8080
+CORS_ORIGIN=http://localhost:8080
+
+# ✅ These origins will be allowed:
+# - http://localhost:8080 (exact match)
+# - http://127.0.0.1:8080 (localhost variant)
+# - https://localhost:8080 (HTTPS upgrade)
+# - https://127.0.0.1:8080 (HTTPS + variant)
 ```
 
 ### MCP Configuration (for AI assistants)
@@ -225,7 +247,7 @@ The API actively rejects double-wrapped data structures:
 
 - **WAL mode**: Non-blocking reads during writes
 - **Rate limiting**: 60 req/min by default, configurable
-- **CORS**: Configurable origin restrictions
+- **CORS**: Flexible origin support (localhost/127.0.0.1 variants, HTTPS upgrades)
 - **Payload limits**: Prevent memory exhaustion attacks
 - **Structured logging**: pino with request IDs for tracing
 - **Docker ready**: Multi-stage build with health checks

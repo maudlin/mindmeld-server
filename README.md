@@ -36,7 +36,7 @@ npm start
 Environment
 
 - PORT (default: 3001)
-- CORS_ORIGIN (default: http://localhost:8080)
+- CORS_ORIGIN (default: http://localhost:8080, supports localhost/127.0.0.1 variants and HTTPS)
 - JSON_LIMIT (default: 50mb)
 - SQLITE_FILE (default: ./data/db.sqlite)
 - FEATURE_MAPS_API (default: true; set to 0/false to disable)
@@ -80,7 +80,7 @@ Errors (RFC 7807)
 
 ## Configuration
 
-- CORS: configurable via CORS_ORIGIN
+- CORS: flexible origin support via CORS_ORIGIN (localhost/127.0.0.1 variants, HTTPS upgrades)
 - JSON payload limit: JSON_LIMIT (default 50mb)
 - SQLite file: SQLITE_FILE (default ./data/db.sqlite)
 - Maps API: FEATURE_MAPS_API (default enabled)

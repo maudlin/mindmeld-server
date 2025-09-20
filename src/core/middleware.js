@@ -61,10 +61,58 @@ function createMiddleware(config = {}) {
     })
   );
 
-  // CORS configuration (strict to provided origin)
+  // CORS configuration - support localhost/127.0.0.1 variants and HTTPS/HTTP
+  const createCorsOrigin = configuredOrigin => {
+    return (origin, callback) => {
+      // Allow requests with no origin (mobile apps, Postman, etc.)
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      const originUrl = new URL(origin);
+      const configUrl = new URL(configuredOrigin);
+
+      // Allow if exactly matches configured origin
+      if (origin === configuredOrigin) {
+        return callback(null, true);
+      }
+
+      // Allow localhost <-> 127.0.0.1 variants with same port and protocol
+      const isLocalhostVariant =
+        (originUrl.hostname === 'localhost' &&
+          configUrl.hostname === '127.0.0.1') ||
+        (originUrl.hostname === '127.0.0.1' &&
+          configUrl.hostname === 'localhost');
+
+      if (
+        isLocalhostVariant &&
+        originUrl.port === configUrl.port &&
+        originUrl.protocol === configUrl.protocol
+      ) {
+        return callback(null, true);
+      }
+
+      // Allow HTTPS for any localhost/127.0.0.1 on same port (secure upgrade)
+      const isSecureUpgrade =
+        originUrl.protocol === 'https:' &&
+        configUrl.protocol === 'http:' &&
+        (originUrl.hostname === 'localhost' ||
+          originUrl.hostname === '127.0.0.1') &&
+        (configUrl.hostname === 'localhost' ||
+          configUrl.hostname === '127.0.0.1') &&
+        originUrl.port === configUrl.port;
+
+      if (isSecureUpgrade) {
+        return callback(null, true);
+      }
+
+      return callback(new Error('Not allowed by CORS'));
+    };
+  };
+
   middleware.push(
     cors({
-      origin: corsOrigin,
+      origin: createCorsOrigin(corsOrigin),
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       allowedHeaders: [
