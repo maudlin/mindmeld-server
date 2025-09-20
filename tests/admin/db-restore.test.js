@@ -20,7 +20,7 @@ describe('Admin Command: db:restore', () => {
     try {
       const dbRestore = require('../../scripts/admin/db-restore');
       DatabaseRestore = dbRestore.DatabaseRestore;
-    } catch (error) {
+    } catch {
       // Expected during TDD - class doesn't exist yet
       DatabaseRestore = null;
     }
@@ -235,7 +235,7 @@ describe('Admin Command: db:restore', () => {
         // Clean up the corrupted file
         try {
           await fs.unlink(corruptedPath);
-        } catch (cleanupError) {
+        } catch {
           // Ignore cleanup errors
         }
       }
@@ -507,7 +507,7 @@ describe('Admin Command: db:restore', () => {
 
       try {
         await restore.restoreDatabase();
-      } catch (error) {
+      } catch {
         // Expected
       }
 
@@ -543,7 +543,7 @@ describe('Admin Command: db:restore', () => {
         // Verify help was displayed and exit was called
         expect(consoleSpy).toHaveBeenCalled();
         expect(exitSpy).toHaveBeenCalledWith(0);
-      } catch (error) {
+      } catch {
         // If parseArguments throws instead of calling process.exit, that's also valid
         expect(consoleSpy).toHaveBeenCalled();
       }

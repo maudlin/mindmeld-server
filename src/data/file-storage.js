@@ -83,7 +83,7 @@ class FileStorage {
             if (!stat.isFile()) {
               throw err;
             }
-          } catch (_) {
+          } catch {
             throw err;
           }
         } else {
@@ -109,7 +109,7 @@ class FileStorage {
       // Clean up temp file if it exists
       try {
         await fs.unlink(uniqueTmpPath);
-      } catch (cleanupError) {
+      } catch {
         // Ignore cleanup errors
       }
       

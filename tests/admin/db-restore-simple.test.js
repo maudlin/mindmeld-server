@@ -40,7 +40,7 @@ class SimpleTestEnv {
 
       try {
         await fs.rm(this.tempDir, { recursive: true, force: true });
-      } catch (error) {
+      } catch {
         // On Windows, sometimes files are still locked - retry once
         await new Promise(resolve => setTimeout(resolve, 500));
         try {
@@ -59,7 +59,7 @@ class SimpleTestEnv {
     // Remove existing database file first
     try {
       await fs.unlink(this.testDbPath);
-    } catch (error) {
+    } catch {
       // File doesn't exist, that's fine
     }
 
@@ -183,7 +183,7 @@ class SimpleTestEnv {
       // Clean up temporary database
       try {
         await fs.unlink(tempDbPath);
-      } catch (error) {
+      } catch {
         // Ignore cleanup errors
       }
     }

@@ -14,7 +14,7 @@ afterAll(async () => {
   const testDataDir = path.join(process.cwd(), 'test-data');
   try {
     await fs.rm(testDataDir, { recursive: true, force: true });
-  } catch (error) {
+  } catch {
     // Ignore if directory doesn't exist
   }
 });
