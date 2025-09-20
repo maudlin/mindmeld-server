@@ -6,13 +6,17 @@ describe('MapsRepo', () => {
   let repo;
   let dbFile;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     // Create a unique test database file
     dbFile = path.join(
       process.cwd(),
       'test-data',
       `maps-repo-${Date.now()}.sqlite`
     );
+
+    // Ensure the test-data directory exists
+    await fs.mkdir(path.dirname(dbFile), { recursive: true });
+
     repo = new MapsRepo(dbFile);
   });
 
