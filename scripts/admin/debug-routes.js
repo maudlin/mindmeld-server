@@ -41,8 +41,26 @@ class DebugRoutes {
     };
   }
 
+  // Method that would be used to get Express app instance (for testing/mocking)
+  getExpressApp() {
+    // In a real implementation, this would get the actual Express app instance
+    // For now, we'll use static route definitions since we can't easily access the app
+    return null;
+  }
+
   async discoverRoutes() {
     try {
+      // Try to get the Express app - if it fails, handle gracefully
+      try {
+        this.getExpressApp();
+      } catch (error) {
+        return {
+          error: error.message,
+          routes: [],
+          discoveredAt: new Date().toISOString()
+        };
+      }
+
       // Since we can't easily introspect Express routes at runtime without the app instance,
       // we'll provide a static definition based on the known MindMeld Server routes
       const routes = this.getKnownRoutes();

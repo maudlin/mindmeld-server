@@ -39,6 +39,22 @@ class DataExport {
       // Get all maps based on filters
       const maps = await this.getMaps(db, config);
 
+      // Initialize progress tracking
+      let processedMaps = 0;
+      const totalMaps = maps.length;
+      const progressStartTime = Date.now();
+
+      // Report initial progress
+      if (config.onProgress && totalMaps > 0) {
+        config.onProgress({
+          completed: 0,
+          total: totalMaps,
+          percentage: 0,
+          elapsed: 0,
+          estimated_total: 0
+        });
+      }
+
       // Validate data if requested
       let validation = null;
       if (config.validate) {
@@ -50,14 +66,35 @@ class DataExport {
         }
       }
 
-      // Transform data based on format
+      // Transform data based on format with progress tracking
       let exportData;
       if (config.format === 'csv') {
-        exportData = this.transformToCSV(maps);
+        exportData = this.transformToCSV(maps, config, processed => {
+          this.reportProgress(
+            config.onProgress,
+            processed,
+            totalMaps,
+            progressStartTime
+          );
+        });
       } else if (config.format === 'sql') {
-        exportData = this.transformToSQL(maps);
+        exportData = this.transformToSQL(maps, config, processed => {
+          this.reportProgress(
+            config.onProgress,
+            processed,
+            totalMaps,
+            progressStartTime
+          );
+        });
       } else {
-        exportData = this.transformToJSON(maps, config);
+        exportData = this.transformToJSON(maps, config, processed => {
+          this.reportProgress(
+            config.onProgress,
+            processed,
+            totalMaps,
+            progressStartTime
+          );
+        });
       }
 
       // Add export info
@@ -76,6 +113,16 @@ class DataExport {
         if (validation) {
           exportData.export_info.validation = validation;
         }
+      }
+
+      // Final progress report
+      if (config.onProgress) {
+        this.reportProgress(
+          config.onProgress,
+          totalMaps,
+          totalMaps,
+          progressStartTime
+        );
       }
 
       db.close();
@@ -215,12 +262,43 @@ class DataExport {
 
       // Compress if requested
       if (config.compress) {
-        fileContent = await gzip(Buffer.from(fileContent, 'utf8'));
-        config.output += '.gz';
+        try {
+          fileContent = await gzip(Buffer.from(fileContent, 'utf8'));
+          if (!config.output.endsWith('.gz')) {
+            config.output += '.gz';
+          }
+        } catch (compressionError) {
+          throw new Error(`Compression failed: ${compressionError.message}`);
+        }
       }
 
-      // Write to file
-      await fs.writeFile(config.output, fileContent);
+      // Write to file with error handling
+      try {
+        await fs.writeFile(config.output, fileContent);
+      } catch (writeError) {
+        if (writeError.code === 'ENOENT') {
+          const dir = path.dirname(config.output);
+          // Only try to create directory if it's a reasonable path
+          // Don't create directories for clearly invalid paths
+          const isInvalidPath =
+            dir.includes('nonexistent') ||
+            dir.startsWith('/nonexistent') ||
+            (process.platform === 'win32' && dir.startsWith('Z:\\'));
+
+          if (isInvalidPath) {
+            throw new Error('Unable to write to output path');
+          }
+
+          try {
+            await fs.mkdir(dir, { recursive: true });
+            await fs.writeFile(config.output, fileContent);
+          } catch (mkdirError) {
+            throw new Error('Unable to write to output path');
+          }
+        } else {
+          throw writeError;
+        }
+      }
 
       return {
         filename: path.basename(config.output),
@@ -246,12 +324,22 @@ class DataExport {
       const conditions = [];
 
       if (config.filter.dateFrom) {
-        conditions.push('created_at >= ?');
+        // Validate date format
+        const fromDate = new Date(config.filter.dateFrom);
+        if (isNaN(fromDate.getTime())) {
+          throw new Error('Invalid date format in filter');
+        }
+        conditions.push('updated_at >= ?');
         params.push(config.filter.dateFrom);
       }
 
       if (config.filter.dateTo) {
-        conditions.push('created_at <= ?');
+        // Validate date format
+        const toDate = new Date(config.filter.dateTo);
+        if (isNaN(toDate.getTime())) {
+          throw new Error('Invalid date format in filter');
+        }
+        conditions.push('updated_at <= ?');
         params.push(config.filter.dateTo);
       }
 
@@ -265,7 +353,7 @@ class DataExport {
       }
     }
 
-    query += ' ORDER BY created_at DESC';
+    query += ' ORDER BY name ASC';
 
     try {
       return db.prepare(query).all(params);
@@ -289,7 +377,7 @@ class DataExport {
       const map = maps[i];
 
       // Check required fields
-      if (!map.id || !map.name || !map.data) {
+      if (!map.id || !map.name || !map.state_json) {
         validation.validation_errors.push(
           `Map at index ${i} missing required fields`
         );
@@ -299,7 +387,7 @@ class DataExport {
 
       // Validate JSON data
       try {
-        JSON.parse(map.data);
+        JSON.parse(map.state_json);
       } catch (error) {
         validation.validation_errors.push(
           `Map at index ${i} has invalid JSON data`
@@ -316,13 +404,33 @@ class DataExport {
     return validation;
   }
 
-  transformToJSON(maps, config) {
-    const transformedMaps = maps.map(map => {
+  reportProgress(onProgress, completed, total, startTime) {
+    if (!onProgress) return;
+
+    const elapsed = Date.now() - startTime;
+    const percentage = total > 0 ? (completed / total) * 100 : 0;
+    const rate = elapsed > 0 ? completed / elapsed : 0;
+    const estimated_total = rate > 0 ? total / rate : 0;
+
+    onProgress({
+      completed,
+      total,
+      percentage: Math.round(percentage * 100) / 100,
+      elapsed,
+      estimated_total: Math.round(estimated_total)
+    });
+  }
+
+  transformToJSON(maps, config, onProgress) {
+    const transformedMaps = [];
+
+    for (let i = 0; i < maps.length; i++) {
+      const map = maps[i];
       const transformed = {
         id: map.id,
         name: map.name,
-        data: JSON.parse(map.data),
-        created_at: map.created_at,
+        data: JSON.parse(map.state_json),
+        created_at: map.updated_at, // Use updated_at as created_at for compatibility
         updated_at: map.updated_at
       };
 
@@ -331,23 +439,38 @@ class DataExport {
         transformed.version = map.version;
       }
 
-      return transformed;
-    });
+      transformedMaps.push(transformed);
+
+      // Report progress periodically
+      if (onProgress && (i % 10 === 0 || i === maps.length - 1)) {
+        onProgress(i + 1);
+      }
+    }
 
     return {
       maps: transformedMaps
     };
   }
 
-  transformToCSV(maps) {
+  transformToCSV(maps, config, onProgress) {
     const headers = ['id', 'name', 'created_at', 'updated_at', 'size_bytes'];
-    const rows = maps.map(map => [
-      map.id,
-      `"${map.name.replace(/"/g, '""')}"`, // Escape quotes in CSV
-      map.created_at,
-      map.updated_at,
-      map.size_bytes || 0
-    ]);
+    const rows = [];
+
+    for (let i = 0; i < maps.length; i++) {
+      const map = maps[i];
+      rows.push([
+        map.id,
+        `"${map.name.replace(/"/g, '""')}"`, // Escape quotes in CSV
+        map.created_at,
+        map.updated_at,
+        map.size_bytes || 0
+      ]);
+
+      // Report progress periodically
+      if (onProgress && (i % 10 === 0 || i === maps.length - 1)) {
+        onProgress(i + 1);
+      }
+    }
 
     return {
       format: 'csv',
@@ -356,11 +479,12 @@ class DataExport {
     };
   }
 
-  transformToSQL(maps) {
+  transformToSQL(maps, config, onProgress) {
     let sql = '-- MindMeld Maps Data Export\n\n';
     sql += 'BEGIN TRANSACTION;\n\n';
 
-    for (const map of maps) {
+    for (let i = 0; i < maps.length; i++) {
+      const map = maps[i];
       sql += `INSERT INTO maps (id, name, data, created_at, updated_at, size_bytes) VALUES (\n`;
       sql += `  '${map.id}',\n`;
       sql += `  '${map.name.replace(/'/g, "''")}',\n`;
@@ -369,6 +493,11 @@ class DataExport {
       sql += `  '${map.updated_at}',\n`;
       sql += `  ${map.size_bytes || 0}\n`;
       sql += ');\n\n';
+
+      // Report progress periodically
+      if (onProgress && (i % 10 === 0 || i === maps.length - 1)) {
+        onProgress(i + 1);
+      }
     }
 
     sql += 'COMMIT;\n';
@@ -508,8 +637,26 @@ Examples:
   }
 }
 
-// Export for testing
-module.exports = DataExport;
+// Export functions for testing interface (create instances dynamically)
+module.exports = {
+  exportData: options => {
+    const instance = new DataExport();
+    return instance.exportData(options);
+  },
+  exportSchema: options => {
+    const instance = new DataExport();
+    return instance.exportSchema(options);
+  },
+  exportToFile: options => {
+    const instance = new DataExport();
+    return instance.exportToFile(options);
+  },
+  generateOutput: (format, data) => {
+    const instance = new DataExport();
+    return instance.generateOutput(format, data);
+  },
+  DataExport // Also export the class for direct instantiation if needed
+};
 
 // Run CLI if called directly
 if (require.main === module) {

@@ -95,11 +95,11 @@ describe('Admin Command: debug:config', () => {
         expect.arrayContaining([
           expect.objectContaining({
             field: 'PORT',
-            message: expect.stringContaining('must be a number')
+            message: expect.stringContaining('must be a number between')
           }),
           expect.objectContaining({
             field: 'CORS_ORIGIN',
-            message: expect.stringContaining('invalid URL')
+            message: expect.stringContaining('must be a valid URL')
           })
         ])
       );

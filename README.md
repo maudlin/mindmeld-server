@@ -10,7 +10,7 @@ A production-ready REST API for the MindMeld mind mapping application with integ
 - 📋 **RFC 7807 Problem Details** for structured error responses
 - 🛡️ **Production hardening** with helmet, CORS, rate limiting
 - 📊 **Structured logging** (pino + pino-http) with request IDs
-- ⚙️ **Admin Commands** with database backup and deep health diagnostics
+- ⚙️ **Comprehensive Admin Tools** with database backup/restore, data migration, and debug utilities
 - 🏗️ **Node 24 baseline** with ESLint, Prettier, Jest, Husky/lint-staged
 
 ## Quick start
@@ -155,9 +155,35 @@ Scripts
 
 Admin Commands
 
+**Database Management:**
+
 - npm run db:backup — create timestamped database backup with optional compression
+- npm run db:restore — restore database from backup files
+
+**Server Monitoring & Diagnostics:**
+
 - npm run server:health:deep — comprehensive health diagnostics with detailed reporting
+
+**Data Management & Migration:**
+
+- npm run data:export — export maps data in JSON/CSV/SQL formats with filtering
+- npm run data:import — import data with conflict resolution and validation
+- npm run data:migrate — database schema migrations with version tracking
+- npm run data:backup — advanced backup/restore with compression & encryption
+
+**Development & Debug Tools:**
+
+- npm run debug:config — inspect application configuration and validation
+- npm run debug:endpoints — analyze and test API endpoints
+- npm run debug:mcp — debug Model Context Protocol integration
+- npm run debug:routes — examine Express.js routing structure
+- npm run debug:system — system diagnostics and health checks
+
+**Testing:**
+
 - npm run test:admin — run admin command test suite
+
+📋 _All admin commands support `--help` for detailed usage information_
 
 Project structure
 
@@ -169,6 +195,18 @@ src/
 ├── utils/                # logger, event-bus, etag helpers
 ├── factories/            # server-factory (composition)
 └── index.js              # entrypoint
+
+scripts/
+└── admin/                # Admin commands and utilities
+    ├── data-export.js    # Data export utilities
+    ├── data-import.js    # Data import utilities
+    ├── data-migrate.js   # Database migrations
+    ├── data-backup.js    # Advanced backup/restore
+    ├── debug-config.js   # Configuration debugging
+    ├── debug-endpoints.js# API endpoint testing
+    ├── debug-mcp.js      # MCP debugging tools
+    ├── debug-routes.js   # Route introspection
+    └── debug-system.js   # System diagnostics
 ```
 
 ## MCP (Model Context Protocol) Integration

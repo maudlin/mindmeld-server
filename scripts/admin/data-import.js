@@ -5,7 +5,12 @@ const path = require('path');
 const zlib = require('zlib');
 const { promisify } = require('util');
 const gunzip = promisify(zlib.gunzip);
-const { v4: uuidv4 } = require('uuid');
+const crypto = require('crypto');
+
+// Generate UUID v4 using built-in crypto module
+function uuidv4() {
+  return crypto.randomUUID();
+}
 
 // Import database utilities
 const Database = require('better-sqlite3');
@@ -201,10 +206,18 @@ class DataImport {
             try {
               const imported = await this.importSingleMap(db, map, config);
 
-              if (imported.action === 'imported') result.imported++;
-              else if (imported.action === 'skipped') result.skipped++;
-              else if (imported.action === 'overwritten') result.overwritten++;
-              else if (imported.action === 'merged') result.merged++;
+              if (imported.action === 'imported') {
+                result.imported++;
+              } else if (imported.action === 'skipped') {
+                result.skipped++;
+                // Skip actions don't count as imported
+              } else if (imported.action === 'overwritten') {
+                result.imported++;
+                result.overwritten++;
+              } else if (imported.action === 'merged') {
+                result.imported++;
+                result.merged++;
+              }
 
               if (imported.conflict) {
                 result.conflicts_resolved.push(imported.conflict);
@@ -285,7 +298,7 @@ class DataImport {
         case 'overwrite':
           const updateStmt = db.prepare(`
             UPDATE maps 
-            SET name = ?, data = ?, updated_at = ?, size_bytes = ?
+            SET name = ?, state_json = ?, updated_at = ?, size_bytes = ?
             WHERE id = ?
           `);
 
@@ -305,7 +318,8 @@ class DataImport {
         case 'merge':
           // Simple merge strategy - update timestamp and combine data
           const existingData = JSON.parse(
-            db.prepare('SELECT data FROM maps WHERE id = ?').get(map.id).data
+            db.prepare('SELECT state_json FROM maps WHERE id = ?').get(map.id)
+              .state_json
           );
           const newData = JSON.parse(map.data);
 
@@ -313,7 +327,7 @@ class DataImport {
 
           const mergeStmt = db.prepare(`
             UPDATE maps 
-            SET name = ?, data = ?, updated_at = ?, size_bytes = ?
+            SET name = ?, state_json = ?, updated_at = ?, size_bytes = ?
             WHERE id = ?
           `);
 
@@ -338,7 +352,7 @@ class DataImport {
     } else {
       // Insert new map
       const insertStmt = db.prepare(`
-        INSERT INTO maps (id, name, data, created_at, updated_at, size_bytes)
+        INSERT INTO maps (id, name, state_json, updated_at, size_bytes, version)
         VALUES (?, ?, ?, ?, ?, ?)
       `);
 
@@ -346,9 +360,9 @@ class DataImport {
         map.id,
         map.name,
         map.data,
-        map.created_at || new Date().toISOString(),
         map.updated_at || new Date().toISOString(),
-        this.calculateSize(map.data)
+        this.calculateSize(map.data),
+        1 // version
       );
 
       return { action: 'imported' };
@@ -604,8 +618,38 @@ Examples:
   }
 }
 
-// Export for testing
-module.exports = DataImport;
+// Export functions for testing interface (create instances dynamically)
+module.exports = {
+  validateImportFile: importData => {
+    const instance = new DataImport();
+    return instance.validateImportFile(importData);
+  },
+  analyzeImport: importData => {
+    const instance = new DataImport();
+    return instance.analyzeImport(importData);
+  },
+  importData: (importData, options) => {
+    const instance = new DataImport();
+    return instance.importData(importData, options);
+  },
+  createBackup: () => {
+    const instance = new DataImport();
+    return instance.createBackup();
+  },
+  rollbackFromBackup: backupPath => {
+    const instance = new DataImport();
+    return instance.rollbackFromBackup(backupPath);
+  },
+  importFromFile: (filePath, options) => {
+    const instance = new DataImport();
+    return instance.importFromFile(filePath, options);
+  },
+  generateOutput: (format, data) => {
+    const instance = new DataImport();
+    return instance.generateOutput(format, data);
+  },
+  DataImport // Also export the class for direct instantiation if needed
+};
 
 // Run CLI if called directly
 if (require.main === module) {
