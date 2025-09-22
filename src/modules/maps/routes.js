@@ -30,11 +30,18 @@ function createMapsRouter({ sqliteFile }) {
   router.post('/', (req, res, next) => {
     try {
       const { name, data, state } = req.body || {};
-      const created = service.create({ name, data, state });
+      const created = service.create({ name, state: data ?? state });
       const payload = data ?? state ?? {};
       const etag = computeEtag(payload);
       res.set('ETag', `"${etag}"`);
-      res.status(201).json(created);
+
+      // Return with parsed data field for client convenience
+      const response = {
+        ...created,
+        data: payload
+      };
+      delete response.stateJson; // Remove internal field
+      res.status(201).json(response);
     } catch (err) {
       next(err);
     }
@@ -47,7 +54,14 @@ function createMapsRouter({ sqliteFile }) {
       const payload = JSON.parse(map.stateJson);
       const etag = computeEtag(payload);
       res.set('ETag', `"${etag}"`);
-      res.json(map);
+
+      // Return with parsed data field for client convenience
+      const response = {
+        ...map,
+        data: payload
+      };
+      delete response.stateJson; // Remove internal field
+      res.json(response);
     } catch (err) {
       next(err);
     }
@@ -70,12 +84,17 @@ function createMapsRouter({ sqliteFile }) {
       }
 
       const updated = service.update(id, req.body || {});
-      const payload = updated && (req.body?.data ?? req.body?.state);
-      const nextPayload =
-        payload !== undefined ? payload : (service.getById(id).data ?? {});
-      const nextEtag = computeEtag(nextPayload);
+      const payload = req.body?.data ?? req.body?.state;
+      const nextEtag = computeEtag(payload);
       res.set('ETag', `"${nextEtag}"`);
-      res.json(updated);
+
+      // Return with parsed data field for client convenience
+      const response = {
+        ...updated,
+        data: payload
+      };
+      delete response.stateJson; // Remove internal field
+      res.json(response);
     } catch (err) {
       next(err);
     }

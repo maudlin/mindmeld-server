@@ -47,6 +47,10 @@
     "pino": "^9.10.0",
     "pino-http": "^10.1.0",
     "uuid": "^13.0.0",
+    "ws": "^8.18.3",
+    "y-protocols": "^1.0.6",
+    "y-websocket": "^3.0.0",
+    "yjs": "^13.6.27",
     "zod": "^4.1.9"
   },
   "devDependencies": {

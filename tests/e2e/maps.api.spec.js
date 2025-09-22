@@ -6,7 +6,7 @@ test.describe('Maps API E2E', () => {
     const createResponse = await request.post('/maps', {
       data: {
         name: 'E2E Test Map',
-        data: {
+        state: {
           n: [{ i: 'note1', p: [100, 100], c: 'Initial note', cl: 'blue' }],
           c: []
         }
@@ -33,7 +33,7 @@ test.describe('Maps API E2E', () => {
             { i: 'note1', p: [100, 100], c: 'Initial note', cl: 'blue' },
             { i: 'note2', p: [200, 200], c: 'Updated note', cl: 'green' }
           ],
-          c: [['note1', 'note2', 1]]
+          c: [{ f: 'note1', t: 'note2' }]
         },
         version: 1
       },
@@ -51,7 +51,7 @@ test.describe('Maps API E2E', () => {
 
   test('should handle conflicts properly', async ({ request }) => {
     const createResponse = await request.post('/maps', {
-      data: { name: 'Conflict Test', data: { n: [], c: [] } }
+      data: { name: 'Conflict Test', state: { n: [], c: [] } }
     });
 
     const created = await createResponse.json();
@@ -85,7 +85,7 @@ test.describe('Maps API E2E', () => {
     const createResponse = await request.post('/maps', {
       data: {
         name: 'To Be Deleted',
-        data: {
+        state: {
           n: [{ i: 'temp1', p: [50, 50], c: 'Temporary note' }],
           c: []
         }
@@ -133,7 +133,7 @@ test.describe('Maps API E2E', () => {
     const createResponse = await request.post('/maps', {
       data: {
         name: 'Full Lifecycle Map',
-        data: { n: [], c: [] }
+        state: { n: [], c: [] }
       }
     });
 

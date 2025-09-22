@@ -16,7 +16,10 @@ const EnvSchema = z.object({
   STATE_FILE: z.string().optional(),
   // MCP (Model Context Protocol) - always uses integrated SSE + HTTP transports
   FEATURE_MCP: z.string().optional(),
-  MCP_TOKEN: z.string().optional()
+  MCP_TOKEN: z.string().optional(),
+  // Yjs feature flags (MS-60)
+  DATA_PROVIDER: z.enum(['json', 'yjs']).default('json'),
+  SERVER_SYNC: z.enum(['on', 'off']).default('off')
 });
 
 function buildConfig() {
@@ -40,7 +43,10 @@ function buildConfig() {
       parsed.STATE_FILE || path.join(process.cwd(), 'data', 'state.json'),
     // MCP - integrated SSE + HTTP transports (no separate transport config needed)
     featureMcp: parsed.FEATURE_MCP === '1' || parsed.FEATURE_MCP === 'true',
-    mcpToken: parsed.MCP_TOKEN || null
+    mcpToken: parsed.MCP_TOKEN || null,
+    // Yjs feature flags (MS-60)
+    dataProvider: parsed.DATA_PROVIDER,
+    serverSync: parsed.SERVER_SYNC
   };
   return config;
 }
