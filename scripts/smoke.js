@@ -36,7 +36,10 @@ async function req(method, path, body) {
     console.log('[smoke] Health OK');
 
     // Create
-    const created = await req('POST', '/maps', { name: 'Smoke', state: {} });
+    const created = await req('POST', '/maps', {
+      name: 'Smoke',
+      state: { n: [], c: [] }
+    });
     if (created.status !== 201)
       throw new Error(`Create failed: ${created.status}`);
     console.log('[smoke] Create OK', created.body);
@@ -51,7 +54,7 @@ async function req(method, path, body) {
     const v = got.body.version;
     const upd = await req('PUT', `/maps/${id}`, {
       version: v,
-      state: { nodes: [{ id: 'n1' }] }
+      data: { n: [{ i: 'n1', p: [100, 100], c: 'Test note' }], c: [] }
     });
     if (upd.status !== 200) throw new Error(`Update failed: ${upd.status}`);
     console.log('[smoke] Update OK', upd.body, 'ETag:', upd.etag);
@@ -59,7 +62,7 @@ async function req(method, path, body) {
     // Conflict with stale version
     const conflict = await req('PUT', `/maps/${id}`, {
       version: v,
-      state: { nodes: [{ id: 'n2' }] }
+      data: { n: [{ i: 'n2', p: [200, 200], c: 'Conflict note' }], c: [] }
     });
     if (conflict.status !== 409)
       throw new Error(`Conflict expected 409, got ${conflict.status}`);

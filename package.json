@@ -33,7 +33,9 @@
     "data:migrate": "node scripts/admin/data-migrate.js",
     "data:backup": "node scripts/admin/data-backup.js",
     "test:admin": "jest tests/admin --testTimeout=30000",
-    "test:admin:watch": "jest tests/admin --watch --testTimeout=30000"
+    "test:admin:watch": "jest tests/admin --watch --testTimeout=30000",
+    "health:check": "bash scripts/health-check-server.sh",
+    "health:pre-commit": "bash scripts/pre-commit-health.sh"
   },
   "dependencies": {
     "better-sqlite3": "^12.2.0",
@@ -45,6 +47,10 @@
     "pino": "^9.10.0",
     "pino-http": "^10.1.0",
     "uuid": "^13.0.0",
+    "ws": "^8.18.3",
+    "y-protocols": "^1.0.6",
+    "y-websocket": "^3.0.0",
+    "yjs": "^13.6.27",
     "zod": "^4.1.9"
   },
   "devDependencies": {

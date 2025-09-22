@@ -12,6 +12,8 @@ const createDocsRouter = require('../core/docs-route');
 const { createMcpRoutes } = require('../core/mcp-routes');
 const { createMcpSseEndpoint } = require('../core/mcp-sse');
 const Logger = require('../utils/logger');
+const { buildConfig } = require('../config/config');
+const { createYjsRoutes } = require('../modules/yjs/routes');
 
 /**
  * Create configured Express server
@@ -97,6 +99,27 @@ function createServer(config = {}) {
     corsOrigin,
     jsonLimit
   };
+
+  // Add WebSocket setup function if Yjs is enabled
+  const currentConfig = buildConfig(); // Get fresh config that reads current env vars
+  Logger.debug('Checking SERVER_SYNC config', {
+    serverSync: currentConfig.serverSync
+  });
+  if (currentConfig.serverSync === 'on') {
+    app.setupWebSocket = httpServer => {
+      const sqliteFile =
+        config.sqliteFile || path.join(process.cwd(), 'data', 'db.sqlite');
+      const yjsRoutes = createYjsRoutes(httpServer, {
+        logger: Logger,
+        dbFile: sqliteFile.replace('.sqlite', '-yjs.sqlite') // Use separate Yjs database
+      });
+      Logger.info('Yjs WebSocket server enabled');
+      return yjsRoutes;
+    };
+    Logger.debug('setupWebSocket function added to app');
+  } else {
+    Logger.debug('SERVER_SYNC is off, WebSocket not enabled');
+  }
 
   Logger.info('Server factory completed');
 
