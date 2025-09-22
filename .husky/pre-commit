@@ -16,3 +16,11 @@ npm run openapi:lint
 
 printf "\n[husky] Tests (CI mode)...\n"
 npm test -- --ci --reporters=default
+
+# Quick architecture health check
+printf "\n[husky] Architecture health check...\n"
+if command -v bash >/dev/null 2>&1; then
+    bash scripts/pre-commit-health.sh || echo "Health check completed with warnings"
+else
+    echo "Bash not available - skipping health check"
+fi
