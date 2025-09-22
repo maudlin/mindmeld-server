@@ -8,10 +8,8 @@ describe('MapsRepo', () => {
   let dbFile;
 
   beforeEach(async () => {
-    // Use system temp directory in CI environments, local test-data otherwise
-    const testDir = process.env.CI
-      ? os.tmpdir()
-      : path.join(process.cwd(), 'test-data');
+    // Always use the OS temp directory to avoid permission/path issues across platforms
+    const testDir = path.join(os.tmpdir(), 'maps-repo-tests');
 
     // Create a unique test database file
     dbFile = path.join(

@@ -4,7 +4,7 @@ const os = require('os');
 const crypto = require('crypto');
 const uuidv4 = crypto.randomUUID;
 const Database = require('better-sqlite3');
-const { openDatabase, ensureSchema } = require('../../../src/modules/maps/db');
+const { openDatabase, ensureSchema } = require('../../src/modules/maps/db');
 
 class AdminTestEnvironment {
   constructor() {
@@ -37,6 +37,11 @@ class AdminTestEnvironment {
     // Set test environment
     process.env.SQLITE_FILE = this.testDbPath;
     process.env.NODE_ENV = 'test';
+  }
+
+  // Alias for teardown for backward compatibility
+  async cleanup() {
+    return this.teardown();
   }
 
   async teardown() {
@@ -84,27 +89,57 @@ class AdminTestEnvironment {
 
   /**
    * Create test maps in the database
-   * @param {number} count - Number of test maps to create
+   * @param {Array|number} mapsData - Either array of map objects or count of maps to create
    * @returns {Array} Array of created map objects
    */
-  createTestMaps(count = 5) {
+  async createTestMaps(mapsData) {
     const stmt = this.testDb.prepare(`
       INSERT INTO maps (id, name, version, updated_at, state_json, size_bytes)
       VALUES (?, ?, ?, ?, ?, ?)
     `);
 
     const maps = [];
-    for (let i = 0; i < count; i++) {
-      const map = this.generateTestMap(i);
-      stmt.run(
-        map.id,
-        map.name,
-        map.version,
-        map.updated_at,
-        JSON.stringify(map.data),
-        map.size_bytes
-      );
-      maps.push(map);
+
+    if (Array.isArray(mapsData)) {
+      // Handle array of map objects
+      for (let i = 0; i < mapsData.length; i++) {
+        const mapData = mapsData[i];
+        const map = {
+          id: mapData.id || uuidv4(),
+          name: mapData.name || `Test Map ${i + 1}`,
+          version: 1,
+          updated_at: new Date().toISOString(),
+          data: mapData.data || { nodes: [], connections: [] },
+          size_bytes: JSON.stringify(
+            mapData.data || { nodes: [], connections: [] }
+          ).length
+        };
+
+        stmt.run(
+          map.id,
+          map.name,
+          map.version,
+          map.updated_at,
+          JSON.stringify(map.data),
+          map.size_bytes
+        );
+        maps.push(map);
+      }
+    } else {
+      // Handle count (backward compatibility)
+      const count = mapsData || 5;
+      for (let i = 0; i < count; i++) {
+        const map = this.generateTestMap(i);
+        stmt.run(
+          map.id,
+          map.name,
+          map.version,
+          map.updated_at,
+          JSON.stringify(map.data),
+          map.size_bytes
+        );
+        maps.push(map);
+      }
     }
 
     return maps;
@@ -137,18 +172,21 @@ class AdminTestEnvironment {
 
     const state_json = JSON.stringify(data);
 
-    // Create unique timestamps by adding index-based milliseconds
-    const baseTime = new Date();
-    baseTime.setMilliseconds(baseTime.getMilliseconds() + index * 100);
-
     return {
       id,
       name: `Test Map ${index + 1}`,
       version: 1,
-      updated_at: baseTime.toISOString(),
+      updated_at: new Date().toISOString(),
       data,
       size_bytes: Buffer.byteLength(state_json, 'utf8')
     };
+  }
+
+  /**
+   * Clear all maps from the test database
+   */
+  async clearAllMaps() {
+    this.testDb.prepare('DELETE FROM maps').run();
   }
 
   /**
@@ -165,6 +203,31 @@ class AdminTestEnvironment {
         data: JSON.parse(state_json)
       };
     });
+  }
+
+  /**
+   * Get the count of maps in the test database
+   * @returns {number} Number of maps in database
+   */
+  getMapCount() {
+    const result = this.testDb
+      .prepare('SELECT COUNT(*) as count FROM maps')
+      .get();
+    return result.count;
+  }
+
+  /**
+   * Create a compressed file for testing
+   * @param {string} filePath - Path where to create the compressed file
+   * @param {string} content - Content to compress
+   */
+  async createCompressedFile(filePath, content) {
+    const zlib = require('zlib');
+    const { promisify } = require('util');
+    const gzip = promisify(zlib.gzip);
+
+    const compressed = await gzip(Buffer.from(content, 'utf8'));
+    await fs.writeFile(filePath, compressed);
   }
 
   /**
@@ -279,13 +342,22 @@ class AdminTestEnvironment {
   }
 
   /**
+   * Set file timestamp for testing
+   * @param {string} filePath - Path to file
+   * @param {Date} timestamp - New timestamp
+   */
+  async setFileTimestamp(filePath, timestamp) {
+    await fs.utimes(filePath, timestamp, timestamp);
+  }
+
+  /**
    * Parse backup filename to extract metadata
    * @param {string} filename - Backup filename
    * @returns {Object|null} Parsed metadata or null if invalid
    */
   parseBackupFilename(filename) {
     const match = filename.match(
-      /mindmeld-backup-(\d{4}-\d{2}-\d{2}-\d{6}\d{3}\d{3})\.(sqlite|sqlite\.gz)$/
+      /mindmeld-backup-(\\d{4}-\\d{2}-\\d{2}-\\d{6}\\d{3}\\d{3})\\.(sqlite|sqlite\\.gz)$/
     );
     if (!match) {
       return null;
@@ -454,7 +526,9 @@ class AdminTestEnvironment {
 
       // Create test data
       this.testDb.prepare('DELETE FROM maps').run(); // Clear first
-      this.createTestMaps(scenario.maps, scenario.name);
+      if (scenario.maps > 0) {
+        this.createTestMaps(scenario.maps);
+      }
 
       // Generate backup filename with unique timestamp
       const timestamp = new Date()
@@ -526,4 +600,4 @@ class AdminTestEnvironment {
   }
 }
 
-module.exports = AdminTestEnvironment;
+module.exports = { AdminTestEnvironment };

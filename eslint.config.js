@@ -26,6 +26,7 @@ export default [
         clearInterval: 'readonly',
         setImmediate: 'readonly',
         clearImmediate: 'readonly',
+        URL: 'readonly',
         // Jest globals
         describe: 'readonly',
         it: 'readonly',

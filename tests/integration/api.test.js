@@ -30,11 +30,33 @@ describe('API Integration Tests', () => {
   });
 
   describe('CORS', () => {
-    it('should include CORS headers', async () => {
-      const response = await request(app).get('/health').expect(200);
+    it('should include CORS headers for cross-origin requests', async () => {
+      const response = await request(app)
+        .get('/health')
+        .set('Origin', 'http://localhost:3000')
+        .expect(200);
 
       expect(response.headers['access-control-allow-origin']).toBe(
         'http://localhost:3000'
+      );
+      expect(response.headers['access-control-allow-credentials']).toBe('true');
+    });
+
+    it('should allow requests without origin header', async () => {
+      const response = await request(app).get('/health').expect(200);
+
+      // No CORS headers should be present for same-origin requests
+      expect(response.headers['access-control-allow-origin']).toBeUndefined();
+    });
+
+    it('should allow localhost variants', async () => {
+      const response = await request(app)
+        .get('/health')
+        .set('Origin', 'http://127.0.0.1:3000')
+        .expect(200);
+
+      expect(response.headers['access-control-allow-origin']).toBe(
+        'http://127.0.0.1:3000'
       );
     });
   });

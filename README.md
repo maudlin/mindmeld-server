@@ -10,7 +10,7 @@ A production-ready REST API for the MindMeld mind mapping application with integ
 - 📋 **RFC 7807 Problem Details** for structured error responses
 - 🛡️ **Production hardening** with helmet, CORS, rate limiting
 - 📊 **Structured logging** (pino + pino-http) with request IDs
-- ⚙️ **Admin Commands** with database backup and deep health diagnostics
+- ⚙️ **Comprehensive Admin Tools** with database backup/restore, data migration, and debug utilities
 - 🏗️ **Node 24 baseline** with ESLint, Prettier, Jest, Husky/lint-staged
 
 ## Quick start
@@ -36,7 +36,7 @@ npm start
 Environment
 
 - PORT (default: 3001)
-- CORS_ORIGIN (default: http://localhost:8080)
+- CORS_ORIGIN (default: http://localhost:8080) - Flexible CORS with localhost/127.0.0.1 variants and HTTPS upgrades
 - JSON_LIMIT (default: 50mb)
 - SQLITE_FILE (default: ./data/db.sqlite)
 - FEATURE_MAPS_API (default: true; set to 0/false to disable)
@@ -80,10 +80,27 @@ Errors (RFC 7807)
 
 ## Configuration
 
-- CORS: configurable via CORS_ORIGIN
-- JSON payload limit: JSON_LIMIT (default 50mb)
-- SQLite file: SQLITE_FILE (default ./data/db.sqlite)
-- Maps API: FEATURE_MAPS_API (default enabled)
+### CORS Configuration
+
+Flexible origin support via `CORS_ORIGIN` environment variable:
+
+- **Exact matching**: Configure specific origin (e.g., `http://localhost:3000`)
+- **Localhost variants**: Automatic cross-resolution between `localhost` and `127.0.0.1` on same port
+- **HTTPS upgrades**: Allows `https://` requests when config is `http://` for local development
+- **No-origin requests**: Supports requests without Origin header (Postman, mobile apps)
+
+```bash
+# Examples - all work with CORS_ORIGIN=http://localhost:3000:
+CORS_ORIGIN=http://localhost:3000    # Allows localhost:3000 AND 127.0.0.1:3000
+CORS_ORIGIN=http://127.0.0.1:8080    # Allows 127.0.0.1:8080 AND localhost:8080
+CORS_ORIGIN=http://localhost:3000    # Also allows https://localhost:3000
+```
+
+### Other Configuration
+
+- **JSON payload limit**: JSON_LIMIT (default 50mb)
+- **SQLite file**: SQLITE_FILE (default ./data/db.sqlite)
+- **Maps API**: FEATURE_MAPS_API (default enabled)
 
 ## Observability
 
@@ -138,9 +155,35 @@ Scripts
 
 Admin Commands
 
+**Database Management:**
+
 - npm run db:backup — create timestamped database backup with optional compression
+- npm run db:restore — restore database from backup files
+
+**Server Monitoring & Diagnostics:**
+
 - npm run server:health:deep — comprehensive health diagnostics with detailed reporting
+
+**Data Management & Migration:**
+
+- npm run data:export — export maps data in JSON/CSV/SQL formats with filtering
+- npm run data:import — import data with conflict resolution and validation
+- npm run data:migrate — database schema migrations with version tracking
+- npm run data:backup — advanced backup/restore with compression & encryption
+
+**Development & Debug Tools:**
+
+- npm run debug:config — inspect application configuration and validation
+- npm run debug:endpoints — analyze and test API endpoints
+- npm run debug:mcp — debug Model Context Protocol integration
+- npm run debug:routes — examine Express.js routing structure
+- npm run debug:system — system diagnostics and health checks
+
+**Testing:**
+
 - npm run test:admin — run admin command test suite
+
+📋 _All admin commands support `--help` for detailed usage information_
 
 Project structure
 
@@ -152,6 +195,18 @@ src/
 ├── utils/                # logger, event-bus, etag helpers
 ├── factories/            # server-factory (composition)
 └── index.js              # entrypoint
+
+scripts/
+└── admin/                # Admin commands and utilities
+    ├── data-export.js    # Data export utilities
+    ├── data-import.js    # Data import utilities
+    ├── data-migrate.js   # Database migrations
+    ├── data-backup.js    # Advanced backup/restore
+    ├── debug-config.js   # Configuration debugging
+    ├── debug-endpoints.js# API endpoint testing
+    ├── debug-mcp.js      # MCP debugging tools
+    ├── debug-routes.js   # Route introspection
+    └── debug-system.js   # System diagnostics
 ```
 
 ## MCP (Model Context Protocol) Integration
