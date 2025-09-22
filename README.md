@@ -251,3 +251,4 @@ FEATURE_MCP=1 npm start
 ## License
 
 MIT
+# YJS Integration Test
