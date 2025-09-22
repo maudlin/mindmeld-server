@@ -97,23 +97,24 @@ class DataExport {
         });
       }
 
-      // Add export info
-      if (config.format === 'json') {
-        exportData.export_info = {
-          version: '1.0.0',
-          exported_at: new Date().toISOString(),
-          server_version: require('../../package.json').version,
-          total_maps: maps.length,
-          format: config.format,
-          include_metadata: config.includeMetadata,
-          filter_applied: !!config.filter,
-          execution_time: Date.now() - startTime
-        };
+      // Add export info for all formats (needed for generateOutput)
+      const export_info = {
+        version: '1.0.0',
+        exported_at: new Date().toISOString(),
+        server_version: require('../../package.json').version,
+        total_maps: maps.length,
+        format: config.format,
+        include_metadata: config.includeMetadata,
+        filter_applied: !!config.filter,
+        execution_time: Date.now() - startTime
+      };
 
-        if (validation) {
-          exportData.export_info.validation = validation;
-        }
+      if (validation) {
+        export_info.validation = validation;
       }
+
+      // Add export_info to all formats (needed for generateOutput)
+      exportData.export_info = export_info;
 
       // Final progress report
       if (config.onProgress) {
