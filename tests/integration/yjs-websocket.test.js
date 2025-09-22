@@ -7,7 +7,6 @@ const WebSocket = require('ws');
 const http = require('http');
 const Y = require('yjs');
 // const createServer = require('../../src/factories/server-factory'); // unused
-const config = require('../../src/config/config');
 
 describe('Yjs WebSocket Integration Tests', () => {
   // let server; // unused
@@ -424,32 +423,89 @@ describe('Yjs WebSocket Integration Tests', () => {
 
   describe('Feature Flag Integration', () => {
     it('should respect SERVER_SYNC feature flag', async () => {
-      // This test assumes the server factory respects the feature flag
-      // We'll test that WebSocket connections work when enabled
-      const mapId = 'test-map-feature-flag';
+      // First test: WebSocket should work when SERVER_SYNC is 'on'
+      const mapId = 'test-map-feature-flag-on';
       const wsUrl = `${baseUrl}/yjs/${mapId}`;
+
+      // SERVER_SYNC is set to 'on' in beforeAll, so this should work
+      const ws = new WebSocket(wsUrl);
+
+      await new Promise((resolve, reject) => {
+        ws.on('open', resolve);
+        ws.on('error', reject);
+        setTimeout(() => reject(new Error('Connection timeout')), 2000);
+      });
+
+      expect(ws.readyState).toBe(WebSocket.OPEN);
+      ws.close();
+    });
+
+    it('should reject connections when SERVER_SYNC is disabled', async () => {
+      // Temporarily disable SERVER_SYNC for this test
+      const originalValue = process.env.SERVER_SYNC;
+      process.env.SERVER_SYNC = 'off';
+
+      // Clear module cache and restart server to pick up new config
+      delete require.cache[require.resolve('../../src/config/config')];
+      delete require.cache[
+        require.resolve('../../src/factories/server-factory')
+      ];
+
+      // Close current server
+      if (httpServer) {
+        await new Promise(resolve => {
+          httpServer.close(resolve);
+        });
+      }
+
+      // Create new server with disabled sync
+      const createServerFresh = require('../../src/factories/server-factory');
+      const app = createServerFresh({
+        port: 0,
+        corsOrigin: 'http://localhost:3000',
+        jsonLimit: '1mb'
+      });
+
+      httpServer = http.createServer(app);
+
+      // Setup WebSocket handling - should not be available when SERVER_SYNC is off
+      console.log('setupWebSocket function available:', !!app.setupWebSocket);
+      if (app.setupWebSocket) {
+        app.setupWebSocket(httpServer);
+      }
+
+      await new Promise(resolve => {
+        httpServer.listen(0, resolve);
+      });
+
+      const address = httpServer.address();
+      const newBaseUrl = `ws://localhost:${address.port}`;
+      const mapId = 'test-map-feature-flag-off';
+      const wsUrl = `${newBaseUrl}/yjs/${mapId}`;
 
       const ws = new WebSocket(wsUrl);
 
-      if (config.serverSync === 'on') {
-        await new Promise((resolve, reject) => {
-          ws.on('open', resolve);
-          ws.on('error', reject);
-          setTimeout(() => reject(new Error('Connection timeout')), 2000);
-        });
+      // If feature is disabled, connection should be rejected or not available
+      await new Promise(resolve => {
+        ws.on('error', resolve);
+        ws.on('close', resolve);
+        setTimeout(resolve, 1000);
+      });
 
-        expect(ws.readyState).toBe(WebSocket.OPEN);
-        ws.close();
+      expect(ws.readyState).not.toBe(WebSocket.OPEN);
+
+      // Restore original environment variable
+      if (originalValue !== undefined) {
+        process.env.SERVER_SYNC = originalValue;
       } else {
-        // If feature is disabled, connection should be rejected or not available
-        await new Promise(resolve => {
-          ws.on('error', resolve);
-          ws.on('close', resolve);
-          setTimeout(resolve, 1000);
-        });
-
-        expect(ws.readyState).not.toBe(WebSocket.OPEN);
+        delete process.env.SERVER_SYNC;
       }
+
+      // Clear cache again to restore original config
+      delete require.cache[require.resolve('../../src/config/config')];
+      delete require.cache[
+        require.resolve('../../src/factories/server-factory')
+      ];
     });
   });
 

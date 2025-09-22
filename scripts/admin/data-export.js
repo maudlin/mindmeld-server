@@ -533,7 +533,7 @@ class DataExport {
       );
       lines.push(`Format: ${data.export_info?.format || 'json'}`);
 
-      if (data.export_info?.execution_time) {
+      if (data.export_info?.execution_time !== undefined) {
         lines.push(`Exported in: ${data.export_info.execution_time}ms`);
       }
 
