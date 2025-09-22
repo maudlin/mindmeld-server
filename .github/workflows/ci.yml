@@ -29,7 +29,5 @@ jobs:
         run: npm run format:check
       - name: OpenAPI lint
         run: npm run openapi:lint
-      - name: Tests
-        run: npm test -- --ci --reporters=default
-      - name: Coverage
-        run: npm run test:coverage
+      - name: Tests with Coverage
+        run: npm run test:coverage -- --ci --reporters=default

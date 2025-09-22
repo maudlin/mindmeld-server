@@ -500,6 +500,123 @@ npm run data:import [-- --file=/path/to/export.json] [--merge] [--dry-run]
 - Supports rollback on failure
 - Logs all import operations
 
+### Data Migration
+
+#### `npm run data:migrate`
+
+**Purpose**: Handle database schema migrations and data transformations
+
+**Usage**:
+
+```bash
+npm run data:migrate [-- --version=latest] [--dry-run] [--force] [--rollback]
+```
+
+**Options**:
+
+- `--version`: Target migration version (latest, specific version, or 'up'/'down')
+- `--dry-run`: Preview migrations without applying
+- `--force`: Override migration safety checks
+- `--rollback`: Roll back the last migration
+- `--verbose`: Show detailed migration steps
+- `--backup`: Create backup before migration
+
+**Behavior**:
+
+- Applies pending database schema changes
+- Handles data transformations between versions
+- Creates automatic backups before major changes
+- Validates data integrity after migration
+- Supports rollback to previous versions
+- Tracks migration history
+
+**Output**:
+
+```
+Migration Status
+================
+Current Version:   1.2.0
+Target Version:    1.3.0
+Pending:          2 migrations
+
+Applying Migrations:
+✅ 001_add_metadata_columns.sql       (0.12s)
+✅ 002_update_size_calculation.sql     (0.35s)
+
+Migration Complete
+✅ Database schema updated to v1.3.0
+✅ Data integrity validated
+✅ Backup created: ./backups/pre-migration-20250120-140255.sqlite
+```
+
+### Backup Management
+
+#### `npm run data:backup`
+
+**Purpose**: Create, restore, and manage database backups
+
+**Usage**:
+
+```bash
+npm run data:backup [-- --create] [--restore=/path/to/backup] [--list] [--clean]
+```
+
+**Options**:
+
+- `--create`: Create new backup (default action)
+- `--restore`: Restore from backup file
+- `--list`: List available backups
+- `--clean`: Remove old backups (keeps last 10)
+- `--compress`: Enable compression (gzip)
+- `--encrypt`: Encrypt backup file
+- `--output`: Custom backup location
+- `--name`: Custom backup name
+
+**Behavior**:
+
+- Creates compressed, timestamped backups
+- Supports encryption for sensitive data
+- Validates backup integrity
+- Manages backup retention policies
+- Provides restore verification
+- Logs all backup operations
+
+**Backup Creation Output**:
+
+```
+Backup Creation
+===============
+Starting backup...
+✅ Database locked for consistent backup
+✅ Data exported (150 maps, 2.1 MB)
+✅ Compression applied (2.1 MB → 524 KB)
+✅ Integrity verified
+
+Backup Complete:
+File:     ./backups/mindmeld-20250120-140255.sqlite.gz
+Size:     524 KB
+Maps:     150
+Duration: 1.2s
+```
+
+**Restore Output**:
+
+```
+Backup Restore
+==============
+Validating backup file...
+✅ Backup integrity verified
+✅ Compatible version (1.2.0)
+✅ Pre-restore backup created
+
+Restoring data...
+✅ 150 maps restored
+✅ Indexes rebuilt
+✅ Data integrity verified
+
+Restore Complete (2.1s)
+```
+
 ### Data Cleanup
 
 #### `npm run data:cleanup`
@@ -509,8 +626,16 @@ npm run data:import [-- --file=/path/to/export.json] [--merge] [--dry-run]
 **Usage**:
 
 ```bash
-npm run data:cleanup [-- --dry-run] [--fix-corruption] [--verbose]
+npm run data:cleanup [-- --dry-run] [--fix-corruption] [--vacuum] [--verbose]
 ```
+
+**Options**:
+
+- `--dry-run`: Preview cleanup without making changes
+- `--fix-corruption`: Attempt to repair corrupted data
+- `--vacuum`: Compact database to reclaim space
+- `--orphans`: Remove orphaned records
+- `--verbose`: Show detailed cleanup operations
 
 **Operations**:
 
@@ -520,6 +645,23 @@ npm run data:cleanup [-- --dry-run] [--fix-corruption] [--verbose]
 - Recalculate size_bytes
 - Validate foreign key constraints
 - Clean up temporary files
+- Optimize database indexes
+- Reclaim unused space
+
+**Output**:
+
+```
+Data Cleanup Results
+====================
+✅ Fixed 3 corrupted JSON records
+✅ Removed 12 orphaned references
+✅ Updated 8 missing timestamps
+✅ Recalculated 150 size values
+✅ Vacuumed database (2.1 MB → 1.8 MB)
+
+Space reclaimed: 320 KB
+Integrity: 100% valid
+```
 
 #### `npm run data:validate`
 
@@ -528,8 +670,15 @@ npm run data:cleanup [-- --dry-run] [--fix-corruption] [--verbose]
 **Usage**:
 
 ```bash
-npm run data:validate [-- --fix] [--report=/path/to/report.json]
+npm run data:validate [-- --fix] [--report=/path/to/report.json] [--detailed]
 ```
+
+**Options**:
+
+- `--fix`: Automatically fix repairable issues
+- `--report`: Generate detailed validation report
+- `--detailed`: Include per-record validation details
+- `--format`: Report format (json, html, text)
 
 **Checks**:
 
@@ -539,20 +688,46 @@ npm run data:validate [-- --fix] [--report=/path/to/report.json]
 - Size calculations
 - Timestamp formats
 - Referential integrity
+- Schema compliance
+- Version compatibility
+
+**Output**:
+
+```
+Data Validation Report
+======================
+✅ JSON Validity:      150/150 valid
+✅ Required Fields:    150/150 complete
+✅ Data Types:         150/150 correct
+⚠️  Size Calculation:  147/150 accurate (3 recalculated)
+✅ Timestamps:         150/150 valid
+✅ Schema Compliance:  150/150 compliant
+
+Overall Status: HEALTHY (99.8%)
+Issues Fixed:   3
+Recommendations: Run cleanup to optimize
+```
 
 ## Development & Debug Tools
 
 ### Configuration Debugging
 
-#### `npm run debug:config`
+#### `npm run debug:config` 🔧 **PLANNED**
 
-**Purpose**: Show complete resolved configuration
+**Purpose**: Show complete resolved configuration with source tracking and validation
 
 **Usage**:
 
 ```bash
 npm run debug:config [-- --format=json|table] [--show-env] [--validate]
 ```
+
+**Options**:
+
+- `--format`: Output format (table for human reading, json for scripts)
+- `--show-env`: Include all environment variables (sanitized)
+- `--validate`: Run configuration validation checks
+- `--defaults`: Show default values for unset options
 
 **Output**:
 
@@ -583,15 +758,22 @@ Feature Flags:
 
 ### API Exploration
 
-#### `npm run debug:routes`
+#### `npm run debug:routes` 🔧 **PLANNED**
 
-**Purpose**: List all registered routes and middlewares
+**Purpose**: List all registered routes and middlewares for API debugging
 
 **Usage**:
 
 ```bash
-npm run debug:routes [-- --format=table|json] [--test]
+npm run debug:routes [-- --format=table|json] [--test] [--method=GET] [--path=/maps]
 ```
+
+**Options**:
+
+- `--format`: Output format (table, json)
+- `--test`: Test route accessibility
+- `--method`: Filter by HTTP method
+- `--path`: Filter by path pattern
 
 **Output**:
 
@@ -609,15 +791,22 @@ GET    /mcp/sse         [helmet, cors, logging] (MCP)
 POST   /mcp/http        [helmet, cors, logging] (MCP)
 ```
 
-#### `npm run debug:endpoints`
+#### `npm run debug:endpoints` 🔧 **PLANNED**
 
-**Purpose**: Test all endpoints for basic functionality
+**Purpose**: Test all endpoints for basic functionality and performance
 
 **Usage**:
 
 ```bash
-npm run debug:endpoints [-- --verbose] [--timeout=5000]
+npm run debug:endpoints [-- --verbose] [--timeout=5000] [--parallel] [--report]
 ```
+
+**Options**:
+
+- `--verbose`: Show detailed request/response information
+- `--timeout`: Request timeout in milliseconds
+- `--parallel`: Run tests concurrently
+- `--report`: Generate detailed test report
 
 **Behavior**:
 
@@ -629,15 +818,22 @@ npm run debug:endpoints [-- --verbose] [--timeout=5000]
 
 ### MCP Testing
 
-#### `npm run debug:mcp`
+#### `npm run debug:mcp` 🔧 **PLANNED**
 
-**Purpose**: Test MCP tools and resources
+**Purpose**: Test MCP (Model Context Protocol) integration and functionality
 
 **Usage**:
 
 ```bash
-npm run debug:mcp [-- --tool=all] [--resource=all] [--verbose]
+npm run debug:mcp [-- --tool=all] [--resource=all] [--verbose] [--transport=sse]
 ```
+
+**Options**:
+
+- `--tool`: Specific tool to test (or 'all')
+- `--resource`: Specific resource to test (or 'all')
+- `--verbose`: Show detailed protocol communication
+- `--transport`: Test specific transport (sse, http)
 
 **Tests**:
 
@@ -649,15 +845,22 @@ npm run debug:mcp [-- --tool=all] [--resource=all] [--verbose]
 
 ### System Diagnostics
 
-#### `npm run debug:system`
+#### `npm run debug:system` 🔧 **PLANNED**
 
-**Purpose**: System environment and dependencies
+**Purpose**: Analyze system environment and dependencies for debugging
 
 **Usage**:
 
 ```bash
-npm run debug:system [-- --format=table|json]
+npm run debug:system [-- --format=table|json] [--check-requirements] [--section=all]
 ```
+
+**Options**:
+
+- `--format`: Output format (table, json)
+- `--check-requirements`: Validate against system requirements
+- `--section`: Specific section to show (node, os, network, all)
+- `--export`: Export to file
 
 **Information**:
 
