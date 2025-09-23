@@ -35,7 +35,8 @@
     "test:admin": "jest tests/admin --testTimeout=30000",
     "test:admin:watch": "jest tests/admin --watch --testTimeout=30000",
     "health:check": "bash scripts/health-check-server.sh",
-    "health:pre-commit": "bash scripts/pre-commit-health.sh"
+    "health:pre-commit": "bash scripts/pre-commit-health.sh",
+    "cleanup:backups": "node -e \"require('./tests/utils/temp-files').cleanupOldTestBackups()\""
   },
   "dependencies": {
     "better-sqlite3": "^12.2.0",

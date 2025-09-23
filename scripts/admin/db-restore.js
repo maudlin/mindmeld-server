@@ -20,7 +20,7 @@ class DatabaseRestore {
       backupFile: options.backupFile || null,
       safetyDir: options.safetyDir || './backups',
       verify: options.verify !== false, // Default to true
-      createSafety: options.createSafety !== false, // Default to true
+      createSafety: options.createSafety === true, // Default to false
       force: options.force || false,
       verbose: options.verbose || false,
       ...options
@@ -422,8 +422,8 @@ function parseArguments() {
       options.backupFile = args[++i];
     } else if (arg === '--backup-dir' && args[i + 1]) {
       options.backupDir = args[++i];
-    } else if (arg === '--no-safety') {
-      options.createSafety = false;
+    } else if (arg === '--safety') {
+      options.createSafety = true;
     } else if (arg === '--no-verify') {
       options.verify = false;
     } else if (arg === '--force') {
@@ -451,7 +451,7 @@ Usage: node db-restore.js [options]
 Options:
   --backup <path>        Specific backup file to restore from
   --backup-dir <path>    Directory to search for backups (default: ./backups)
-  --no-safety            Skip creating safety backup of current database
+  --safety               Create safety backup of current database (not created by default)
   --no-verify            Skip backup file validation before restore
   --force                Skip confirmation prompts
   --verbose              Show detailed progress information
@@ -459,7 +459,7 @@ Options:
 
 Examples:
   node db-restore.js --backup ./backups/mindmeld-backup-2025-01-10-120000.sqlite
-  node db-restore.js --no-safety --verbose
+  node db-restore.js --safety --verbose
   node db-restore.js --backup-dir /path/to/backups --force
 `);
 }

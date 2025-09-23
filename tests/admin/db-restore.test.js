@@ -3,6 +3,7 @@ const path = require('path');
 const zlib = require('zlib');
 const { promisify } = require('util');
 const AdminTestEnvironment = require('./helpers/admin-test-env');
+const { cleanupOldTestBackups } = require('../utils/temp-files');
 
 // We'll create the DatabaseRestore class during implementation
 let DatabaseRestore;
@@ -30,6 +31,11 @@ describe('Admin Command: db:restore', () => {
     await testEnv.teardown();
   });
 
+  afterAll(async () => {
+    // Clean up old test safety backups
+    await cleanupOldTestBackups();
+  });
+
   describe('class instantiation', () => {
     it('creates DatabaseRestore with default options', () => {
       if (!DatabaseRestore) {
@@ -39,7 +45,7 @@ describe('Admin Command: db:restore', () => {
       const restore = new DatabaseRestore();
       expect(restore.options.backupDir).toBe('./backups');
       expect(restore.options.verify).toBe(true);
-      expect(restore.options.createSafety).toBe(true);
+      expect(restore.options.createSafety).toBe(false);
       expect(restore.options.verbose).toBe(false);
     });
 
@@ -191,7 +197,9 @@ describe('Admin Command: db:restore', () => {
       const uncompressedBackup = backups.find(f => f.endsWith('.sqlite'));
       const backupPath = path.join(testEnv.backupDir, uncompressedBackup);
 
-      const restore = new DatabaseRestore();
+      const restore = new DatabaseRestore({
+        safetyDir: testEnv.backupDir
+      });
       const isValid = await restore.validateBackupFile(backupPath);
 
       expect(isValid).toBe(true);
@@ -208,7 +216,9 @@ describe('Admin Command: db:restore', () => {
       if (compressedBackup) {
         const backupPath = path.join(testEnv.backupDir, compressedBackup);
 
-        const restore = new DatabaseRestore();
+        const restore = new DatabaseRestore({
+          safetyDir: testEnv.backupDir
+        });
         const isValid = await restore.validateBackupFile(backupPath);
 
         expect(isValid).toBe(true);
@@ -228,7 +238,9 @@ describe('Admin Command: db:restore', () => {
       await fs.writeFile(corruptedPath, 'This is not a valid SQLite file');
 
       try {
-        const restore = new DatabaseRestore();
+        const restore = new DatabaseRestore({
+          safetyDir: testEnv.backupDir
+        });
         const isValid = await restore.validateBackupFile(corruptedPath);
         expect(isValid).toBe(false);
       } finally {
@@ -251,7 +263,9 @@ describe('Admin Command: db:restore', () => {
         'does-not-exist.sqlite'
       );
 
-      const restore = new DatabaseRestore();
+      const restore = new DatabaseRestore({
+        safetyDir: testEnv.backupDir
+      });
       await expect(restore.validateBackupFile(nonExistentPath)).rejects.toThrow(
         'Backup file not found'
       );
@@ -441,7 +455,9 @@ describe('Admin Command: db:restore', () => {
       }
 
       const restore = new DatabaseRestore({
-        backupFile: '/non/existent/backup.sqlite'
+        backupFile: '/non/existent/backup.sqlite',
+        createSafety: false, // Don't create safety backups for error condition tests
+        safetyDir: testEnv.backupDir
       });
 
       await expect(restore.restoreDatabase()).rejects.toThrow(
