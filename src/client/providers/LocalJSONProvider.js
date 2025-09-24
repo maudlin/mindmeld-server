@@ -39,7 +39,9 @@ class LocalJSONProvider extends DataProviderInterface {
     // State management
     this.autosavePaused = false;
     this.subscribers = new Map(); // mapId -> Set of callbacks
+    this.changeSubscribers = new Set(); // Set of normalized change callbacks
     this.isOnlineStatus = true; // LocalProvider is always "online" from its perspective
+    this.isHydrating = false; // Flag to suppress events during data loading
 
     // Initialize storage
     this.initializeStorage();
@@ -158,12 +160,21 @@ class LocalJSONProvider extends DataProviderInterface {
       localStorage.setItem(mapKey, JSON.stringify(mapData));
       localStorage.setItem(metaKey, JSON.stringify(metadata));
 
-      // Notify subscribers of the update
+      // Notify subscribers of the update (both old and new style)
       this.notifySubscribers(mapId, {
         type: 'saved',
         mapId,
         data: { ...mapData, meta: metadata },
         options
+      });
+
+      // Notify change subscribers (unless during hydration)
+      this.notifyChangeSubscribers({
+        type: 'snapshot', // For save operations, we'll use snapshot type
+        payload: {
+          mapId,
+          data: { ...mapData, meta: metadata }
+        }
       });
 
       return {
@@ -344,18 +355,28 @@ class LocalJSONProvider extends DataProviderInterface {
 
   /**
    * Pause autosave functionality
+   * Enhanced for MS-62 migration scenarios
    */
-  pauseAutosave() {
+  pauseAutosave(reason = 'manual') {
+    const wasPaused = this.autosavePaused;
     this.autosavePaused = true;
-    console.log('LocalJSONProvider: Autosave paused');
+
+    if (!wasPaused) {
+      console.log(`LocalJSONProvider: Autosave paused (reason: ${reason})`);
+    }
   }
 
   /**
    * Resume autosave functionality
+   * Enhanced for MS-62 migration scenarios
    */
-  resumeAutosave() {
+  resumeAutosave(reason = 'manual') {
+    const wasPaused = this.autosavePaused;
     this.autosavePaused = false;
-    console.log('LocalJSONProvider: Autosave resumed');
+
+    if (wasPaused) {
+      console.log(`LocalJSONProvider: Autosave resumed (reason: ${reason})`);
+    }
   }
 
   /**
@@ -363,6 +384,295 @@ class LocalJSONProvider extends DataProviderInterface {
    */
   isOnline() {
     return this.isOnlineStatus;
+  }
+
+  // MS-61 Required Methods - Granular Operations
+
+  /**
+   * Initialize provider for a specific map
+   *
+   * @param {string} mapId - Map identifier
+   * @param {Object} [options={}] - Initialization options
+   * @param {boolean} [options.serverSync=true] - Enable server synchronization (ignored for LocalProvider)
+   * @param {boolean} [options.offlineMode=false] - Start in offline-only mode (always true for LocalProvider)
+   * @returns {Function} Unsubscribe function
+   */
+  async init(mapId, options = {}) {
+    this.validateMapId(mapId);
+
+    // LocalProvider is always offline, so we ignore serverSync
+    if (options.serverSync !== false) {
+      console.log(
+        'LocalJSONProvider: serverSync option ignored (always offline)'
+      );
+    }
+
+    // Ensure map exists or create empty one
+    try {
+      await this.load(mapId);
+    } catch (error) {
+      if (error.message.includes('not found')) {
+        // Create empty map
+        const emptyMap = {
+          n: [],
+          c: [],
+          meta: {
+            version: 1,
+            created: new Date().toISOString(),
+            modified: new Date().toISOString(),
+            title: 'Untitled Map'
+          }
+        };
+        await this.save(mapId, emptyMap);
+      } else {
+        throw error;
+      }
+    }
+
+    // Set up subscription for this map
+    const unsubscribe = () => {
+      this.unsubscribe(mapId);
+    };
+
+    return unsubscribe;
+  }
+
+  /**
+   * Subscribe to normalized change events
+   * Different from the existing subscribe() method - this provides normalized events
+   *
+   * @param {Function} onChange - Callback for change events
+   * @returns {Function} Unsubscribe function
+   */
+  subscribeToChanges(onChange) {
+    if (typeof onChange !== 'function') {
+      throw new Error('onChange must be a function');
+    }
+
+    if (!this.changeSubscribers) {
+      this.changeSubscribers = new Set();
+    }
+
+    this.changeSubscribers.add(onChange);
+
+    return () => {
+      this.changeSubscribers.delete(onChange);
+    };
+  }
+
+  /**
+   * Insert or update a note
+   *
+   * @param {Object} noteData - Note data
+   * @param {string} noteData.id - Unique note identifier
+   * @param {string} noteData.content - Markdown content
+   * @param {Array<number>} noteData.pos - Position [x, y]
+   * @param {string} [noteData.color] - Note color
+   * @returns {Promise<void>}
+   */
+  async upsertNote(noteData) {
+    if (!noteData || !noteData.id || typeof noteData.content !== 'string') {
+      throw new Error('Invalid note data: id and content are required');
+    }
+
+    if (!Array.isArray(noteData.pos) || noteData.pos.length !== 2) {
+      throw new Error('Invalid note position: must be [x, y] array');
+    }
+
+    // This is a simplified implementation - in practice we'd need to know which map
+    // For LocalProvider, we'll implement this as part of a broader state management approach
+    throw new Error(
+      'upsertNote requires active map context - use save() with full map data instead'
+    );
+  }
+
+  /**
+   * Delete a note by ID
+   *
+   * @param {string} noteId - Note identifier to delete
+   * @returns {Promise<boolean>} True if deleted, false if not found
+   */
+  async deleteNote(noteId) {
+    if (!noteId) {
+      throw new Error('Note ID is required');
+    }
+
+    // This is a simplified implementation - in practice we'd need to know which map
+    throw new Error(
+      'deleteNote requires active map context - use save() with updated map data instead'
+    );
+  }
+
+  /**
+   * Insert or update a connection
+   *
+   * @param {Object} connectionData - Connection data
+   * @param {string} connectionData.from - Source note ID
+   * @param {string} connectionData.to - Target note ID
+   * @param {string} [connectionData.type='arrow'] - Connection type
+   * @returns {Promise<void>}
+   */
+  async upsertConnection(connectionData) {
+    if (!connectionData || !connectionData.from || !connectionData.to) {
+      throw new Error('Invalid connection data: from and to are required');
+    }
+
+    // This is a simplified implementation - in practice we'd need to know which map
+    throw new Error(
+      'upsertConnection requires active map context - use save() with full map data instead'
+    );
+  }
+
+  /**
+   * Delete a connection by from/to/type
+   *
+   * @param {string} from - Source note ID
+   * @param {string} to - Target note ID
+   * @param {string} [type='arrow'] - Connection type
+   * @returns {Promise<boolean>} True if deleted, false if not found
+   */
+  async deleteConnection(from, to, _type = 'arrow') {
+    if (!from || !to) {
+      throw new Error('Connection from and to are required');
+    }
+
+    // This is a simplified implementation - in practice we'd need to know which map
+    throw new Error(
+      'deleteConnection requires active map context - use save() with updated map data instead'
+    );
+  }
+
+  /**
+   * Update map metadata for a specific map
+   *
+   * @param {string} mapId - Map identifier
+   * @param {Object} metaUpdates - Metadata updates
+   * @returns {Promise<void>}
+   */
+  async setMeta(mapId, metaUpdates) {
+    this.validateMapId(mapId);
+
+    if (!metaUpdates || typeof metaUpdates !== 'object') {
+      throw new Error('Meta updates must be an object');
+    }
+
+    try {
+      // Load current map
+      const currentMap = await this.load(mapId);
+
+      // Update metadata
+      const updatedMap = {
+        ...currentMap,
+        meta: {
+          ...currentMap.meta,
+          ...metaUpdates,
+          modified: new Date().toISOString()
+        }
+      };
+
+      // Save updated map
+      await this.save(mapId, updatedMap, { skipMetaUpdate: true });
+
+      // Notify change subscribers
+      this.notifyChangeSubscribers({
+        type: 'meta',
+        payload: {
+          mapId,
+          updates: metaUpdates
+        }
+      });
+    } catch (error) {
+      throw new Error(
+        `Failed to update metadata for map ${mapId}: ${error.message}`
+      );
+    }
+  }
+
+  /**
+   * Get current map data as JSON snapshot
+   *
+   * @param {string} mapId - Map identifier
+   * @returns {Promise<Object>} Map data { n: notes[], c: connections[], meta }
+   */
+  async getSnapshot(mapId) {
+    return await this.load(mapId);
+  }
+
+  /**
+   * Import JSON data for a specific map, replacing current contents
+   * Suppresses user events during import
+   *
+   * @param {string} mapId - Map identifier
+   * @param {Object} jsonData - Map data in MindMeld JSON format
+   * @param {Object} [options={}] - Import options
+   * @param {boolean} [options.merge=false] - Merge instead of replace
+   * @param {boolean} [options.suppressEvents=true] - Suppress change notifications
+   * @returns {Promise<void>}
+   */
+  async importJSON(mapId, jsonData, options = {}) {
+    this.validateMapId(mapId);
+
+    if (!this.validateMapData(jsonData)) {
+      throw new Error('Invalid JSON data format');
+    }
+
+    const suppressEvents = options.suppressEvents !== false;
+
+    try {
+      // Set hydration mode to suppress events
+      if (suppressEvents) {
+        this.isHydrating = true;
+      }
+
+      if (options.merge && !options.replace) {
+        // Merge with existing data
+        try {
+          const existingData = await this.load(mapId);
+          const mergedData = {
+            n: [...(existingData.n || []), ...(jsonData.n || [])],
+            c: [...(existingData.c || []), ...(jsonData.c || [])],
+            meta: {
+              ...existingData.meta,
+              ...jsonData.meta,
+              modified: new Date().toISOString()
+            }
+          };
+          await this.save(mapId, mergedData, { force: true });
+        } catch (_loadError) {
+          // If load fails (map doesn't exist), just save new data
+          await this.save(mapId, jsonData, { force: true });
+        }
+      } else {
+        // Replace existing data
+        await this.save(mapId, jsonData, { force: true });
+      }
+
+      // Notify change subscribers (unless suppressed)
+      if (!suppressEvents) {
+        this.notifyChangeSubscribers({
+          type: 'snapshot',
+          payload: {
+            mapId,
+            data: jsonData
+          }
+        });
+      }
+    } finally {
+      // Always clear hydration mode
+      if (suppressEvents) {
+        this.isHydrating = false;
+      }
+    }
+  }
+
+  /**
+   * Export current map data as JSON for backup/interchange
+   *
+   * @param {string} mapId - Map identifier
+   * @returns {Promise<Object>} Map data in MindMeld JSON format
+   */
+  async exportJSON(mapId) {
+    return await this.load(mapId);
   }
 
   // Extended functionality specific to LocalJSONProvider
@@ -443,26 +753,42 @@ class LocalJSONProvider extends DataProviderInterface {
 
   /**
    * Import maps from exported JSON structure
+   * Enhanced for MS-62 with hydration suppression
    */
-  async importMaps(exportData, _options = {}) {
+  async importMaps(exportData, options = {}) {
     if (!exportData.maps || typeof exportData.maps !== 'object') {
       throw new Error('Invalid export data structure');
     }
 
+    const suppressEvents = options.suppressEvents !== false;
     const results = {
       imported: 0,
       failed: 0,
       errors: []
     };
 
-    for (const [mapId, mapData] of Object.entries(exportData.maps)) {
-      try {
-        await this.save(mapId, mapData, { force: true });
-        results.imported++;
-      } catch (error) {
-        results.failed++;
-        results.errors.push(`${mapId}: ${error.message}`);
+    try {
+      // Pause autosave and enable hydration mode during bulk import
+      this.pauseAutosave('bulk-import');
+      if (suppressEvents) {
+        this.isHydrating = true;
       }
+
+      for (const [mapId, mapData] of Object.entries(exportData.maps)) {
+        try {
+          await this.save(mapId, mapData, { force: true });
+          results.imported++;
+        } catch (error) {
+          results.failed++;
+          results.errors.push(`${mapId}: ${error.message}`);
+        }
+      }
+    } finally {
+      // Always restore state
+      if (suppressEvents) {
+        this.isHydrating = false;
+      }
+      this.resumeAutosave('bulk-import');
     }
 
     return results;
@@ -581,6 +907,31 @@ class LocalJSONProvider extends DataProviderInterface {
         }
       });
     }
+  }
+
+  /**
+   * Notify normalized change subscribers
+   * Only notifies if not in hydration mode
+   */
+  notifyChangeSubscribers(changeEvent) {
+    // Don't notify during hydration to prevent feedback loops
+    if (this.isHydrating) {
+      console.log(
+        'LocalJSONProvider: Suppressing change event during hydration'
+      );
+      return;
+    }
+
+    this.changeSubscribers.forEach(callback => {
+      try {
+        callback(changeEvent);
+      } catch (error) {
+        console.warn(
+          'LocalJSONProvider: Change subscriber callback failed:',
+          error
+        );
+      }
+    });
   }
 }
 
