@@ -1,12 +1,16 @@
 const path = require('path');
 const { promises: fs } = require('fs');
 const { AdminTestEnvironment } = require('../helpers/admin-test-environment');
-const { tempFileManager, cleanupStrayTestFiles, cleanupOldTestBackups } = require('../utils/temp-files');
+const {
+  tempFileManager,
+  cleanupStrayTestFiles,
+  cleanupOldTestBackups
+} = require('../utils/temp-files');
 
 describe('Admin Command: data:import', () => {
   let testEnv;
   let dataImport;
-  
+
   afterAll(async () => {
     // Global cleanup of any stray files that might have been created
     await cleanupStrayTestFiles();
@@ -342,7 +346,7 @@ describe('Admin Command: data:import', () => {
       expect(result.backup_path).toMatch(
         /pre-import-\d{4}-\d{2}-\d{2}-\d+Z?\.sqlite/
       );
-      
+
       // Register backup file for cleanup
       tempFileManager.registerFileForCleanup(result.backup_path);
     });

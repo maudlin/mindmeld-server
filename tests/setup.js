@@ -18,7 +18,7 @@ afterAll(async () => {
   } catch {
     // Ignore if directory doesn't exist
   }
-  
+
   // Clean up any safety backups created during tests
   await cleanupOldTestBackups();
 });

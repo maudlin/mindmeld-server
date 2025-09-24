@@ -1,16 +1,16 @@
 /**
  * Hydration Suppression Utilities
- * 
+ *
  * Provides mechanisms to prevent server-side rendering of client-only features,
  * particularly DataProvider instances that require browser APIs (localStorage, WebSocket).
  * Ensures clean separation between server/client data flows.
- * 
+ *
  * Features:
  * - Server-side detection
  * - Component-level hydration suppression
  * - Safe client-side initialization
  * - Development mode warnings
- * 
+ *
  * @see MS-62: Client boundary + LocalJSONProvider; hydration suppression; autosave pause/resume
  */
 
@@ -28,7 +28,7 @@ class HydrationChecker {
       typeof navigator === 'undefined'
     );
   }
-  
+
   /**
    * Check if we're in a hydration phase
    */
@@ -36,7 +36,7 @@ class HydrationChecker {
     if (this.isServerSide()) {
       return false;
     }
-    
+
     // Check for hydration indicators
     return (
       typeof window !== 'undefined' &&
@@ -44,7 +44,7 @@ class HydrationChecker {
       !window.document.documentElement.hasAttribute('data-hydrated')
     );
   }
-  
+
   /**
    * Mark that hydration is complete
    */
@@ -53,7 +53,7 @@ class HydrationChecker {
       window.document.documentElement.setAttribute('data-hydrated', 'true');
     }
   }
-  
+
   /**
    * Check if browser APIs are available
    */
@@ -79,10 +79,10 @@ class HydrationSuppressor {
       ...options
     };
   }
-  
+
   /**
    * Suppress execution if conditions are met
-   * 
+   *
    * @param {Function} fn - Function to potentially suppress
    * @param {*} fallback - Fallback value if suppressed
    * @returns {*} Function result or fallback
@@ -93,19 +93,22 @@ class HydrationSuppressor {
       this.log('Suppressing execution on server-side');
       return fallback;
     }
-    
+
     // Hydration phase suppression
-    if (this.options.suppressDuringHydration && HydrationChecker.isHydrating()) {
+    if (
+      this.options.suppressDuringHydration &&
+      HydrationChecker.isHydrating()
+    ) {
       this.log('Suppressing execution during hydration');
       return fallback;
     }
-    
+
     // Browser API availability check
     if (!HydrationChecker.hasBrowserAPIs()) {
       this.log('Suppressing execution - browser APIs not available');
       return fallback;
     }
-    
+
     // Safe to execute
     try {
       return fn();
@@ -114,7 +117,7 @@ class HydrationSuppressor {
       return fallback;
     }
   }
-  
+
   /**
    * Async version of suppress
    */
@@ -124,19 +127,22 @@ class HydrationSuppressor {
       this.log('Suppressing async execution on server-side');
       return Promise.resolve(fallback);
     }
-    
+
     // Hydration phase suppression
-    if (this.options.suppressDuringHydration && HydrationChecker.isHydrating()) {
+    if (
+      this.options.suppressDuringHydration &&
+      HydrationChecker.isHydrating()
+    ) {
       this.log('Suppressing async execution during hydration');
       return Promise.resolve(fallback);
     }
-    
+
     // Browser API availability check
     if (!HydrationChecker.hasBrowserAPIs()) {
       this.log('Suppressing async execution - browser APIs not available');
       return Promise.resolve(fallback);
     }
-    
+
     // Safe to execute
     try {
       return await fn();
@@ -145,29 +151,35 @@ class HydrationSuppressor {
       return fallback;
     }
   }
-  
+
   /**
    * Create a component wrapper that handles hydration
    */
   wrapComponent(Component, LoadingComponent = null) {
     const suppressor = this;
-    
+
     return function HydratedComponent(props) {
       // Server-side: return loading/placeholder component
-      if (suppressor.options.suppressOnServer && HydrationChecker.isServerSide()) {
+      if (
+        suppressor.options.suppressOnServer &&
+        HydrationChecker.isServerSide()
+      ) {
         return LoadingComponent ? LoadingComponent(props) : null;
       }
-      
+
       // Client-side during hydration: return loading component
-      if (suppressor.options.suppressDuringHydration && HydrationChecker.isHydrating()) {
+      if (
+        suppressor.options.suppressDuringHydration &&
+        HydrationChecker.isHydrating()
+      ) {
         return LoadingComponent ? LoadingComponent(props) : null;
       }
-      
+
       // Safe to render the actual component
       return Component(props);
     };
   }
-  
+
   /**
    * Wait for client-side hydration to complete
    */
@@ -175,13 +187,13 @@ class HydrationSuppressor {
     if (HydrationChecker.isServerSide()) {
       return; // No-op on server
     }
-    
-    return new Promise((resolve) => {
+
+    return new Promise(resolve => {
       if (!HydrationChecker.isHydrating()) {
         resolve();
         return;
       }
-      
+
       // Poll for hydration completion
       const checkHydration = () => {
         if (!HydrationChecker.isHydrating()) {
@@ -190,11 +202,11 @@ class HydrationSuppressor {
           setTimeout(checkHydration, 50);
         }
       };
-      
+
       checkHydration();
     });
   }
-  
+
   /**
    * Safe initialization wrapper for DataProvider
    */
@@ -202,15 +214,15 @@ class HydrationSuppressor {
     return this.suppressAsync(async () => {
       // Wait for hydration to complete
       await this.waitForHydration();
-      
+
       // Mark hydration as complete
       HydrationChecker.markHydrationComplete();
-      
+
       // Create the provider
       return await factory.createProvider(options);
     });
   }
-  
+
   /**
    * Log messages if logging is enabled
    */
@@ -235,7 +247,7 @@ const HydrationUtils = {
         return window.localStorage.getItem(key);
       });
     },
-    
+
     setItem(key, value) {
       const suppressor = new HydrationSuppressor();
       return suppressor.suppress(() => {
@@ -243,7 +255,7 @@ const HydrationUtils = {
         return true;
       }, false);
     },
-    
+
     removeItem(key) {
       const suppressor = new HydrationSuppressor();
       return suppressor.suppress(() => {
@@ -252,7 +264,7 @@ const HydrationUtils = {
       }, false);
     }
   },
-  
+
   /**
    * Create a hydration-safe hook (for use with React or similar frameworks)
    */
@@ -261,27 +273,30 @@ const HydrationUtils = {
       const [provider, setProvider] = React.useState(null);
       const [error, setError] = React.useState(null);
       const [loading, setLoading] = React.useState(true);
-      
+
       React.useEffect(() => {
         const suppressor = new HydrationSuppressor();
-        
-        suppressor.initializeDataProvider(factory, options)
+
+        suppressor
+          .initializeDataProvider(factory, options)
           .then(setProvider)
           .catch(setError)
           .finally(() => setLoading(false));
       }, []);
-      
+
       return { provider, error, loading };
     };
   },
-  
+
   /**
    * Check if it's safe to use client-side features
    */
   isClientSafe() {
-    return !HydrationChecker.isServerSide() && HydrationChecker.hasBrowserAPIs();
+    return (
+      !HydrationChecker.isServerSide() && HydrationChecker.hasBrowserAPIs()
+    );
   },
-  
+
   /**
    * Defer execution until client-side is ready
    */
@@ -289,7 +304,7 @@ const HydrationUtils = {
     if (HydrationChecker.isServerSide()) {
       return;
     }
-    
+
     if (typeof window.requestIdleCallback !== 'undefined') {
       window.requestIdleCallback(fn);
     } else {

@@ -1,6 +1,6 @@
 /**
  * Test utilities for managing temporary files and cleanup
- * 
+ *
  * Ensures all test-generated files are created in temporary directories
  * and properly cleaned up after tests complete.
  */
@@ -62,11 +62,12 @@ class TempFileManager {
    * @returns {string} Unique filename
    */
   generateUniqueFilename(prefix, extension) {
-    const timestamp = new Date()
-      .toISOString()
-      .replace(/[:.]/g, '')
-      .replace('T', '-')
-      .split('.')[0] + 'Z';
+    const timestamp =
+      new Date()
+        .toISOString()
+        .replace(/[:.]/g, '')
+        .replace('T', '-')
+        .split('.')[0] + 'Z';
     return `${prefix}-${timestamp}.${extension}`;
   }
 
@@ -115,7 +116,9 @@ class TempFileManager {
         await fs.rm(dirPath, { recursive: true, force: true });
       } catch (error) {
         if (error.code !== 'ENOENT') {
-          errors.push(`Failed to delete directory ${dirPath}: ${error.message}`);
+          errors.push(
+            `Failed to delete directory ${dirPath}: ${error.message}`
+          );
         }
       }
     }
@@ -176,7 +179,7 @@ const cleanupTempFiles = async () => {
 const cleanupStrayTestFiles = async () => {
   const fs = require('fs').promises;
   const path = require('path');
-  
+
   try {
     // Define patterns for test files that shouldn't be in project root
     const strayPatterns = [
@@ -185,10 +188,10 @@ const cleanupStrayTestFiles = async () => {
       /^test-export-\d{4}-\d{2}-\d{2}-\d+Z?\.\w+$/,
       /^test-backup-\d{4}-\d{2}-\d{2}-\d+Z?\.\w+$/
     ];
-    
+
     const projectRoot = process.cwd();
     const entries = await fs.readdir(projectRoot, { withFileTypes: true });
-    
+
     const filesToClean = [];
     for (const entry of entries) {
       if (entry.isFile()) {
@@ -198,7 +201,7 @@ const cleanupStrayTestFiles = async () => {
         }
       }
     }
-    
+
     // Clean up identified files
     const errors = [];
     for (const filePath of filesToClean) {
@@ -211,7 +214,7 @@ const cleanupStrayTestFiles = async () => {
         }
       }
     }
-    
+
     if (errors.length > 0) {
       console.warn('Some stray test files could not be cleaned up:', errors);
     }
@@ -227,20 +230,20 @@ const cleanupStrayTestFiles = async () => {
 const cleanupOldTestBackups = async () => {
   const fs = require('fs').promises;
   const path = require('path');
-  
+
   try {
     const backupDir = path.join(process.cwd(), 'backups');
-    
+
     // Check if backup directory exists
     try {
       await fs.access(backupDir);
-    } catch (error) {
+    } catch {
       // Backup directory doesn't exist, nothing to clean
       return;
     }
-    
+
     const entries = await fs.readdir(backupDir, { withFileTypes: true });
-    
+
     const filesToClean = [];
     for (const entry of entries) {
       if (entry.isFile() && entry.name.startsWith('safety-backup-')) {
@@ -248,24 +251,26 @@ const cleanupOldTestBackups = async () => {
         filesToClean.push(filePath);
       }
     }
-    
+
     // Clean up old safety backups
     const errors = [];
     for (const filePath of filesToClean) {
       try {
         await fs.unlink(filePath);
-        console.log(`Cleaned up test safety backup: ${path.basename(filePath)}`);
+        console.log(
+          `Cleaned up test safety backup: ${path.basename(filePath)}`
+        );
       } catch (error) {
         if (error.code !== 'ENOENT') {
           errors.push(`Failed to clean up ${filePath}: ${error.message}`);
         }
       }
     }
-    
+
     if (errors.length > 0) {
-        console.warn('Some test safety backups could not be cleaned up:', errors);
+      console.warn('Some test safety backups could not be cleaned up:', errors);
     }
-    
+
     if (filesToClean.length > 0) {
       console.log(`Cleaned up ${filesToClean.length} test safety backup files`);
     }

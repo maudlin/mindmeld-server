@@ -1,12 +1,15 @@
 const path = require('path');
 const { promises: fs } = require('fs');
 const AdminTestEnvironment = require('./helpers/admin-test-env');
-const { tempFileManager, cleanupStrayTestFiles } = require('../utils/temp-files');
+const {
+  tempFileManager,
+  cleanupStrayTestFiles
+} = require('../utils/temp-files');
 
 describe('Admin Command: data:export', () => {
   let testEnv;
   let dataExport;
-  
+
   afterAll(async () => {
     // Global cleanup of any stray files that might have been created
     await cleanupStrayTestFiles();
