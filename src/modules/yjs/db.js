@@ -21,7 +21,7 @@ function openDatabase(sqliteFile) {
     // WAL mode failed - likely due to filesystem limitations in CI
     console.warn(
       'WAL mode failed, falling back to DELETE journal mode:',
-      error.message
+      error.message,
     );
     db.pragma('journal_mode = DELETE');
   }
@@ -46,14 +46,14 @@ function ensureSchema(db) {
   const columns = db
     .prepare('PRAGMA table_info(yjs_snapshots)')
     .all()
-    .map(r => r.name);
+    .map((r) => r.name);
   if (!columns.includes('size_bytes')) {
     db.exec(
-      'ALTER TABLE yjs_snapshots ADD COLUMN size_bytes INTEGER NOT NULL DEFAULT 0'
+      'ALTER TABLE yjs_snapshots ADD COLUMN size_bytes INTEGER NOT NULL DEFAULT 0',
     );
     // Populate existing rows
     db.exec(
-      'UPDATE yjs_snapshots SET size_bytes = length(snapshot_data) WHERE size_bytes = 0 OR size_bytes IS NULL'
+      'UPDATE yjs_snapshots SET size_bytes = length(snapshot_data) WHERE size_bytes = 0 OR size_bytes IS NULL',
     );
   }
 }

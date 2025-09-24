@@ -7,10 +7,12 @@
 const pino = require('pino');
 
 const isDev = process.env.NODE_ENV !== 'production';
+const isTesting = process.env.NODE_ENV === 'test';
 
 const pinoOptions = {
-  level: process.env.LOG_LEVEL || (isDev ? 'debug' : 'info'),
-  base: undefined // don't include pid, hostname by default
+  level:
+    process.env.LOG_LEVEL || (isTesting ? 'silent' : isDev ? 'debug' : 'info'),
+  base: undefined, // don't include pid, hostname by default
 };
 
 if (isDev) {
@@ -19,8 +21,8 @@ if (isDev) {
     options: {
       colorize: true,
       translateTime: 'SYS:standard',
-      singleLine: true
-    }
+      singleLine: true,
+    },
   };
 }
 

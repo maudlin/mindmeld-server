@@ -20,7 +20,7 @@ describe('Admin Command: debug:system', () => {
   describe('system information gathering', () => {
     it('gathers complete system information', async () => {
       const debugSystem = new DebugSystem({
-        section: 'all'
+        section: 'all',
       });
 
       const result = await debugSystem.gatherSystemInfo();
@@ -37,7 +37,7 @@ describe('Admin Command: debug:system', () => {
 
     it('gathers Node.js information', async () => {
       const debugSystem = new DebugSystem({
-        section: 'node'
+        section: 'node',
       });
 
       const result = await debugSystem.gatherSystemInfo();
@@ -55,7 +55,7 @@ describe('Admin Command: debug:system', () => {
 
     it('gathers operating system information', async () => {
       const debugSystem = new DebugSystem({
-        section: 'os'
+        section: 'os',
       });
 
       const result = await debugSystem.gatherSystemInfo();
@@ -70,7 +70,7 @@ describe('Admin Command: debug:system', () => {
       // Verify CPU information
       expect(Array.isArray(result.os.cpus)).toBe(true);
       expect(result.os.cpus.length).toBeGreaterThan(0);
-      result.os.cpus.forEach(cpu => {
+      result.os.cpus.forEach((cpu) => {
         expect(cpu).toHaveProperty('model');
         expect(cpu).toHaveProperty('speed');
       });
@@ -78,7 +78,7 @@ describe('Admin Command: debug:system', () => {
 
     it('gathers memory information', async () => {
       const debugSystem = new DebugSystem({
-        section: 'memory'
+        section: 'memory',
       });
 
       const result = await debugSystem.gatherSystemInfo();
@@ -102,7 +102,7 @@ describe('Admin Command: debug:system', () => {
 
     it('gathers disk space information', async () => {
       const debugSystem = new DebugSystem({
-        section: 'disk'
+        section: 'disk',
       });
 
       const result = await debugSystem.gatherSystemInfo();
@@ -110,7 +110,7 @@ describe('Admin Command: debug:system', () => {
       expect(result.disk).toHaveProperty('drives');
       expect(Array.isArray(result.disk.drives)).toBe(true);
 
-      result.disk.drives.forEach(drive => {
+      result.disk.drives.forEach((drive) => {
         expect(drive).toHaveProperty('path');
         expect(drive).toHaveProperty('total');
         expect(drive).toHaveProperty('free');
@@ -121,7 +121,7 @@ describe('Admin Command: debug:system', () => {
 
     it('gathers network configuration', async () => {
       const debugSystem = new DebugSystem({
-        section: 'network'
+        section: 'network',
       });
 
       const result = await debugSystem.gatherSystemInfo();
@@ -131,9 +131,9 @@ describe('Admin Command: debug:system', () => {
       expect(typeof result.network.interfaces).toBe('object');
 
       // Check network interfaces structure
-      Object.values(result.network.interfaces).forEach(interfaceList => {
+      Object.values(result.network.interfaces).forEach((interfaceList) => {
         expect(Array.isArray(interfaceList)).toBe(true);
-        interfaceList.forEach(iface => {
+        interfaceList.forEach((iface) => {
           expect(iface).toHaveProperty('address');
           expect(iface).toHaveProperty('family');
           expect(iface).toHaveProperty('internal');
@@ -143,7 +143,7 @@ describe('Admin Command: debug:system', () => {
 
     it('gathers dependency information', async () => {
       const debugSystem = new DebugSystem({
-        section: 'dependencies'
+        section: 'dependencies',
       });
 
       const result = await debugSystem.gatherSystemInfo();
@@ -164,7 +164,7 @@ describe('Admin Command: debug:system', () => {
   describe('system requirements validation', () => {
     it('validates system requirements when requested', async () => {
       const debugSystem = new DebugSystem({
-        checkRequirements: true
+        checkRequirements: true,
       });
 
       const result = await debugSystem.validateSystemRequirements();
@@ -183,16 +183,18 @@ describe('Admin Command: debug:system', () => {
 
     it('validates Node.js version requirement', async () => {
       const debugSystem = new DebugSystem({
-        checkRequirements: true
+        checkRequirements: true,
       });
 
       const result = await debugSystem.validateSystemRequirements();
 
       const nodeValidation =
         result.validation.passed.find(
-          v => v.requirement === 'Node.js version'
+          (v) => v.requirement === 'Node.js version',
         ) ||
-        result.validation.failed.find(v => v.requirement === 'Node.js version');
+        result.validation.failed.find(
+          (v) => v.requirement === 'Node.js version',
+        );
 
       expect(nodeValidation).toBeDefined();
       expect(nodeValidation).toHaveProperty('actual');
@@ -202,17 +204,17 @@ describe('Admin Command: debug:system', () => {
 
     it('validates available memory', async () => {
       const debugSystem = new DebugSystem({
-        checkRequirements: true
+        checkRequirements: true,
       });
 
       const result = await debugSystem.validateSystemRequirements();
 
       const memoryValidation =
         result.validation.passed.find(
-          v => v.requirement === 'Available memory'
+          (v) => v.requirement === 'Available memory',
         ) ||
         result.validation.warnings.find(
-          v => v.requirement === 'Available memory'
+          (v) => v.requirement === 'Available memory',
         );
 
       if (memoryValidation) {
@@ -224,14 +226,14 @@ describe('Admin Command: debug:system', () => {
 
     it('validates disk space', async () => {
       const debugSystem = new DebugSystem({
-        checkRequirements: true
+        checkRequirements: true,
       });
 
       const result = await debugSystem.validateSystemRequirements();
 
       const diskValidation =
-        result.validation.passed.find(v => v.requirement === 'Disk space') ||
-        result.validation.warnings.find(v => v.requirement === 'Disk space');
+        result.validation.passed.find((v) => v.requirement === 'Disk space') ||
+        result.validation.warnings.find((v) => v.requirement === 'Disk space');
 
       if (diskValidation) {
         expect(diskValidation).toHaveProperty('actual');
@@ -247,7 +249,7 @@ describe('Admin Command: debug:system', () => {
       process.env.SECRET_KEY = 'secret-value';
 
       const debugSystem = new DebugSystem({
-        analyzeEnvironment: true
+        analyzeEnvironment: true,
       });
 
       const result = await debugSystem.analyzeEnvironment();
@@ -259,7 +261,7 @@ describe('Admin Command: debug:system', () => {
       // Verify sanitization
       expect(result.environment.sanitized).toHaveProperty(
         'TEST_DEBUG_VAR',
-        'test-value'
+        'test-value',
       );
       expect(result.environment.sanitized.SECRET_KEY).toBe('[REDACTED]');
 
@@ -275,7 +277,7 @@ describe('Admin Command: debug:system', () => {
       process.env.PORT = '3001';
 
       const debugSystem = new DebugSystem({
-        analyzeEnvironment: true
+        analyzeEnvironment: true,
       });
 
       const result = await debugSystem.analyzeEnvironment();
@@ -293,23 +295,23 @@ describe('Admin Command: debug:system', () => {
       process.env.CORS_ORIGIN = 'http://localhost:8080';
 
       const debugSystem = new DebugSystem({
-        analyzeEnvironment: true
+        analyzeEnvironment: true,
       });
 
       const result = await debugSystem.analyzeEnvironment();
 
       expect(result.environment.analysis).toHaveProperty('categories');
       expect(result.environment.analysis.categories).toHaveProperty(
-        'application'
+        'application',
       );
       expect(result.environment.analysis.categories).toHaveProperty('system');
       expect(result.environment.analysis.categories).toHaveProperty('unknown');
 
       expect(result.environment.analysis.categories.application).toContain(
-        'PORT'
+        'PORT',
       );
       expect(result.environment.analysis.categories.application).toContain(
-        'CORS_ORIGIN'
+        'CORS_ORIGIN',
       );
     });
   });
@@ -317,7 +319,7 @@ describe('Admin Command: debug:system', () => {
   describe('performance analysis', () => {
     it('analyzes system performance', async () => {
       const debugSystem = new DebugSystem({
-        analyzePerformance: true
+        analyzePerformance: true,
       });
 
       const result = await debugSystem.analyzePerformance();
@@ -335,7 +337,7 @@ describe('Admin Command: debug:system', () => {
 
     it('identifies performance bottlenecks', async () => {
       const debugSystem = new DebugSystem({
-        analyzePerformance: true
+        analyzePerformance: true,
       });
 
       const result = await debugSystem.analyzePerformance();
@@ -343,7 +345,7 @@ describe('Admin Command: debug:system', () => {
       expect(result.performance).toHaveProperty('bottlenecks');
       expect(Array.isArray(result.performance.bottlenecks)).toBe(true);
 
-      result.performance.bottlenecks.forEach(bottleneck => {
+      result.performance.bottlenecks.forEach((bottleneck) => {
         expect(bottleneck).toHaveProperty('component');
         expect(bottleneck).toHaveProperty('severity');
         expect(bottleneck).toHaveProperty('description');
@@ -353,7 +355,7 @@ describe('Admin Command: debug:system', () => {
 
     it('provides performance recommendations', async () => {
       const debugSystem = new DebugSystem({
-        analyzePerformance: true
+        analyzePerformance: true,
       });
 
       const result = await debugSystem.analyzePerformance();
@@ -361,7 +363,7 @@ describe('Admin Command: debug:system', () => {
       expect(result.performance).toHaveProperty('recommendations');
       expect(Array.isArray(result.performance.recommendations)).toBe(true);
 
-      result.performance.recommendations.forEach(rec => {
+      result.performance.recommendations.forEach((rec) => {
         expect(rec).toHaveProperty('category');
         expect(rec).toHaveProperty('priority');
         expect(rec).toHaveProperty('action');
@@ -375,7 +377,7 @@ describe('Admin Command: debug:system', () => {
       const exportPath = path.join(testEnv.tempDir, 'system-debug.json');
 
       const debugSystem = new DebugSystem({
-        export: exportPath
+        export: exportPath,
       });
 
       const result = await debugSystem.exportSystemInfo();
@@ -403,7 +405,7 @@ describe('Admin Command: debug:system', () => {
 
       const debugSystem = new DebugSystem({
         section: 'node',
-        export: exportPath
+        export: exportPath,
       });
 
       await debugSystem.exportSystemInfo();
@@ -419,7 +421,7 @@ describe('Admin Command: debug:system', () => {
   describe('output formatting', () => {
     it('generates table format correctly', async () => {
       const debugSystem = new DebugSystem({
-        format: 'table'
+        format: 'table',
       });
 
       const output = await debugSystem.generateOutput();
@@ -433,7 +435,7 @@ describe('Admin Command: debug:system', () => {
 
     it('generates JSON format correctly', async () => {
       const debugSystem = new DebugSystem({
-        format: 'json'
+        format: 'json',
       });
 
       const output = await debugSystem.generateOutput();
@@ -449,7 +451,7 @@ describe('Admin Command: debug:system', () => {
     it('includes requirements validation in output', async () => {
       const debugSystem = new DebugSystem({
         format: 'table',
-        checkRequirements: true
+        checkRequirements: true,
       });
 
       const output = await debugSystem.generateOutput();
@@ -478,13 +480,13 @@ describe('Admin Command: debug:system', () => {
     it('validates options', () => {
       expect(() => {
         new DebugSystem({
-          format: 'invalid-format'
+          format: 'invalid-format',
         });
       }).toThrow('Invalid format option');
 
       expect(() => {
         new DebugSystem({
-          section: 'invalid-section'
+          section: 'invalid-section',
         });
       }).toThrow('Invalid section option');
     });
@@ -493,7 +495,7 @@ describe('Admin Command: debug:system', () => {
       const invalidPath = '/invalid/path/system-debug.json';
 
       const debugSystem = new DebugSystem({
-        export: invalidPath
+        export: invalidPath,
       });
 
       const result = await debugSystem.exportSystemInfo();
@@ -509,7 +511,7 @@ describe('Admin Command: debug:system', () => {
       const debugSystem = new DebugSystem({
         section: 'all',
         checkRequirements: true,
-        analyzePerformance: true
+        analyzePerformance: true,
       });
 
       const result = await debugSystem.generateSystemOverview();
@@ -542,7 +544,7 @@ describe('Admin Command: debug:system', () => {
       const startTime = Date.now();
 
       const debugSystem = new DebugSystem({
-        section: 'all'
+        section: 'all',
       });
       await debugSystem.gatherSystemInfo();
 

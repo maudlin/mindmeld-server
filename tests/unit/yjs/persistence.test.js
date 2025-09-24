@@ -15,7 +15,7 @@ describe('YjsPersistence', () => {
     const testDir = path.join(os.tmpdir(), 'yjs-persistence-tests');
     dbFile = path.join(
       testDir,
-      `yjs-persistence-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.sqlite`
+      `yjs-persistence-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.sqlite`,
     );
 
     // Ensure test directory exists
@@ -55,7 +55,7 @@ describe('YjsPersistence', () => {
       Y.applyUpdate(newDoc, retrieved);
       const newMap = newDoc.getMap('mindmeld');
       expect(newMap.get('notes')).toEqual([
-        { i: '1', p: [100, 100], c: 'Test note' }
+        { i: '1', p: [100, 100], c: 'Test note' },
       ]);
       expect(newMap.get('connections')).toEqual([]);
     });
@@ -87,7 +87,7 @@ describe('YjsPersistence', () => {
       Y.applyUpdate(newDoc, retrieved);
       const newMap = newDoc.getMap('mindmeld');
       expect(newMap.get('notes')).toEqual([
-        { i: '1', p: [100, 100], c: 'Updated note' }
+        { i: '1', p: [100, 100], c: 'Updated note' },
       ]);
     });
 
@@ -130,7 +130,7 @@ describe('YjsPersistence', () => {
         const doc = new Y.Doc();
         const yMap = doc.getMap('mindmeld');
         yMap.set('notes', [
-          { i: `note-${i}`, p: [i * 100, i * 100], c: `Note ${i}` }
+          { i: `note-${i}`, p: [i * 100, i * 100], c: `Note ${i}` },
         ]);
         docs.push(doc);
         mapIds.push(`test-map-${i}`);
@@ -148,7 +148,7 @@ describe('YjsPersistence', () => {
         Y.applyUpdate(newDoc, retrieved);
         const newMap = newDoc.getMap('mindmeld');
         expect(newMap.get('notes')).toEqual([
-          { i: `note-${i}`, p: [i * 100, i * 100], c: `Note ${i}` }
+          { i: `note-${i}`, p: [i * 100, i * 100], c: `Note ${i}` },
         ]);
       }
     });
@@ -210,7 +210,7 @@ describe('YjsPersistence', () => {
         const newMap = newDoc.getMap('mindmeld');
         const index = mapId === 'map-1' ? 0 : 2;
         expect(newMap.get('notes')).toEqual([
-          { i: `note-${index}`, c: `Note ${index}` }
+          { i: `note-${index}`, c: `Note ${index}` },
         ]);
       }
     });
@@ -237,7 +237,7 @@ describe('YjsPersistence', () => {
 
         // Small delay to ensure different timestamps
         if (i < mapIds.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 10));
+          await new Promise((resolve) => setTimeout(resolve, 10));
         }
       }
 
@@ -248,7 +248,7 @@ describe('YjsPersistence', () => {
       expect(result).toHaveLength(3);
 
       // Verify each entry has required fields
-      result.forEach(entry => {
+      result.forEach((entry) => {
         expect(entry).toHaveProperty('mapId');
         expect(entry).toHaveProperty('sizeBytes');
         expect(entry).toHaveProperty('updatedAt');
@@ -257,7 +257,7 @@ describe('YjsPersistence', () => {
       });
 
       // Verify all mapIds are present
-      const returnedMapIds = result.map(entry => entry.mapId).sort();
+      const returnedMapIds = result.map((entry) => entry.mapId).sort();
       expect(returnedMapIds).toEqual(mapIds.sort());
     });
 
@@ -274,7 +274,7 @@ describe('YjsPersistence', () => {
         const yMap = doc.getMap('mindmeld');
         yMap.set(
           'notes',
-          Array.from({ length: i + 1 }, (_, j) => ({ i: `note-${j}` }))
+          Array.from({ length: i + 1 }, (_, j) => ({ i: `note-${j}` })),
         );
 
         await persistence.saveSnapshot(mapId, Y.encodeStateAsUpdate(doc));
@@ -290,7 +290,7 @@ describe('YjsPersistence', () => {
       expect(endTime - startTime).toBeLessThan(1000); // Should complete in under 1 second
 
       // Verify ordering (should be consistent)
-      const mapIds_result = result.map(entry => entry.mapId);
+      const mapIds_result = result.map((entry) => entry.mapId);
       expect(mapIds_result).toEqual(mapIds_result.slice().sort());
     });
   });
@@ -321,7 +321,7 @@ describe('YjsPersistence', () => {
         'yjs-test',
         'nested',
         'deep',
-        'path'
+        'path',
       );
       const deepDbFile = path.join(deepDir, 'deep-test.sqlite');
 
@@ -335,7 +335,7 @@ describe('YjsPersistence', () => {
       // Should not throw
       await deepPersistence.saveSnapshot(
         'deep-test',
-        Y.encodeStateAsUpdate(doc)
+        Y.encodeStateAsUpdate(doc),
       );
 
       // Verify it worked
@@ -356,7 +356,7 @@ describe('YjsPersistence', () => {
       for (const invalidId of invalidMapIds) {
         await expect(persistence.getSnapshot(invalidId)).resolves.toBeNull();
         await expect(persistence.deleteSnapshot(invalidId)).resolves.toBe(
-          false
+          false,
         );
       }
     });
@@ -369,7 +369,7 @@ describe('YjsPersistence', () => {
 
       // Should not throw when saving invalid data
       await expect(
-        persistence.saveSnapshot(mapId, invalidSnapshot)
+        persistence.saveSnapshot(mapId, invalidSnapshot),
       ).resolves.not.toThrow();
 
       // Should return the data as-is (corruption handling is Yjs's responsibility)
@@ -387,7 +387,7 @@ describe('YjsPersistence', () => {
         i: `note-${i}`,
         p: [Math.random() * 1000, Math.random() * 1000],
         c: `This is note number ${i} with some content to make it larger`,
-        metadata: { created: Date.now(), tags: ['tag1', 'tag2', 'tag3'] }
+        metadata: { created: Date.now(), tags: ['tag1', 'tag2', 'tag3'] },
       }));
       yMap.set('notes', largeNoteArray);
       yMap.set(
@@ -395,8 +395,8 @@ describe('YjsPersistence', () => {
         Array.from({ length: 1000 }, (_, i) => [
           `note-${i}`,
           `note-${i + 1}`,
-          1
-        ])
+          1,
+        ]),
       );
 
       const mapId = 'large-doc-test';

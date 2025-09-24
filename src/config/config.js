@@ -19,7 +19,7 @@ const EnvSchema = z.object({
   MCP_TOKEN: z.string().optional(),
   // Yjs feature flags (MS-60)
   DATA_PROVIDER: z.enum(['json', 'yjs']).default('json'),
-  SERVER_SYNC: z.enum(['on', 'off']).default('off')
+  SERVER_SYNC: z.enum(['on', 'off']).default('off'),
 });
 
 function buildConfig() {
@@ -46,7 +46,7 @@ function buildConfig() {
     mcpToken: parsed.MCP_TOKEN || null,
     // Yjs feature flags (MS-60)
     dataProvider: parsed.DATA_PROVIDER,
-    serverSync: parsed.SERVER_SYNC
+    serverSync: parsed.SERVER_SYNC,
   };
   return config;
 }

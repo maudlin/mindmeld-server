@@ -9,28 +9,28 @@ class MapsRepo {
 
   _prepare() {
     this.stmtInsert = this.db.prepare(
-      'INSERT INTO maps (id, name, version, updated_at, state_json, size_bytes) VALUES (?, ?, ?, ?, ?, ?)'
+      'INSERT INTO maps (id, name, version, updated_at, state_json, size_bytes) VALUES (?, ?, ?, ?, ?, ?)',
     );
     this.stmtGet = this.db.prepare(
-      'SELECT id, name, version, updated_at, state_json, size_bytes FROM maps WHERE id = ?'
+      'SELECT id, name, version, updated_at, state_json, size_bytes FROM maps WHERE id = ?',
     );
     this.stmtUpdate = this.db.prepare(
-      'UPDATE maps SET version = ?, updated_at = ?, state_json = ?, name = ?, size_bytes = ? WHERE id = ? AND version = ?'
+      'UPDATE maps SET version = ?, updated_at = ?, state_json = ?, name = ?, size_bytes = ? WHERE id = ? AND version = ?',
     );
     this.stmtList = this.db.prepare(
-      'SELECT id, name, version, updated_at, size_bytes FROM maps ORDER BY updated_at DESC LIMIT ? OFFSET ?'
+      'SELECT id, name, version, updated_at, size_bytes FROM maps ORDER BY updated_at DESC LIMIT ? OFFSET ?',
     );
     this.stmtDelete = this.db.prepare('DELETE FROM maps WHERE id = ?');
   }
 
   list(limit = 50, offset = 0) {
     const rows = this.stmtList.all(limit, offset);
-    return rows.map(row => ({
+    return rows.map((row) => ({
       id: row.id,
       name: row.name,
       version: row.version,
       updatedAt: row.updated_at,
-      sizeBytes: row.size_bytes
+      sizeBytes: row.size_bytes,
     }));
   }
 
@@ -50,7 +50,7 @@ class MapsRepo {
       version: row.version,
       updatedAt: row.updated_at,
       stateJson: row.state_json,
-      sizeBytes: row.size_bytes
+      sizeBytes: row.size_bytes,
     };
   }
 
@@ -61,7 +61,7 @@ class MapsRepo {
     stateJson,
     name,
     expectedVersion,
-    sizeBytes
+    sizeBytes,
   }) {
     const info = this.stmtUpdate.run(
       nextVersion,
@@ -70,7 +70,7 @@ class MapsRepo {
       name,
       sizeBytes,
       id,
-      expectedVersion
+      expectedVersion,
     );
     return info.changes; // 1 if updated, 0 if version mismatch
   }

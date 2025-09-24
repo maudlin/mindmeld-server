@@ -3,7 +3,7 @@ const { promises: fs } = require('fs');
 const AdminTestEnvironment = require('./helpers/admin-test-env');
 const {
   tempFileManager,
-  cleanupStrayTestFiles
+  cleanupStrayTestFiles,
 } = require('../utils/temp-files');
 
 describe('Admin Command: data:export', () => {
@@ -41,7 +41,7 @@ describe('Admin Command: data:export', () => {
       expect(result.maps).toHaveLength(2);
 
       // Verify map structure
-      result.maps.forEach(map => {
+      result.maps.forEach((map) => {
         expect(map).toHaveProperty('id');
         expect(map).toHaveProperty('name');
         expect(map).toHaveProperty('data');
@@ -83,8 +83,8 @@ describe('Admin Command: data:export', () => {
       const result = await dataExport.exportData({
         filter: {
           dateFrom: yesterday.toISOString(),
-          dateTo: tomorrow.toISOString()
-        }
+          dateTo: tomorrow.toISOString(),
+        },
       });
 
       expect(result.maps).toHaveLength(2);
@@ -95,7 +95,7 @@ describe('Admin Command: data:export', () => {
       const result = await dataExport.exportData({ includeMetadata: true });
 
       expect(result.export_info).toHaveProperty('include_metadata', true);
-      result.maps.forEach(map => {
+      result.maps.forEach((map) => {
         expect(map).toHaveProperty('size_bytes');
         expect(map).toHaveProperty('version');
       });
@@ -104,7 +104,7 @@ describe('Admin Command: data:export', () => {
     it('excludes sensitive data by default', async () => {
       const result = await dataExport.exportData();
 
-      result.maps.forEach(map => {
+      result.maps.forEach((map) => {
         expect(map).not.toHaveProperty('internal_id');
         expect(map).not.toHaveProperty('raw_data');
       });
@@ -117,7 +117,7 @@ describe('Admin Command: data:export', () => {
 
       await dataExport.exportToFile({
         output: outputPath,
-        format: 'json'
+        format: 'json',
       });
 
       const fileExists = await fs
@@ -139,7 +139,7 @@ describe('Admin Command: data:export', () => {
       await dataExport.exportToFile({
         output: outputPath,
         format: 'json',
-        compress: true
+        compress: true,
       });
 
       const fileExists = await fs
@@ -162,12 +162,12 @@ describe('Admin Command: data:export', () => {
 
       try {
         const result = await dataExport.exportToFile({
-          format: 'json'
+          format: 'json',
         });
 
         expect(result).toHaveProperty('filename');
         expect(result.filename).toMatch(
-          /^mindmeld-export-\d{4}-\d{2}-\d{2}-\d{9}Z\.json$/
+          /^mindmeld-export-\d{4}-\d{2}-\d{2}-\d{9}Z\.json$/,
         );
 
         const filePath = path.join(tempDir, result.filename);
@@ -194,7 +194,7 @@ describe('Admin Command: data:export', () => {
       expect(result.export_info.validation).toHaveProperty('total_maps');
       expect(result.export_info.validation).toHaveProperty(
         'validation_errors',
-        []
+        [],
       );
     });
 
@@ -205,8 +205,8 @@ describe('Admin Command: data:export', () => {
       await expect(
         dataExport.exportData({
           validate: true,
-          skipCorrupted: false
-        })
+          skipCorrupted: false,
+        }),
       ).rejects.toThrow('Data validation failed');
     });
 
@@ -215,7 +215,7 @@ describe('Admin Command: data:export', () => {
 
       const result = await dataExport.exportData({
         validate: true,
-        skipCorrupted: true
+        skipCorrupted: true,
       });
 
       expect(result.export_info.validation).toHaveProperty('skipped_items', 1);
@@ -231,15 +231,15 @@ describe('Admin Command: data:export', () => {
       const progressUpdates = [];
 
       const result = await dataExport.exportData({
-        onProgress: progress => {
+        onProgress: (progress) => {
           progressUpdates.push(progress);
-        }
+        },
       });
 
       expect(progressUpdates.length).toBeGreaterThan(0);
       expect(progressUpdates[progressUpdates.length - 1]).toHaveProperty(
         'completed',
-        102
+        102,
       );
       expect(result.maps).toHaveLength(102);
     });
@@ -248,13 +248,13 @@ describe('Admin Command: data:export', () => {
       const progressUpdates = [];
 
       await dataExport.exportData({
-        onProgress: progress => {
+        onProgress: (progress) => {
           progressUpdates.push(progress);
-        }
+        },
       });
 
       expect(progressUpdates.length).toBeGreaterThan(0);
-      progressUpdates.forEach(update => {
+      progressUpdates.forEach((update) => {
         expect(update).toHaveProperty('elapsed');
         expect(update).toHaveProperty('estimated_total');
       });
@@ -265,11 +265,11 @@ describe('Admin Command: data:export', () => {
     it('handles database connection errors gracefully', async () => {
       // Create a simpler mock by modifying the database path to an invalid one
       const invalidExporter = new dataExport.DataExport({
-        dbPath: '/invalid/path/that/does/not/exist.sqlite'
+        dbPath: '/invalid/path/that/does/not/exist.sqlite',
       });
 
       await expect(invalidExporter.exportData()).rejects.toThrow(
-        'Export failed'
+        'Export failed',
       );
     });
 
@@ -281,7 +281,7 @@ describe('Admin Command: data:export', () => {
           : '/nonexistent/directory/export.json';
 
       await expect(
-        dataExport.exportToFile({ output: invalidPath })
+        dataExport.exportToFile({ output: invalidPath }),
       ).rejects.toThrow('Unable to write to output path');
     });
 
@@ -289,9 +289,9 @@ describe('Admin Command: data:export', () => {
       await expect(
         dataExport.exportData({
           filter: {
-            dateFrom: 'invalid-date'
-          }
-        })
+            dateFrom: 'invalid-date',
+          },
+        }),
       ).rejects.toThrow('Invalid date format in filter');
     });
   });
@@ -300,7 +300,7 @@ describe('Admin Command: data:export', () => {
     it('formats output as table when requested', async () => {
       const output = await dataExport.generateOutput('table', {
         maps: [{ id: '1', name: 'Test', created_at: new Date().toISOString() }],
-        export_info: { total_maps: 1, format: 'json' }
+        export_info: { total_maps: 1, format: 'json' },
       });
 
       expect(output).toContain('Export Summary');
@@ -311,7 +311,7 @@ describe('Admin Command: data:export', () => {
     it('formats output as JSON when requested', async () => {
       const data = {
         maps: [{ id: '1', name: 'Test' }],
-        export_info: { total_maps: 1 }
+        export_info: { total_maps: 1 },
       };
 
       const output = await dataExport.generateOutput('json', data);

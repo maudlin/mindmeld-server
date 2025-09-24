@@ -20,7 +20,7 @@ describe('YjsService', () => {
       saveSnapshot: jest.fn().mockResolvedValue(undefined),
       getSnapshot: jest.fn().mockResolvedValue(null),
       deleteSnapshot: jest.fn().mockResolvedValue(undefined),
-      listSnapshots: jest.fn().mockResolvedValue([])
+      listSnapshots: jest.fn().mockResolvedValue([]),
     };
     YjsPersistence.mockImplementation(() => mockPersistence);
 
@@ -29,7 +29,7 @@ describe('YjsService', () => {
       debug: jest.fn(),
       info: jest.fn(),
       warn: jest.fn(),
-      error: jest.fn()
+      error: jest.fn(),
     };
 
     yjsService = new YjsService({ logger: mockLogger });
@@ -71,7 +71,7 @@ describe('YjsService', () => {
       expect(mockPersistence.getSnapshot).toHaveBeenCalledWith(mapId);
       expect(mockLogger.debug).toHaveBeenCalledWith('Created new Y.Doc', {
         mapId,
-        docSize: yjsService.docs.size
+        docSize: yjsService.docs.size,
       });
     });
 
@@ -94,7 +94,7 @@ describe('YjsService', () => {
         mapId,
         snapshot: Buffer.from(snapshotData),
         createdAt: new Date(),
-        version: 1
+        version: 1,
       });
 
       const doc = await yjsService.getOrCreateDocument(mapId);
@@ -102,7 +102,7 @@ describe('YjsService', () => {
       expect(doc).toBeInstanceOf(Y.Doc);
       expect(mockLogger.debug).toHaveBeenCalledWith(
         'Restored Y.Doc from snapshot',
-        { mapId, snapshotSize: snapshotData.length }
+        { mapId, snapshotSize: snapshotData.length },
       );
     });
 
@@ -116,7 +116,7 @@ describe('YjsService', () => {
       expect(doc).toBeInstanceOf(Y.Doc);
       expect(mockLogger.error).toHaveBeenCalledWith(
         'Failed to load snapshot, creating new document',
-        { mapId, error: error.message }
+        { mapId, error: error.message },
       );
     });
 
@@ -138,7 +138,7 @@ describe('YjsService', () => {
       yArray.insert(0, ['test note']);
 
       // Wait for async operations
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       expect(updateSpy).toHaveBeenCalled();
     });
@@ -161,12 +161,18 @@ describe('YjsService', () => {
 
       expect(mockPersistence.saveSnapshot).toHaveBeenCalledWith(
         mapId,
-        expect.any(Buffer)
+        expect.any(Buffer),
       );
-      expect(mockLogger.debug).toHaveBeenCalledWith('Saved document snapshot', {
-        mapId,
-        updateSize: updateData.length
-      });
+      expect(mockLogger.debug).toHaveBeenCalledWith(
+        'Y.js document updated and persisted',
+        {
+          mapId: mapId.substring(0, 8) + '...',
+          updateSize: updateData.length,
+          documentSize: expect.any(Number),
+          origin: 'unknown',
+          activeClients: 0,
+        },
+      );
     });
 
     it('should not save snapshot for remote updates', async () => {
@@ -178,7 +184,7 @@ describe('YjsService', () => {
       expect(mockPersistence.saveSnapshot).not.toHaveBeenCalled();
       expect(mockLogger.debug).toHaveBeenCalledWith(
         'Skipping snapshot save for remote update',
-        { mapId, origin, updateSize: updateData.length }
+        { mapId, origin, updateSize: updateData.length },
       );
     });
 
@@ -191,7 +197,7 @@ describe('YjsService', () => {
 
       expect(mockLogger.error).toHaveBeenCalledWith(
         'Failed to save document snapshot',
-        { mapId, error: error.message }
+        { mapId, error: error.message },
       );
     });
   });
@@ -207,21 +213,29 @@ describe('YjsService', () => {
       mockWs.readyState = 1; // WebSocket.OPEN
 
       mockRequest = {
-        url: '/yjs/test-map-id'
+        url: '/yjs/test-map-id',
+        headers: { 'user-agent': 'test-client' },
       };
     });
 
     it('should setup WebSocket connection for valid mapId', async () => {
       const mapId = 'test-map-id';
       mockRequest.url = `/yjs/${mapId}`;
+      mockRequest.headers = { 'user-agent': 'test-client' };
       mockPersistence.getSnapshot.mockResolvedValue(null);
 
       await yjsService.handleWebSocketConnection(mockWs, mockRequest);
 
       expect(yjsService.docs.has(mapId)).toBe(true);
       expect(mockLogger.info).toHaveBeenCalledWith(
-        'WebSocket connected for document',
-        { mapId }
+        'WebSocket client connected',
+        {
+          mapId: mapId.substring(0, 8) + '...',
+          clientId: expect.stringContaining('websocket-'),
+          totalClientsForDocument: 1,
+          totalDocuments: 1,
+          userAgent: 'test-client',
+        },
       );
     });
 
@@ -233,13 +247,14 @@ describe('YjsService', () => {
       expect(mockWs.close).toHaveBeenCalledWith(1008, 'Invalid URL format');
       expect(mockLogger.warn).toHaveBeenCalledWith(
         'WebSocket connection rejected: Invalid URL format',
-        { url: mockRequest.url }
+        { url: mockRequest.url },
       );
     });
 
     it('should handle WebSocket messages', async () => {
       const mapId = 'test-map-id';
       mockRequest.url = `/yjs/${mapId}`;
+      mockRequest.headers = { 'user-agent': 'test-client' };
       mockPersistence.getSnapshot.mockResolvedValue(null);
 
       await yjsService.handleWebSocketConnection(mockWs, mockRequest);
@@ -255,6 +270,7 @@ describe('YjsService', () => {
     it('should handle WebSocket close events', async () => {
       const mapId = 'test-map-id';
       mockRequest.url = `/yjs/${mapId}`;
+      mockRequest.headers = { 'user-agent': 'test-client' };
       mockPersistence.getSnapshot.mockResolvedValue(null);
 
       await yjsService.handleWebSocketConnection(mockWs, mockRequest);
@@ -262,14 +278,20 @@ describe('YjsService', () => {
       mockWs.emit('close');
 
       expect(mockLogger.info).toHaveBeenCalledWith(
-        'WebSocket disconnected from document',
-        { mapId }
+        'WebSocket client disconnected',
+        {
+          mapId: mapId.substring(0, 8) + '...',
+          remainingClientsForDocument: 0,
+          totalDocuments: 1,
+          documentCleanedUp: true,
+        },
       );
     });
 
     it('should handle WebSocket error events', async () => {
       const mapId = 'test-map-id';
       mockRequest.url = `/yjs/${mapId}`;
+      mockRequest.headers = { 'user-agent': 'test-client' };
       mockPersistence.getSnapshot.mockResolvedValue(null);
 
       await yjsService.handleWebSocketConnection(mockWs, mockRequest);
@@ -279,22 +301,31 @@ describe('YjsService', () => {
 
       expect(mockLogger.error).toHaveBeenCalledWith(
         'WebSocket error for document',
-        { mapId, error: error.message }
+        {
+          mapId: mapId.substring(0, 8) + '...',
+          clientId: expect.stringContaining('websocket-'),
+          error: error.message,
+          errorType: error.name,
+          totalClients: 1,
+        },
       );
     });
 
     it('should send initial state to new connections', async () => {
       const mapId = 'test-map-id';
       mockRequest.url = `/yjs/${mapId}`;
+      mockRequest.headers = { 'user-agent': 'test-client' };
 
       // Mock existing document with state
       const existingDoc = new Y.Doc();
+      const yArray = existingDoc.getArray('notes');
+      yArray.insert(0, ['test']);
       const state = Y.encodeStateAsUpdate(existingDoc);
       mockPersistence.getSnapshot.mockResolvedValue({
         mapId,
         snapshot: Buffer.from(state),
         createdAt: new Date(),
-        version: 1
+        version: 1,
       });
 
       await yjsService.handleWebSocketConnection(mockWs, mockRequest);
@@ -329,7 +360,7 @@ describe('YjsService', () => {
       // Should have logged applied update (not document creation)
       expect(mockLogger.debug).toHaveBeenCalledWith(
         'Applied update to document',
-        { mapId, updateSize: updateData.length, origin: mockWs.id }
+        { mapId, updateSize: updateData.length, origin: mockWs.id },
       );
     });
 
@@ -340,7 +371,7 @@ describe('YjsService', () => {
 
       expect(mockLogger.error).toHaveBeenCalledWith(
         'Failed to apply update to document',
-        expect.objectContaining({ mapId })
+        expect.objectContaining({ mapId }),
       );
     });
 
@@ -352,7 +383,7 @@ describe('YjsService', () => {
 
       expect(mockLogger.error).toHaveBeenCalledWith(
         'Attempted to apply update to non-existent document',
-        { mapId: nonExistentMapId }
+        { mapId: nonExistentMapId },
       );
     });
   });
@@ -420,7 +451,7 @@ describe('YjsService', () => {
         exists: true,
         clientCount: 0,
         documentSize: expect.any(Number),
-        lastUpdate: expect.any(Date)
+        lastUpdate: expect.any(Date),
       });
     });
 
@@ -431,7 +462,7 @@ describe('YjsService', () => {
         exists: false,
         clientCount: 0,
         documentSize: 0,
-        lastUpdate: null
+        lastUpdate: null,
       });
     });
 
@@ -500,7 +531,7 @@ describe('YjsService', () => {
 
       try {
         await expect(
-          yjsService.getOrCreateDocument('test-map-id')
+          yjsService.getOrCreateDocument('test-map-id'),
         ).rejects.toThrow('Y.Doc creation failed');
         expect(mockLogger.error).toHaveBeenCalled();
       } finally {
@@ -515,7 +546,10 @@ describe('YjsService', () => {
       mockWs.close = jest.fn();
       mockWs.readyState = 1;
 
-      const mockRequest = { url: `/yjs/${mapId}` };
+      const mockRequest = {
+        url: `/yjs/${mapId}`,
+        headers: { 'user-agent': 'test-client' },
+      };
       mockPersistence.getSnapshot.mockResolvedValue(null);
 
       await yjsService.handleWebSocketConnection(mockWs, mockRequest);
@@ -526,7 +560,10 @@ describe('YjsService', () => {
 
       expect(mockLogger.error).toHaveBeenCalledWith(
         'Invalid WebSocket message format',
-        expect.objectContaining({ mapId })
+        {
+          mapId,
+          dataType: 'string',
+        },
       );
     });
   });

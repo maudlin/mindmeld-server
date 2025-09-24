@@ -35,11 +35,11 @@ async function ensureDataDirectory() {
  * Setup graceful shutdown
  */
 function setupGracefulShutdown(server) {
-  const shutdown = signal => {
+  const shutdown = (signal) => {
     Logger.info(`Received ${signal}, shutting down gracefully...`);
     eventBus.emit('server.shutdown', {
       signal,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
 
     server.close(() => {
@@ -51,7 +51,7 @@ function setupGracefulShutdown(server) {
     // Force close after 10 seconds
     setTimeout(() => {
       Logger.error(
-        'Could not close connections in time, forcefully shutting down'
+        'Could not close connections in time, forcefully shutting down',
       );
       process.exit(1);
     }, 10000);
@@ -65,11 +65,11 @@ function setupGracefulShutdown(server) {
  * Setup global error handlers
  */
 function setupErrorHandlers() {
-  process.on('uncaughtException', error => {
+  process.on('uncaughtException', (error) => {
     Logger.error('Uncaught Exception:', error);
     eventBus.emit('error.uncaught', {
       error: error.message,
-      stack: error.stack
+      stack: error.stack,
     });
     process.exit(1);
   });
@@ -92,7 +92,7 @@ async function startServer() {
       nodeEnv: CONFIG.nodeEnv,
       featureMapsApi: CONFIG.featureMapsApi,
       featureMcp: CONFIG.featureMcp,
-      mcpTransport: CONFIG.mcpTransport
+      mcpTransport: CONFIG.mcpTransport,
     };
     Logger.info({ config: sanitizedConfig }, 'Starting MindMeld Server...');
 
@@ -118,8 +118,8 @@ async function startServer() {
         nodeEnv: CONFIG.nodeEnv,
         features: {
           maps: CONFIG.featureMapsApi,
-          mcp: CONFIG.featureMcp
-        }
+          mcp: CONFIG.featureMcp,
+        },
       });
     });
 

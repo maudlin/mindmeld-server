@@ -34,7 +34,7 @@ class YjsPersistence {
         SELECT map_id, size_bytes, updated_at 
         FROM yjs_snapshots 
         WHERE map_id = ?
-      `)
+      `),
     };
   }
 
@@ -103,10 +103,10 @@ class YjsPersistence {
   async listSnapshots() {
     const results = this.statements.listSnapshots.all();
 
-    return results.map(row => ({
+    return results.map((row) => ({
       mapId: row.map_id,
       sizeBytes: row.size_bytes,
-      updatedAt: row.updated_at
+      updatedAt: row.updated_at,
     }));
   }
 
@@ -129,7 +129,7 @@ class YjsPersistence {
     return {
       mapId: result.map_id,
       sizeBytes: result.size_bytes,
-      updatedAt: result.updated_at
+      updatedAt: result.updated_at,
     };
   }
 
@@ -158,13 +158,13 @@ class YjsPersistence {
   async getStats() {
     const result = this.db
       .prepare(
-        'SELECT COUNT(*) as count, COALESCE(SUM(size_bytes), 0) as total_size FROM yjs_snapshots'
+        'SELECT COUNT(*) as count, COALESCE(SUM(size_bytes), 0) as total_size FROM yjs_snapshots',
       )
       .get();
 
     return {
       totalSnapshots: result.count,
-      totalSize: result.total_size
+      totalSize: result.total_size,
     };
   }
 }

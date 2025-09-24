@@ -27,7 +27,8 @@ This directory contains comprehensive documentation for the MindMeld Server - a 
 - **[Developer Guide](developer-guide.md)** - Development workflows and testing
 - **[Testing Guide](testing-guide.md)** - Manual API testing workflows
 - **[Server Administration](server-admin.md)** - Database backup, health monitoring, and admin tools
-- **[Health Checks](health-checks.md)** - Health monitoring documentation
+- **[Health Checks](health-checks.md)** - Code quality health check documentation
+- **[Monitoring Security](monitoring-security.md)** - Runtime monitoring endpoints and security
 
 ## 🏗️ Architecture Overview
 
@@ -96,7 +97,8 @@ docs/
 ├── developer-guide.md          # Development workflows
 ├── testing-guide.md            # Testing strategies
 ├── server-admin.md             # Server administration and monitoring
-├── health-checks.md            # Health monitoring documentation
+├── health-checks.md            # Code quality health check documentation
+├── monitoring-security.md      # Runtime monitoring endpoints and security
 └── admin-testing.md            # Admin command testing
 ```
 

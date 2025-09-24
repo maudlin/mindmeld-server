@@ -37,19 +37,19 @@ class SimpleTestEnv {
 
     if (this.tempDir) {
       // Add delay before cleanup to ensure all file handles are released
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       try {
         await fs.rm(this.tempDir, { recursive: true, force: true });
       } catch {
         // On Windows, sometimes files are still locked - retry once
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise((resolve) => setTimeout(resolve, 500));
         try {
           await fs.rm(this.tempDir, { recursive: true, force: true });
         } catch (retryError) {
           console.warn(
             'Could not clean up temp directory:',
-            retryError.message
+            retryError.message,
           );
         }
       }
@@ -69,7 +69,7 @@ class SimpleTestEnv {
 
     if (mapCount > 0) {
       const stmt = db.prepare(
-        'INSERT INTO maps (id, name, version, updated_at, state_json, size_bytes) VALUES (?, ?, ?, ?, ?, ?)'
+        'INSERT INTO maps (id, name, version, updated_at, state_json, size_bytes) VALUES (?, ?, ?, ?, ?, ?)',
       );
 
       for (let i = 0; i < mapCount; i++) {
@@ -79,9 +79,9 @@ class SimpleTestEnv {
           1,
           new Date().toISOString(),
           JSON.stringify({
-            nodes: [{ id: `node-${i}`, content: `Node ${i}` }]
+            nodes: [{ id: `node-${i}`, content: `Node ${i}` }],
           }),
-          50
+          50,
         );
       }
     }
@@ -89,14 +89,14 @@ class SimpleTestEnv {
     db.close();
 
     // Add small delay to ensure file handles are released on Windows
-    await new Promise(resolve => setTimeout(resolve, 10));
+    await new Promise((resolve) => setTimeout(resolve, 10));
   }
 
   async createTestBackupFile(compressed = false, uniqueId = null) {
     // Create a fresh database for this backup
     const tempDbPath = path.join(
       this.tempDir,
-      `temp-${uniqueId || Date.now()}.sqlite`
+      `temp-${uniqueId || Date.now()}.sqlite`,
     );
 
     try {
@@ -105,7 +105,7 @@ class SimpleTestEnv {
 
       // Add test data
       const stmt = db.prepare(
-        'INSERT INTO maps (id, name, version, updated_at, state_json, size_bytes) VALUES (?, ?, ?, ?, ?, ?)'
+        'INSERT INTO maps (id, name, version, updated_at, state_json, size_bytes) VALUES (?, ?, ?, ?, ?, ?)',
       );
 
       for (let i = 0; i < 3; i++) {
@@ -115,9 +115,9 @@ class SimpleTestEnv {
           1,
           new Date().toISOString(),
           JSON.stringify({
-            nodes: [{ id: `node-${i}`, content: `Node ${i}` }]
+            nodes: [{ id: `node-${i}`, content: `Node ${i}` }],
           }),
-          50
+          50,
         );
       }
 
@@ -129,7 +129,7 @@ class SimpleTestEnv {
     }
 
     // Add delay to ensure database file is fully written and closed
-    await new Promise(resolve => setTimeout(resolve, 50));
+    await new Promise((resolve) => setTimeout(resolve, 50));
 
     // Verify database file exists and is readable
     try {
@@ -154,7 +154,7 @@ class SimpleTestEnv {
     const extension = compressed ? '.sqlite.gz' : '.sqlite';
     const backupPath = path.join(
       this.backupDir,
-      `mindmeld-backup-${finalTimestamp}${extension}`
+      `mindmeld-backup-${finalTimestamp}${extension}`,
     );
 
     try {
@@ -196,12 +196,12 @@ class SimpleTestEnv {
     const timestamp = Date.now();
     const backupPath = path.join(
       this.backupDir,
-      `mindmeld-backup-2025-01-01-120000-${timestamp}.sqlite`
+      `mindmeld-backup-2025-01-01-120000-${timestamp}.sqlite`,
     );
     await fs.writeFile(backupPath, 'This is not a valid SQLite file');
 
     // Add small delay to ensure file is written
-    await new Promise(resolve => setTimeout(resolve, 10));
+    await new Promise((resolve) => setTimeout(resolve, 10));
 
     return backupPath;
   }
@@ -243,7 +243,7 @@ describe('Database Restore Functionality', () => {
         verify: false,
         createSafety: false,
         verbose: true,
-        force: true
+        force: true,
       };
 
       const restore = new DatabaseRestore(options);
@@ -263,7 +263,7 @@ describe('Database Restore Functionality', () => {
       await testEnv.createTestBackupFile(true, '02');
 
       const restore = new DatabaseRestore({
-        backupDir: testEnv.backupDir
+        backupDir: testEnv.backupDir,
       });
 
       const backups = await restore.discoverBackups();
@@ -273,7 +273,7 @@ describe('Database Restore Functionality', () => {
       expect(backups.length).toBe(2);
 
       // Verify backup file structure
-      backups.forEach(backup => {
+      backups.forEach((backup) => {
         expect(backup.filename).toBeDefined();
         expect(backup.path).toBeDefined();
         expect(backup.size).toBeGreaterThan(0);
@@ -284,7 +284,7 @@ describe('Database Restore Functionality', () => {
 
     it('handles empty backup directory gracefully', async () => {
       const restore = new DatabaseRestore({
-        backupDir: testEnv.backupDir
+        backupDir: testEnv.backupDir,
       });
 
       const backups = await restore.discoverBackups();
@@ -296,22 +296,22 @@ describe('Database Restore Functionality', () => {
       await testEnv.createTestBackupFile(false, '03');
       await fs.writeFile(
         path.join(testEnv.backupDir, 'not-backup.txt'),
-        'test'
+        'test',
       );
       await fs.writeFile(
         path.join(testEnv.backupDir, 'invalid-name.sqlite'),
-        'test'
+        'test',
       );
 
       const restore = new DatabaseRestore({
-        backupDir: testEnv.backupDir
+        backupDir: testEnv.backupDir,
       });
 
       const backups = await restore.discoverBackups();
 
       expect(backups.length).toBe(1);
       expect(backups[0].filename).toMatch(
-        /mindmeld-backup-\d{4}-\d{2}-\d{2}-\d{6}.*\.sqlite$/
+        /mindmeld-backup-\d{4}-\d{2}-\d{2}-\d{6}.*\.sqlite$/,
       );
     });
   });
@@ -321,7 +321,7 @@ describe('Database Restore Functionality', () => {
       const backupPath = await testEnv.createTestBackupFile(false, '04');
 
       const restore = new DatabaseRestore({
-        safetyDir: testEnv.backupDir
+        safetyDir: testEnv.backupDir,
       });
       const isValid = await restore.validateBackupFile(backupPath);
 
@@ -332,7 +332,7 @@ describe('Database Restore Functionality', () => {
       const backupPath = await testEnv.createTestBackupFile(true, '05');
 
       const restore = new DatabaseRestore({
-        safetyDir: testEnv.backupDir
+        safetyDir: testEnv.backupDir,
       });
       const isValid = await restore.validateBackupFile(backupPath);
 
@@ -343,7 +343,7 @@ describe('Database Restore Functionality', () => {
       const corruptedPath = await testEnv.createCorruptedBackup();
 
       const restore = new DatabaseRestore({
-        safetyDir: testEnv.backupDir
+        safetyDir: testEnv.backupDir,
       });
       const isValid = await restore.validateBackupFile(corruptedPath);
 
@@ -352,11 +352,11 @@ describe('Database Restore Functionality', () => {
 
     it('rejects non-existent backup files', async () => {
       const restore = new DatabaseRestore({
-        safetyDir: testEnv.backupDir
+        safetyDir: testEnv.backupDir,
       });
 
       await expect(
-        restore.validateBackupFile('/non/existent/file.sqlite')
+        restore.validateBackupFile('/non/existent/file.sqlite'),
       ).rejects.toThrow('Backup file not found');
     });
   });
@@ -372,7 +372,7 @@ describe('Database Restore Functionality', () => {
       const restore = new DatabaseRestore({
         backupFile: backupPath,
         createSafety: false, // Skip for test simplicity
-        verify: false
+        verify: false,
       });
 
       const result = await restore.restoreDatabase();
@@ -391,7 +391,7 @@ describe('Database Restore Functionality', () => {
       const restore = new DatabaseRestore({
         backupFile: backupPath,
         createSafety: false,
-        verify: false
+        verify: false,
       });
 
       const result = await restore.restoreDatabase();
@@ -407,7 +407,7 @@ describe('Database Restore Functionality', () => {
       const restore = new DatabaseRestore({
         backupFile: backupPath,
         verify: false,
-        createSafety: false
+        createSafety: false,
       });
 
       // Mock validation to track if called
@@ -426,11 +426,11 @@ describe('Database Restore Functionality', () => {
       const restore = new DatabaseRestore({
         backupFile: '/non/existent/backup.sqlite',
         createSafety: false, // Don't create safety backups for error condition tests
-        safetyDir: testEnv.backupDir
+        safetyDir: testEnv.backupDir,
       });
 
       await expect(restore.restoreDatabase()).rejects.toThrow(
-        'Backup file not found'
+        'Backup file not found',
       );
     });
 
@@ -441,11 +441,11 @@ describe('Database Restore Functionality', () => {
         backupFile: corruptedPath,
         verify: true,
         createSafety: false, // Don't create safety backups for error condition tests
-        safetyDir: testEnv.backupDir
+        safetyDir: testEnv.backupDir,
       });
 
       await expect(restore.restoreDatabase()).rejects.toThrow(
-        'Backup validation failed'
+        'Backup validation failed',
       );
     });
 
@@ -453,11 +453,11 @@ describe('Database Restore Functionality', () => {
       const restore = new DatabaseRestore({
         backupDir: testEnv.backupDir,
         createSafety: false, // Don't create safety backups for error condition tests
-        safetyDir: testEnv.backupDir
+        safetyDir: testEnv.backupDir,
       });
 
       await expect(restore.restoreDatabase()).rejects.toThrow(
-        'No backup files found'
+        'No backup files found',
       );
     });
   });
@@ -470,14 +470,14 @@ describe('Database Restore Functionality', () => {
       const restore = new DatabaseRestore({
         safetyDir: testEnv.backupDir,
         createSafety: true,
-        verbose: true
+        verbose: true,
       });
 
       const safetyPath = await restore.createSafetyBackup();
 
       expect(safetyPath).toBeDefined();
       expect(path.basename(safetyPath)).toMatch(
-        /^safety-backup-\d{4}-\d{2}-\d{2}-\d{6}\.sqlite$/
+        /^safety-backup-\d{4}-\d{2}-\d{2}-\d{6}\.sqlite$/,
       );
 
       // Verify file exists
@@ -490,7 +490,7 @@ describe('Database Restore Functionality', () => {
 
     it('skips safety backup when disabled', async () => {
       const restore = new DatabaseRestore({
-        createSafety: false
+        createSafety: false,
       });
 
       const safetyPath = await restore.createSafetyBackup();
@@ -503,7 +503,7 @@ describe('Database Restore Functionality', () => {
 
       const restore = new DatabaseRestore({
         safetyDir: testEnv.backupDir,
-        createSafety: true
+        createSafety: true,
       });
 
       const safetyPath = await restore.createSafetyBackup();
@@ -511,7 +511,7 @@ describe('Database Restore Functionality', () => {
       // Should create backup since database exists
       expect(safetyPath).toBeDefined();
       expect(path.basename(safetyPath)).toMatch(
-        /^safety-backup-\d{4}-\d{2}-\d{2}-\d{6}\.sqlite$/
+        /^safety-backup-\d{4}-\d{2}-\d{2}-\d{6}\.sqlite$/,
       );
 
       // Verify file exists
@@ -539,7 +539,7 @@ describe('Database Restore Functionality', () => {
         '--safety',
         '--no-verify',
         '--verbose',
-        '--force'
+        '--force',
       ];
 
       const options = parseArguments();

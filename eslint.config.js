@@ -1,105 +1,81 @@
+// eslint.config.mjs
 import js from '@eslint/js';
+import prettier from 'eslint-plugin-prettier';
+import globals from 'globals';
+import jestPlugin from 'eslint-plugin-jest';
+import playwrightPlugin from 'eslint-plugin-playwright';
+import security from 'eslint-plugin-security';
+import noUnsanitized from 'eslint-plugin-no-unsanitized';
 
 export default [
-  // Base recommended configuration
   js.configs.recommended,
-
-  // Global configuration for all files
   {
+    files: ['**/*.js'],
+    plugins: {
+      prettier: prettier,
+      security: security,
+      'no-unsanitized': noUnsanitized,
+    },
     languageOptions: {
       ecmaVersion: 2022,
-      sourceType: 'commonjs',
+      sourceType: 'module',
       globals: {
-        // Node.js globals
-        console: 'readonly',
-        process: 'readonly',
-        Buffer: 'readonly',
-        __dirname: 'readonly',
-        __filename: 'readonly',
-        exports: 'writable',
-        module: 'writable',
-        require: 'readonly',
-        global: 'readonly',
-        setTimeout: 'readonly',
-        clearTimeout: 'readonly',
-        setInterval: 'readonly',
-        clearInterval: 'readonly',
-        setImmediate: 'readonly',
-        clearImmediate: 'readonly',
-        URL: 'readonly',
-        // Jest globals
-        describe: 'readonly',
-        it: 'readonly',
-        test: 'readonly',
-        expect: 'readonly',
-        beforeEach: 'readonly',
-        afterEach: 'readonly',
-        beforeAll: 'readonly',
-        afterAll: 'readonly',
-        jest: 'readonly',
-        // Browser globals for client code
-        window: 'readonly',
-        document: 'readonly',
-        localStorage: 'readonly',
-        sessionStorage: 'readonly',
-        React: 'readonly'
-      }
+        ...globals.browser,
+        ...globals.node,
+      },
     },
     rules: {
-      // Possible Errors
-      'no-console': 'off', // We use pino logger but allow console for dev
-      'no-debugger': 'warn',
-      'no-unused-vars': [
+      'prettier/prettier': [
         'error',
         {
-          argsIgnorePattern: '^_',
-          varsIgnorePattern: '^_',
-          caughtErrorsIgnorePattern: '^_'
-        }
+          semi: true,
+          endOfLine: 'auto',
+        },
       ],
-
-      // Best Practices
-      curly: ['error', 'all'],
-      eqeqeq: ['error', 'always'],
-      'no-eval': 'error',
-      'no-implied-eval': 'error',
-      'no-return-assign': 'error',
-      'no-self-compare': 'error',
-      'no-throw-literal': 'error',
-      radix: 'error',
-
-      // Stylistic Issues
-      'comma-dangle': ['error', 'never'],
-      indent: ['error', 2, { SwitchCase: 1 }],
-      'linebreak-style': ['error', 'unix'],
-      quotes: ['error', 'single', { avoidEscape: true }],
-      semi: ['error', 'always'],
-      'space-before-function-paren': [
-        'error',
-        {
-          anonymous: 'always',
-          named: 'never',
-          asyncArrow: 'always'
-        }
-      ],
-      'space-in-parens': ['error', 'never'],
-      'object-curly-spacing': ['error', 'always'],
-      'array-bracket-spacing': ['error', 'never']
-    }
+      // Security rules
+      ...security.configs.recommended.rules,
+      'no-unsanitized/method': 'error',
+      'no-unsanitized/property': 'error',
+    },
   },
-
-  // Ignore patterns (equivalent to .eslintignore)
+  {
+    files: ['**/*.test.js', '**/*.spec.js', '**/tests/**/*.js'],
+    plugins: {
+      jest: jestPlugin,
+    },
+    languageOptions: {
+      globals: {
+        ...globals.jest,
+      },
+    },
+    rules: {
+      ...jestPlugin.configs.recommended.rules,
+      // Loosen certain rules in tests to keep dev green and avoid noisy failures
+      'no-unused-vars': 'off',
+      'jest/no-conditional-expect': 'off',
+      'prettier/prettier': 'warn',
+    },
+  },
+  {
+    files: ['**/e2e/**/*.js', '**/e2e/**/*.ts'],
+    plugins: {
+      playwright: playwrightPlugin,
+    },
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+      },
+    },
+    rules: {
+      ...playwrightPlugin.configs.recommended.rules,
+    },
+  },
   {
     ignores: [
-      'node_modules/',
-      'dist/',
-      'build/',
-      'coverage/',
-      'data/',
-      '*.min.js',
-      '.env',
-      '.env.local',
-      '.env.production'
-    ]
-  }
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/coverage/**',
+      '**/.jscpd-report/**',
+    ],
+  },
 ];

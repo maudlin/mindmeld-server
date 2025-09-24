@@ -46,12 +46,12 @@ class YjsService {
         Y.applyUpdate(doc, new Uint8Array(snapshot.snapshot));
         this.logger.debug('Restored Y.Doc from snapshot', {
           mapId,
-          snapshotSize: snapshot.snapshot.length
+          snapshotSize: snapshot.snapshot.length,
         });
       } else {
         this.logger.debug('Created new Y.Doc', {
           mapId,
-          docSize: this.docs.size + 1
+          docSize: this.docs.size + 1,
         });
       }
 
@@ -64,14 +64,14 @@ class YjsService {
       this.docs.set(mapId, doc);
       this.docMetadata.set(mapId, {
         createdAt: new Date(),
-        lastUpdate: new Date()
+        lastUpdate: new Date(),
       });
 
       return doc;
     } catch (error) {
       this.logger.error('Failed to load snapshot, creating new document', {
         mapId,
-        error: error.message
+        error: error.message,
       });
 
       // Fallback: create new document
@@ -83,7 +83,7 @@ class YjsService {
       this.docs.set(mapId, doc);
       this.docMetadata.set(mapId, {
         createdAt: new Date(),
-        lastUpdate: new Date()
+        lastUpdate: new Date(),
       });
 
       return doc;
@@ -112,16 +112,19 @@ class YjsService {
           const docState = Y.encodeStateAsUpdate(doc);
           await this.persistence.saveSnapshot(mapId, Buffer.from(docState));
 
-          this.logger.debug('Saved document snapshot', {
-            mapId,
-            updateSize: update.length
+          this.logger.debug('Y.js document updated and persisted', {
+            mapId: mapId.substring(0, 8) + '...', // Truncate for security
+            updateSize: update.length,
+            documentSize: docState.length,
+            origin: origin ? 'local' : 'unknown',
+            activeClients: this.connections.get(mapId)?.size || 0,
           });
         }
       } else {
         this.logger.debug('Skipping snapshot save for remote update', {
           mapId,
           origin,
-          updateSize: update.length
+          updateSize: update.length,
         });
       }
 
@@ -129,12 +132,12 @@ class YjsService {
       this.broadcastUpdate(
         mapId,
         update,
-        typeof origin === 'string' ? null : origin
+        typeof origin === 'string' ? null : origin,
       );
     } catch (error) {
       this.logger.error('Failed to save document snapshot', {
         mapId,
-        error: error.message
+        error: error.message,
       });
     }
   }
@@ -149,7 +152,7 @@ class YjsService {
       if (!urlMatch) {
         ws.close(1008, 'Invalid URL format');
         this.logger.warn('WebSocket connection rejected: Invalid URL format', {
-          url: request.url
+          url: request.url,
         });
         return;
       }
@@ -166,7 +169,14 @@ class YjsService {
       }
       this.connections.get(mapId).add(ws);
 
-      this.logger.info('WebSocket connected for document', { mapId });
+      this.logger.info('WebSocket client connected', {
+        mapId: mapId.substring(0, 8) + '...', // Truncate for security
+        clientId: ws.id.substring(0, 16),
+        totalClientsForDocument: this.connections.get(mapId).size,
+        totalDocuments: this.docs.size,
+        userAgent:
+          request.headers['user-agent']?.substring(0, 100) || 'unknown',
+      });
 
       // Send initial document state to new client
       const initialState = Y.encodeStateAsUpdate(doc);
@@ -175,12 +185,12 @@ class YjsService {
       }
 
       // Set up message handler
-      ws.on('message', data => {
+      ws.on('message', (data) => {
         try {
           if (!(data instanceof Uint8Array) && !Buffer.isBuffer(data)) {
             this.logger.error('Invalid WebSocket message format', {
               mapId,
-              dataType: typeof data
+              dataType: typeof data,
             });
             return;
           }
@@ -191,7 +201,7 @@ class YjsService {
         } catch (error) {
           this.logger.error('Error processing WebSocket message', {
             mapId,
-            error: error.message
+            error: error.message,
           });
         }
       });
@@ -205,20 +215,28 @@ class YjsService {
             this.connections.delete(mapId);
           }
         }
-        this.logger.info('WebSocket disconnected from document', { mapId });
+        this.logger.info('WebSocket client disconnected', {
+          mapId: mapId.substring(0, 8) + '...', // Truncate for security
+          remainingClientsForDocument: connections.size,
+          totalDocuments: this.docs.size,
+          documentCleanedUp: connections.size === 0,
+        });
       });
 
       // Handle connection errors
-      ws.on('error', error => {
+      ws.on('error', (error) => {
         this.logger.error('WebSocket error for document', {
-          mapId,
-          error: error.message
+          mapId: mapId.substring(0, 8) + '...', // Truncate for security
+          clientId: ws.id?.substring(0, 16),
+          error: error.message,
+          errorType: error.name,
+          totalClients: this.connections.get(mapId)?.size || 0,
         });
       });
     } catch (error) {
       this.logger.error('Failed to handle WebSocket connection', {
         url: request.url,
-        error: error.message
+        error: error.message,
       });
       ws.close(1011, 'Server error');
     }
@@ -234,8 +252,8 @@ class YjsService {
         this.logger.error(
           'Attempted to apply update to non-existent document',
           {
-            mapId
-          }
+            mapId,
+          },
         );
         return;
       }
@@ -246,13 +264,13 @@ class YjsService {
       this.logger.debug('Applied update to document', {
         mapId,
         updateSize: updateData.length,
-        origin: ws.id
+        origin: ws.id,
       });
     } catch (error) {
       this.logger.error('Failed to apply update to document', {
         mapId,
         updateSize: updateData.length,
-        error: error.message
+        error: error.message,
       });
     }
   }
@@ -284,7 +302,7 @@ class YjsService {
       } catch (error) {
         this.logger.error('Failed to send update to WebSocket client', {
           mapId,
-          error: error.message
+          error: error.message,
         });
         closedConnections.push(ws);
       }
@@ -309,19 +327,100 @@ class YjsService {
         exists: false,
         clientCount: 0,
         documentSize: 0,
-        lastUpdate: null
+        lastUpdate: null,
       };
     }
 
     const activeConnections = connections
-      ? Array.from(connections).filter(ws => ws.readyState === 1).length
+      ? Array.from(connections).filter((ws) => ws.readyState === 1).length
       : 0;
 
     return {
       exists: true,
       clientCount: activeConnections,
       documentSize: Y.encodeStateAsUpdate(doc).length,
-      lastUpdate: metadata ? metadata.lastUpdate : new Date()
+      lastUpdate: metadata ? metadata.lastUpdate : new Date(),
+    };
+  }
+
+  /**
+   * Get service statistics and metrics
+   * Used for monitoring and health checks
+   * @returns {Object} Service statistics
+   */
+  getStats() {
+    const connectionCounts = new Map();
+    let totalConnections = 0;
+
+    // Calculate connections per document
+    for (const [mapId, connections] of this.connections) {
+      const activeConnections = Array.from(connections).filter(
+        (ws) => ws.readyState === 1,
+      ).length; // Only count OPEN connections
+      connectionCounts.set(mapId, activeConnections);
+      totalConnections += activeConnections;
+    }
+
+    return {
+      // Document metrics
+      activeDocuments: this.docs.size,
+      documentsWithClients: this.connections.size,
+
+      // Connection metrics
+      totalConnections,
+      averageConnectionsPerDocument:
+        this.connections.size > 0
+          ? Math.round((totalConnections / this.connections.size) * 100) / 100
+          : 0,
+
+      // Memory metrics (lightweight)
+      documentsInMemory: this.docs.size,
+      metadataEntries: this.docMetadata.size,
+
+      // Uptime tracking
+      oldestDocument:
+        this.docMetadata.size > 0
+          ? Math.min(
+              ...Array.from(this.docMetadata.values()).map((m) =>
+                m.createdAt.getTime(),
+              ),
+            )
+          : null,
+
+      // Health indicators
+      isHealthy:
+        this.docs.size === this.docMetadata.size && this.persistence !== null,
+
+      // Per-document breakdown (limited for security)
+      documentsOverview: Array.from(connectionCounts.entries())
+        .sort(([, a], [, b]) => b - a) // Sort by connection count desc
+        .slice(0, 10) // Limit to top 10 for security
+        .map(([mapId, connections]) => ({
+          mapId: mapId.substring(0, 8) + '...', // Truncate for security
+          connections,
+          hasDocument: this.docs.has(mapId),
+          lastUpdate:
+            this.docMetadata.get(mapId)?.lastUpdate?.toISOString() || null,
+        })),
+    };
+  }
+
+  /**
+   * Get health status for this service
+   * @returns {Object} Health status information
+   */
+  getHealthStatus() {
+    const stats = this.getStats();
+
+    return {
+      status: stats.isHealthy ? 'healthy' : 'degraded',
+      details: {
+        documentsLoaded: stats.activeDocuments,
+        clientsConnected: stats.totalConnections,
+        persistenceHealthy: this.persistence ? true : false,
+        memoryConsistency: stats.isHealthy,
+      },
+      timestamp: new Date().toISOString(),
     };
   }
 
@@ -329,6 +428,15 @@ class YjsService {
    * Close all connections and clean up resources
    */
   close() {
+    this.logger.info('YjsService shutting down', {
+      documentsActive: this.docs.size,
+      connectionsActive: Array.from(this.connections.values()).reduce(
+        (total, set) =>
+          total + Array.from(set).filter((ws) => ws.readyState === 1).length,
+        0,
+      ),
+    });
+
     // Close all WebSocket connections
     for (const [, connections] of this.connections) {
       for (const ws of connections) {

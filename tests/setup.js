@@ -3,6 +3,9 @@
  * Global test configuration and utilities
  */
 
+// Ensure NODE_ENV is set to 'test' for proper logger configuration
+process.env.NODE_ENV = 'test';
+
 const fs = require('fs').promises;
 const path = require('path');
 const { cleanupOldTestBackups } = require('./utils/temp-files');
@@ -30,7 +33,7 @@ if (!process.env.VERBOSE) {
     log: jest.fn(),
     debug: jest.fn(),
     info: jest.fn(),
-    warn: jest.fn()
+    warn: jest.fn(),
     // Keep error for debugging
   };
 }

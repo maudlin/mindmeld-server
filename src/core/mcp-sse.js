@@ -12,7 +12,7 @@ const logger = require('../utils/logger');
 function createMcpResponse(id, result, error = null) {
   const response = {
     jsonrpc: '2.0',
-    id
+    id,
   };
 
   if (error) {
@@ -52,7 +52,7 @@ function createMcpSseEndpoint(apiServices) {
       'Cache-Control': 'no-cache',
       Connection: 'keep-alive',
       'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Headers': 'Cache-Control'
+      'Access-Control-Allow-Headers': 'Cache-Control',
     });
 
     // Store connection
@@ -63,8 +63,8 @@ function createMcpSseEndpoint(apiServices) {
       `data: ${JSON.stringify({
         type: 'connection',
         id: connectionId,
-        timestamp: new Date().toISOString()
-      })}\n\n`
+        timestamp: new Date().toISOString(),
+      })}\n\n`,
     );
 
     // Handle client disconnect
@@ -73,7 +73,7 @@ function createMcpSseEndpoint(apiServices) {
       connections.delete(connectionId);
     });
 
-    req.on('error', error => {
+    req.on('error', (error) => {
       logger.error(`MCP SSE connection error: ${connectionId}`, error);
       connections.delete(connectionId);
     });
@@ -103,9 +103,9 @@ function createMcpSseEndpoint(apiServices) {
               createMcpError(
                 -32600,
                 'Invalid Request',
-                'Not a valid JSON-RPC 2.0 request'
-              )
-            )
+                'Not a valid JSON-RPC 2.0 request',
+              ),
+            ),
           );
       }
 
@@ -118,13 +118,13 @@ function createMcpSseEndpoint(apiServices) {
             capabilities: {
               resources: {},
               tools: {},
-              logging: {}
+              logging: {},
             },
             serverInfo: {
               name: 'mindmeld-server',
               version: '0.1.0',
-              description: 'MindMeld mind mapping server with MCP SSE support'
-            }
+              description: 'MindMeld mind mapping server with MCP SSE support',
+            },
           });
           res.json(response);
           break;
@@ -144,15 +144,15 @@ function createMcpSseEndpoint(apiServices) {
                     description:
                       'Maximum number of maps to return (1-100, default: 50)',
                     minimum: 1,
-                    maximum: 100
+                    maximum: 100,
                   },
                   offset: {
                     type: 'number',
                     description: 'Number of maps to skip (default: 0)',
-                    minimum: 0
-                  }
-                }
-              }
+                    minimum: 0,
+                  },
+                },
+              },
             },
             {
               name: 'maps.get',
@@ -163,11 +163,11 @@ function createMcpSseEndpoint(apiServices) {
                   id: {
                     type: 'string',
                     format: 'uuid',
-                    description: 'UUID of the map to retrieve'
-                  }
+                    description: 'UUID of the map to retrieve',
+                  },
                 },
-                required: ['id']
-              }
+                required: ['id'],
+              },
             },
             {
               name: 'maps.create',
@@ -178,17 +178,17 @@ function createMcpSseEndpoint(apiServices) {
                   name: {
                     type: 'string',
                     minLength: 1,
-                    description: 'Name of the new map'
+                    description: 'Name of the new map',
                   },
                   data: {
                     type: 'object',
                     description:
-                      'Initial map data structure (nodes and connections)'
-                  }
+                      'Initial map data structure (nodes and connections)',
+                  },
                 },
-                required: ['name', 'data']
-              }
-            }
+                required: ['name', 'data'],
+              },
+            },
           ];
 
           const response = createMcpResponse(id, { tools });
@@ -211,16 +211,16 @@ function createMcpSseEndpoint(apiServices) {
                 total: maps.length,
                 limit,
                 offset,
-                hasMore: maps.length === limit
+                hasMore: maps.length === limit,
               };
 
               const response = createMcpResponse(id, {
                 content: [
                   {
                     type: 'text',
-                    text: JSON.stringify(result, null, 2)
-                  }
-                ]
+                    text: JSON.stringify(result, null, 2),
+                  },
+                ],
               });
               res.json(response);
               break;
@@ -231,7 +231,11 @@ function createMcpSseEndpoint(apiServices) {
                 const response = createMcpResponse(
                   id,
                   null,
-                  createMcpError(-32602, 'Invalid params', 'Map ID is required')
+                  createMcpError(
+                    -32602,
+                    'Invalid params',
+                    'Map ID is required',
+                  ),
                 );
                 res.json(response);
                 return;
@@ -243,9 +247,9 @@ function createMcpSseEndpoint(apiServices) {
                   content: [
                     {
                       type: 'text',
-                      text: JSON.stringify(map, null, 2)
-                    }
-                  ]
+                      text: JSON.stringify(map, null, 2),
+                    },
+                  ],
                 });
                 res.json(response);
               } catch (serviceError) {
@@ -256,8 +260,8 @@ function createMcpSseEndpoint(apiServices) {
                     createMcpError(
                       -32602,
                       'Map not found',
-                      `Map ${args.id} not found or not accessible`
-                    )
+                      `Map ${args.id} not found or not accessible`,
+                    ),
                   );
                   res.json(response);
                   return;
@@ -275,8 +279,8 @@ function createMcpSseEndpoint(apiServices) {
                   createMcpError(
                     -32602,
                     'Invalid params',
-                    'Name and data are required'
-                  )
+                    'Name and data are required',
+                  ),
                 );
                 res.json(response);
                 return;
@@ -284,7 +288,7 @@ function createMcpSseEndpoint(apiServices) {
 
               const newMap = mapsService.create({
                 name: args.name,
-                state: args.data
+                state: args.data,
               });
 
               const response = createMcpResponse(id, {
@@ -295,13 +299,13 @@ function createMcpSseEndpoint(apiServices) {
                       {
                         success: true,
                         map: newMap,
-                        message: `Created map "${newMap.name}" with ID ${newMap.id}`
+                        message: `Created map "${newMap.name}" with ID ${newMap.id}`,
                       },
                       null,
-                      2
-                    )
-                  }
-                ]
+                      2,
+                    ),
+                  },
+                ],
               });
               res.json(response);
               break;
@@ -314,8 +318,8 @@ function createMcpSseEndpoint(apiServices) {
                 createMcpError(
                   -32601,
                   'Method not found',
-                  `Unknown tool: ${name}`
-                )
+                  `Unknown tool: ${name}`,
+                ),
               );
               res.json(response);
               break;
@@ -330,14 +334,14 @@ function createMcpSseEndpoint(apiServices) {
               uri: 'mindmeld://health',
               name: 'Server Health',
               description: 'Server status and health information',
-              mimeType: 'application/json'
+              mimeType: 'application/json',
             },
             {
               uri: 'mindmeld://maps',
               name: 'All Maps',
               description: 'List of all mind maps accessible to the user',
-              mimeType: 'application/json'
-            }
+              mimeType: 'application/json',
+            },
           ];
 
           const response = createMcpResponse(id, { resources });
@@ -358,8 +362,8 @@ function createMcpSseEndpoint(apiServices) {
               features: {
                 maps: true,
                 mcp: true,
-                auth: false
-              }
+                auth: false,
+              },
             };
 
             const response = createMcpResponse(id, {
@@ -367,9 +371,9 @@ function createMcpSseEndpoint(apiServices) {
                 {
                   uri,
                   mimeType: 'application/json',
-                  text: JSON.stringify(content, null, 2)
-                }
-              ]
+                  text: JSON.stringify(content, null, 2),
+                },
+              ],
             });
             res.json(response);
             return;
@@ -387,13 +391,13 @@ function createMcpSseEndpoint(apiServices) {
                     {
                       maps,
                       total: maps.length,
-                      message: 'All mind maps accessible to the user'
+                      message: 'All mind maps accessible to the user',
                     },
                     null,
-                    2
-                  )
-                }
-              ]
+                    2,
+                  ),
+                },
+              ],
             });
             res.json(response);
             return;
@@ -411,9 +415,9 @@ function createMcpSseEndpoint(apiServices) {
                   {
                     uri,
                     mimeType: 'application/json',
-                    text: JSON.stringify(map, null, 2)
-                  }
-                ]
+                    text: JSON.stringify(map, null, 2),
+                  },
+                ],
               });
               res.json(response);
               return;
@@ -425,8 +429,8 @@ function createMcpSseEndpoint(apiServices) {
                   createMcpError(
                     -32602,
                     'Resource not found',
-                    `Map ${mapId} not found or not accessible`
-                  )
+                    `Map ${mapId} not found or not accessible`,
+                  ),
                 );
                 res.json(response);
                 return;
@@ -441,8 +445,8 @@ function createMcpSseEndpoint(apiServices) {
             createMcpError(
               -32602,
               'Invalid params',
-              `Unknown resource URI: ${uri}`
-            )
+              `Unknown resource URI: ${uri}`,
+            ),
           );
           res.json(response);
           break;
@@ -455,8 +459,8 @@ function createMcpSseEndpoint(apiServices) {
             createMcpError(
               -32601,
               'Method not found',
-              `Unknown method: ${method}`
-            )
+              `Unknown method: ${method}`,
+            ),
           );
           res.json(response);
           break;
@@ -467,7 +471,7 @@ function createMcpSseEndpoint(apiServices) {
       const response = createMcpResponse(
         req.body.id,
         null,
-        createMcpError(-32603, 'Internal error', error.message)
+        createMcpError(-32603, 'Internal error', error.message),
       );
       res.status(500).json(response);
     }

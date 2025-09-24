@@ -10,8 +10,6 @@ const {
   yDocToJSON,
   jsonToYDoc,
   hasYDocContent,
-  validateNoteContent: _validateNoteContent,
-  validateNotePosition: _validateNotePosition
 } = require('../yjs/json-converter');
 
 // Strict schema definitions for mind map data structures
@@ -19,14 +17,14 @@ const NoteSchema = z
   .object({
     i: z.string().min(1), // Note ID
     p: z.tuple([z.number(), z.number()]), // Position [x, y]
-    c: z.string() // Content
+    c: z.string(), // Content
   })
   .passthrough(); // Allow additional properties for future extensibility
 
 const ConnectionSchema = z
   .object({
     f: z.string().min(1), // From note ID
-    t: z.string().min(1) // To note ID
+    t: z.string().min(1), // To note ID
   })
   .passthrough(); // Allow additional properties for future extensibility
 
@@ -34,7 +32,7 @@ const ConnectionSchema = z
 const MapDataSchema = z
   .object({
     n: z.array(NoteSchema), // Notes array
-    c: z.array(ConnectionSchema) // Connections array
+    c: z.array(ConnectionSchema), // Connections array
   })
   .strict();
 
@@ -42,7 +40,7 @@ const MapDataSchema = z
 const MapImportSchema = z
   .object({
     n: z.array(NoteSchema), // Notes array
-    c: z.array(ConnectionSchema) // Connections array
+    c: z.array(ConnectionSchema), // Connections array
   })
   .passthrough(); // Allow additional properties including meta
 
@@ -50,7 +48,7 @@ const MapImportSchema = z
 const MapCreateSchema = z
   .object({
     name: z.string().min(1),
-    state: MapDataSchema
+    state: MapDataSchema,
   })
   .strict();
 
@@ -58,7 +56,7 @@ const MapCreateSchema = z
 const MapUpdateSchema = z
   .object({
     data: MapDataSchema,
-    version: z.number().int().min(1)
+    version: z.number().int().min(1),
   })
   .strict();
 
@@ -72,7 +70,7 @@ class MapsService {
     const yjsDbFile = sqliteFile.replace('.sqlite', '-yjs.sqlite');
     this.yjsService = new YjsService({
       dbFile: yjsDbFile,
-      logger: options.logger || console
+      logger: options.logger || console,
     });
   }
 
@@ -97,7 +95,7 @@ class MapsService {
       version,
       updatedAt,
       stateJson,
-      sizeBytes
+      sizeBytes,
     });
 
     // Update successful, return the updated resource
@@ -122,7 +120,7 @@ class MapsService {
             data: yjsData,
             // Generate ETag from Y.js content for proper caching
             etag: this.generateETagFromData(yjsData),
-            dataSource: 'yjs'
+            dataSource: 'yjs',
           };
         } else {
           // Y.js document exists but no static record - create minimal metadata
@@ -134,7 +132,7 @@ class MapsService {
             updated_at: yjsData.meta?.modified || now,
             data: yjsData,
             etag: this.generateETagFromData(yjsData),
-            dataSource: 'yjs'
+            dataSource: 'yjs',
           };
         }
       }
@@ -142,7 +140,7 @@ class MapsService {
       // Y.js document doesn't exist or failed to load - fall back to static
       console.debug(
         `Failed to load Y.js document for ${id}, falling back to static:`,
-        error.message
+        error.message,
       );
     }
 
@@ -154,7 +152,7 @@ class MapsService {
 
     return {
       ...result,
-      dataSource: 'static'
+      dataSource: 'static',
     };
   }
 
@@ -199,7 +197,7 @@ class MapsService {
       updatedAt,
       stateJson,
       name: existing.name, // preserve existing name
-      sizeBytes
+      sizeBytes,
     });
 
     if (result === 0) {
@@ -249,7 +247,7 @@ class MapsService {
       // Import JSON data into Y.js document
       jsonToYDoc(jsonData, yjsDoc, {
         suppressEvents,
-        merge: false // Replace existing content
+        merge: false, // Replace existing content
       });
 
       // Optionally create/update static record for metadata tracking
@@ -268,7 +266,7 @@ class MapsService {
             updatedAt: now,
             stateJson,
             name: mapName,
-            sizeBytes: Buffer.byteLength(stateJson, 'utf8')
+            sizeBytes: Buffer.byteLength(stateJson, 'utf8'),
           });
         } else {
           // Create new record
@@ -279,7 +277,7 @@ class MapsService {
             version: 1,
             updatedAt: now,
             stateJson,
-            sizeBytes: Buffer.byteLength(stateJson, 'utf8')
+            sizeBytes: Buffer.byteLength(stateJson, 'utf8'),
           });
         }
       }
@@ -288,7 +286,7 @@ class MapsService {
         success: true,
         mapId,
         message: 'Successfully imported data to Y.js document',
-        dataSource: 'yjs'
+        dataSource: 'yjs',
       };
     } catch (error) {
       throw new BadRequestError(`Import failed: ${error.message}`);
