@@ -138,7 +138,7 @@ async function saveMapWithConflictHandling(mapId, data, version, etag) {
       // Map was modified - reload and merge or ask user
       const fresh = await loadMap(mapId);
       const shouldOverwrite = confirm('Map was modified. Overwrite changes?');
-      
+
       if (shouldOverwrite) {
         return await saveMap(mapId, data, fresh.version, fresh.etag);
       } else {
@@ -169,7 +169,7 @@ All MindMeld maps use this JSON format:
     }
   ],
   "c": [  // Connections
-    { 
+    {
       "f": "from-id",       // From node ID
       "t": "to-id",         // To node ID
       "type": "arrow"       // Connection type (optional)
@@ -265,9 +265,7 @@ const provider = new LocalJSONProvider({
 
 // Save a map
 await provider.save('my-map-id', {
-  n: [
-    { i: 'note1', c: 'My Note', p: [100, 200] }
-  ],
+  n: [{ i: 'note1', c: 'My Note', p: [100, 200] }],
   c: [],
   meta: { title: 'My Mind Map' }
 });
@@ -284,20 +282,20 @@ const maps = await provider.list({
 });
 
 // Subscribe to changes
-await provider.subscribe('my-map-id', (update) => {
+await provider.subscribe('my-map-id', update => {
   console.log('Map updated:', update.type, update.data);
 });
 ```
 
 #### Configuration Options
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `storagePrefix` | string | 'mindmeld_map_' | Prefix for map data keys |
-| `metaPrefix` | string | 'mindmeld_meta_' | Prefix for metadata keys |
-| `maxMaps` | number | 100 | Maximum maps before cleanup |
-| `storageQuotaWarning` | number | 5MB | Storage warning threshold |
-| `enableCompression` | boolean | true | Enable data compression |
+| Option                | Type    | Default          | Description                 |
+| --------------------- | ------- | ---------------- | --------------------------- |
+| `storagePrefix`       | string  | 'mindmeld*map*'  | Prefix for map data keys    |
+| `metaPrefix`          | string  | 'mindmeld*meta*' | Prefix for metadata keys    |
+| `maxMaps`             | number  | 100              | Maximum maps before cleanup |
+| `storageQuotaWarning` | number  | 5MB              | Storage warning threshold   |
+| `enableCompression`   | boolean | true             | Enable data compression     |
 
 ### 2. DataProviderFactory
 
@@ -314,7 +312,10 @@ The factory manages provider creation and switching based on environment and con
 #### Usage
 
 ```javascript
-const { DataProviderFactory, PROVIDER_TYPES } = require('./src/client/providers/DataProviderFactory');
+const {
+  DataProviderFactory,
+  PROVIDER_TYPES
+} = require('./src/client/providers/DataProviderFactory');
 
 // Initialize factory
 const factory = new DataProviderFactory({
@@ -373,7 +374,10 @@ Utilities to prevent server-side execution of client-only features.
 #### Usage
 
 ```javascript
-const { HydrationChecker, HydrationSuppressor } = require('./src/client/utils/HydrationSuppression');
+const {
+  HydrationChecker,
+  HydrationSuppressor
+} = require('./src/client/utils/HydrationSuppression');
 
 // Environment detection
 if (HydrationChecker.isServerSide()) {
@@ -412,7 +416,10 @@ const provider = await suppressor.initializeDataProvider(factory, {
 ### React Integration (with LocalJSONProvider)
 
 ```jsx
-import { DataProviderFactory, PROVIDER_TYPES } from './src/client/providers/DataProviderFactory';
+import {
+  DataProviderFactory,
+  PROVIDER_TYPES
+} from './src/client/providers/DataProviderFactory';
 import { HydrationSuppressor } from './src/client/utils/HydrationSuppression';
 
 const useDataProvider = () => {
@@ -427,8 +434,9 @@ const useDataProvider = () => {
     });
 
     const suppressor = new HydrationSuppressor();
-    
-    suppressor.initializeDataProvider(factory)
+
+    suppressor
+      .initializeDataProvider(factory)
       .then(setProvider)
       .catch(setError)
       .finally(() => setLoading(false));
@@ -477,7 +485,8 @@ export default function MapPage({ mapId }) {
 
   useEffect(() => {
     if (dataProviderFactory) {
-      dataProviderFactory.createProvider()
+      dataProviderFactory
+        .createProvider()
         .then(setProvider)
         .catch(console.error);
     }
@@ -497,6 +506,7 @@ export default function MapPage({ mapId }) {
 #### From Server-only to Client Boundary
 
 1. **Phase 1**: Install client boundary (this PR)
+
    ```javascript
    // Start with LocalJSONProvider for all users
    const factory = new DataProviderFactory({
@@ -505,6 +515,7 @@ export default function MapPage({ mapId }) {
    ```
 
 2. **Phase 2**: Selective YJS rollout (MS-63)
+
    ```javascript
    const factory = new DataProviderFactory({
      defaultProvider: PROVIDER_TYPES.AUTO,
@@ -580,7 +591,7 @@ console.log(`Imported ${results.imported} maps, ${results.failed} failed`);
 ```javascript
 describe('LocalJSONProvider', () => {
   let provider;
-  
+
   beforeEach(() => {
     // Mock localStorage
     global.localStorage = {
@@ -600,10 +611,10 @@ describe('LocalJSONProvider', () => {
 
   test('should save and load maps', async () => {
     const mapData = { n: [], c: [], meta: { title: 'Test' } };
-    
+
     await provider.save('test-map', mapData);
     const loaded = await provider.load('test-map');
-    
+
     expect(loaded.meta.title).toBe('Test');
     expect(loaded.meta.version).toBe(2); // Incremented
   });
@@ -616,19 +627,19 @@ describe('LocalJSONProvider', () => {
 describe('DataProvider Integration', () => {
   test('should switch providers seamlessly', async () => {
     const factory = new DataProviderFactory();
-    
+
     const localProvider = await factory.createProvider({
       type: PROVIDER_TYPES.LOCAL
     });
-    
+
     await localProvider.save('test', { n: [], c: [] });
-    
+
     // Switch providers
     const newProvider = await factory.switchProvider(PROVIDER_TYPES.LOCAL, {
       storagePrefix: 'new_',
       forceNew: true
     });
-    
+
     expect(newProvider).not.toBe(localProvider);
   });
 });
@@ -659,6 +670,7 @@ describe('DataProvider Integration', () => {
 ### Common Error Scenarios
 
 1. **localStorage unavailable**
+
    ```javascript
    // Provider throws during initialization
    try {
@@ -669,6 +681,7 @@ describe('DataProvider Integration', () => {
    ```
 
 2. **Storage quota exceeded**
+
    ```javascript
    try {
      await provider.save('large-map', largeData);
@@ -700,7 +713,7 @@ describe('DataProvider Integration', () => {
 ## Future Enhancements (MS-63+)
 
 - **YjsProvider**: Real-time collaborative editing
-- **IndexedDB**: Alternative storage for large datasets  
+- **IndexedDB**: Alternative storage for large datasets
 - **Data encryption**: Secure local storage
 - **Background sync**: Offline-to-online synchronization
 - **Conflict resolution**: Handle concurrent edits
@@ -725,4 +738,4 @@ When you're ready for real-time collaborative editing, you'll be able to:
 
 ---
 
-*This guide covers both REST API integration and the new LocalJSONProvider for offline-first applications. Real-time collaborative editing with YjsProvider is coming soon.*
+_This guide covers both REST API integration and the new LocalJSONProvider for offline-first applications. Real-time collaborative editing with YjsProvider is coming soon._

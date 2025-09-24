@@ -152,23 +152,26 @@ class LocalJSONProvider extends DataProviderInterface {
   async load(mapId) {
     const mapKey = this.storagePrefix + mapId;
     const metaKey = this.metaPrefix + mapId;
-    
+
     const mapData = localStorage.getItem(mapKey);
     const metaData = localStorage.getItem(metaKey);
-    
+
     if (!mapData) {
       throw new Error(`Map not found: ${mapId}`);
     }
-    
+
     const parsedMapData = JSON.parse(mapData);
     const parsedMetaData = metaData ? JSON.parse(metaData) : {};
-    
+
     return {
       ...parsedMapData,
       meta: {
         version: parsedMetaData.version || 1,
         created: parsedMetaData.created || new Date().toISOString(),
-        modified: parsedMetaData.modified || parsedMetaData.created || new Date().toISOString(),
+        modified:
+          parsedMetaData.modified ||
+          parsedMetaData.created ||
+          new Date().toISOString(),
         title: parsedMetaData.title || 'Untitled Map',
         ...parsedMapData.meta,
         ...parsedMetaData
@@ -184,7 +187,7 @@ class LocalJSONProvider extends DataProviderInterface {
     const mapKey = this.storagePrefix + mapId;
     const metaKey = this.metaPrefix + mapId;
     const now = new Date().toISOString();
-    
+
     const metadata = {
       ...data.meta,
       version: (data.meta?.version || 1) + (options.expectedVersion ? 0 : 1),
@@ -194,22 +197,22 @@ class LocalJSONProvider extends DataProviderInterface {
       localSaved: now,
       autosave: Boolean(options.autosave)
     };
-    
+
     const mapData = {
       n: data.n || [],
       c: data.c || []
     };
-    
+
     localStorage.setItem(mapKey, JSON.stringify(mapData));
     localStorage.setItem(metaKey, JSON.stringify(metadata));
-    
+
     this.notifySubscribers(mapId, {
       type: 'saved',
       mapId,
       data: { ...mapData, meta: metadata },
       options
     });
-    
+
     return {
       success: true,
       version: metadata.version,
@@ -222,7 +225,7 @@ class LocalJSONProvider extends DataProviderInterface {
       this.subscribers.set(mapId, new Set());
     }
     this.subscribers.get(mapId).add(callback);
-    
+
     // Immediately notify with current state
     try {
       const currentData = await this.load(mapId);
@@ -235,11 +238,11 @@ class LocalJSONProvider extends DataProviderInterface {
   pauseAutosave() {
     this.autosavePaused = true;
   }
-  
+
   resumeAutosave() {
     this.autosavePaused = false;
   }
-  
+
   isOnline() {
     return true; // LocalProvider is always "online"
   }
@@ -265,17 +268,17 @@ class YjsProvider extends DataProviderInterface {
 
   async save(mapId, data, options = {}) {
     const doc = await this.getOrCreateDocument(mapId);
-    
+
     // Convert JSON to Y.Doc structure
     const tempDoc = JsonYjsConverter.jsonToYDoc(data);
-    
+
     // Apply changes to managed document
     JsonYjsConverter.applyPartialUpdates(doc, {
       updateNotes: tempDoc.getArray('notes').toArray(),
       updateConnections: tempDoc.getArray('connections').toArray(),
       updateMeta: tempDoc.getMap('meta').toJSON()
     });
-    
+
     return JsonYjsConverter.yDocToJson(doc);
   }
 
@@ -400,4 +403,4 @@ npm test -- tests/integration/yjs-websocket.test.js
 
 ---
 
-*For usage examples and integration patterns, see the [Client Integration Guide](client-integration.md).*
+_For usage examples and integration patterns, see the [Client Integration Guide](client-integration.md)._

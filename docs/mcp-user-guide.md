@@ -19,10 +19,14 @@ Once connected, AI assistants can:
 ### Step 1: Start Your MindMeld Server
 
 ```bash
+# Enable MCP protocol
+FEATURE_MCP=1 npm start
+
+# Or set in .env file: FEATURE_MCP=1
 npm start
 ```
 
-Your server will start on `http://localhost:3001`
+Your server will start on `http://localhost:3001` with MCP endpoint at `/mcp/sse`
 
 ### Step 2: Connect Your AI Assistant
 
@@ -136,9 +140,10 @@ Ask your AI assistant:
 
 ## Need Help?
 
-- Check the server logs for error messages
-- Visit the [MCP Developer Guide](mcp-developer-guide.md) for technical details
-- Test the connection manually: `http://localhost:3001/health`
+- **Server Issues**: Check the server logs for error messages
+- **Technical Details**: Visit the [MCP Developer Guide](mcp-developer-guide.md) for advanced configuration
+- **Integration Help**: See [MCP Client Integration](mcp-client-integration.md) for detailed technical integration
+- **Quick Test**: Verify server health at `http://localhost:3001/health`
 
 ## Supported AI Assistants
 
