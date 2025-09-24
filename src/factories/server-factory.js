@@ -40,9 +40,8 @@ function createServer(config = {}) {
   const middleware = createMiddleware({ corsOrigin, jsonLimit });
   middleware.forEach(mw => app.use(mw));
 
-  // Apply routes
-  const apiRoutes = createApiRoutes();
-  app.use('/', apiRoutes);
+  // Will be populated when WebSocket is set up
+  let yjsService = null;
 
   // /maps router and MCP endpoints (enabled by default)
   if (!config || config.featureMapsApi !== false) {
@@ -113,12 +112,24 @@ function createServer(config = {}) {
         logger: Logger,
         dbFile: sqliteFile.replace('.sqlite', '-yjs.sqlite') // Use separate Yjs database
       });
+
+      // Store YjsService reference for health checks
+      yjsService = yjsRoutes.yjsService;
+
+      // Now that we have YjsService, set up API routes with health checks
+      const apiRoutes = createApiRoutes({ yjsService });
+      app.use('/', apiRoutes);
+
       Logger.info('Yjs WebSocket server enabled');
       return yjsRoutes;
     };
     Logger.debug('setupWebSocket function added to app');
   } else {
     Logger.debug('SERVER_SYNC is off, WebSocket not enabled');
+
+    // Set up API routes without YjsService
+    const apiRoutes = createApiRoutes();
+    app.use('/', apiRoutes);
   }
 
   Logger.info('Server factory completed');
