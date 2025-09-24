@@ -3,6 +3,9 @@
  * Global test configuration and utilities
  */
 
+// Ensure NODE_ENV is set to 'test' for proper logger configuration
+process.env.NODE_ENV = 'test';
+
 const fs = require('fs').promises;
 const path = require('path');
 const { cleanupOldTestBackups } = require('./utils/temp-files');
