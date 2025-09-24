@@ -7,6 +7,8 @@ A production-ready REST API for the MindMeld mind mapping application with integ
 - 🗺️ **Maps-first API** with SQLite persistence (better-sqlite3)
 - 🔒 **Optimistic concurrency** with ETag/If-Match on updates
 - 🤖 **MCP Integration** for AI assistants (Warp, Claude Desktop, etc.)
+- 🔄 **Real-time Collaboration** with Y.js WebSocket integration for conflict-free collaborative editing
+- 📱 **Client Provider Architecture** with LocalJSONProvider for offline-first browser applications
 - 📋 **RFC 7807 Problem Details** for structured error responses
 - 🛡️ **Production hardening** with helmet, CORS, rate limiting
 - 📊 **Structured logging** (pino + pino-http) with request IDs
@@ -35,11 +37,31 @@ npm start
 
 Environment
 
+**Core Server:**
+
 - PORT (default: 3001)
 - CORS_ORIGIN (default: http://localhost:8080) - Flexible CORS with localhost/127.0.0.1 variants and HTTPS upgrades
 - JSON_LIMIT (default: 50mb)
+- LOG_LEVEL (default: debug in dev, info in prod)
+
+**Data & Storage:**
+
 - SQLITE_FILE (default: ./data/db.sqlite)
+- STATE_FILE (default: ./data/state.json) - Legacy state file for MCP resource
+
+**Feature Flags:**
+
 - FEATURE_MAPS_API (default: true; set to 0/false to disable)
+- FEATURE_MCP (default: false; set to 1/true to enable MCP protocol)
+
+**Real-time Collaboration (Y.js):**
+
+- SERVER_SYNC (default: off; set to 'on' to enable WebSocket collaboration)
+- DATA_PROVIDER (default: json; set to 'yjs' for Y.js documents)
+
+**MCP Protocol:**
+
+- MCP_TOKEN (optional; authentication token for MCP clients)
 
 ## API
 
@@ -77,6 +99,80 @@ Errors (RFC 7807)
 
 - Content-Type: application/problem+json
 - Fields: type, title, status, detail, instance, errors[] (optional)
+
+## Real-time Collaboration
+
+### Y.js WebSocket Integration
+
+Enable real-time collaborative editing with WebSocket support:
+
+```bash
+# Enable WebSocket collaboration
+SERVER_SYNC=on DATA_PROVIDER=yjs npm start
+
+# WebSocket endpoint: ws://localhost:3001/yjs/{mapId}
+```
+
+**Features:**
+
+- **Conflict-free Collaborative Editing**: Multiple users can edit simultaneously
+- **Automatic Persistence**: Y.js documents saved to SQLite with snapshots
+- **Real-time Synchronization**: Changes propagated instantly to all connected clients
+- **Offline Support**: Local changes merged when reconnecting
+
+**WebSocket API:**
+
+```javascript
+// Connect to collaborative document
+const ws = new WebSocket(`ws://localhost:3001/yjs/${mapId}`);
+
+// Y.js integration (client-side)
+import * as Y from 'yjs';
+import { WebsocketProvider } from 'y-websocket';
+
+const ydoc = new Y.Doc();
+const provider = new WebsocketProvider('ws://localhost:3001/yjs', mapId, ydoc);
+const yNotes = ydoc.getArray('notes');
+const yConnections = ydoc.getArray('connections');
+```
+
+## Client Integration
+
+### DataProvider Architecture
+
+MindMeld includes a flexible client-side data provider system:
+
+**LocalJSONProvider** - Offline-first browser storage:
+
+```javascript
+import { LocalJSONProvider } from './src/client/providers/LocalJSONProvider.js';
+
+const provider = new LocalJSONProvider({
+  storagePrefix: 'mindmeld_map_',
+  maxMaps: 100,
+  autosave: true
+});
+
+// Standard DataProvider interface
+const data = await provider.load(mapId);
+await provider.save(mapId, data);
+const maps = await provider.list({ limit: 10 });
+```
+
+**DataProviderFactory** - Smart provider selection:
+
+```javascript
+import { DataProviderFactory } from './src/client/providers/DataProviderFactory.js';
+
+// Automatically selects best provider (LocalJSON, Y.js, etc.)
+const provider = DataProviderFactory.create({
+  preferredProvider: 'yjs', // or 'json'
+  fallbackProvider: 'json',
+  serverUrl: 'http://localhost:3001'
+});
+```
+
+See [Client Integration Guide](docs/client-integration.md) and [DataProvider Reference](docs/dataprovider-reference.md) for detailed documentation.
 
 ## Configuration
 
@@ -189,12 +285,23 @@ Project structure
 
 ```
 src/
+├── client/               # Client-side provider architecture
+│   ├── providers/        # Data provider implementations
+│   │   ├── DataProviderInterface.js    # Base interface/contract
+│   │   ├── DataProviderFactory.js     # Smart provider selection
+│   │   └── LocalJSONProvider.js       # Browser localStorage provider
+│   └── utils/            # Client utilities (hydration suppression)
+├── config/               # Configuration management
 ├── core/                 # Core routes and handlers (health/ready)
-├── modules/
-│   └── maps/             # Maps slice (db, repo, service, routes)
-├── utils/                # logger, event-bus, etag helpers
+├── data/                 # Data layer utilities
 ├── factories/            # server-factory (composition)
-└── index.js              # entrypoint
+├── mcp/                  # Model Context Protocol implementation
+├── modules/
+│   ├── maps/             # Maps API (db, repo, service, routes)
+│   └── yjs/              # Y.js WebSocket collaboration (db, persistence, routes, service)
+├── services/             # Application services (state management)
+├── utils/                # Shared utilities (logger, event-bus, etag)
+└── index.js              # Application entrypoint
 
 scripts/
 └── admin/                # Admin commands and utilities
@@ -235,7 +342,8 @@ FEATURE_MCP=1 npm start
 📚 **Comprehensive guides available in [`docs/`](docs/):**
 
 - 🤖 **[MCP Client Integration](docs/mcp-client-integration.md)** - AI assistant integration for Warp, Claude Desktop
-- 🌐 **[REST Client Integration](docs/rest-client-integration.md)** - REST API client integration patterns
+- 🌐 **[Client Integration Guide](docs/client-integration.md)** - REST API and DataProvider client integration patterns
+- 📊 **[DataProvider Reference](docs/dataprovider-reference.md)** - Technical reference for client provider architecture
 - 🔧 **[Developer Guide](docs/developer-guide.md)** - Development workflows and testing
 - 🏗️ **[Architecture Guide](docs/architecture.md)** - System design and patterns
 - 📝 **[Testing Guide](docs/testing-guide.md)** - Manual API testing workflows
@@ -251,5 +359,3 @@ FEATURE_MCP=1 npm start
 ## License
 
 MIT
-
-# YJS Integration Test
