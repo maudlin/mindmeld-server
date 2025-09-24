@@ -117,4 +117,77 @@ AI Assistant → mcp-remote → MindMeld Server
 - **Message Queue**: For async operations and background processing
 - **Load Balancing**: Horizontal scaling with stateless design
 
+## Client Architecture
+
+### Data Provider System
+
+MindMeld's client architecture supports multiple data storage strategies through a unified interface:
+
+```
+Client Application
+     ↓
+DataProviderFactory ← Feature Flags & Environment Detection
+     ↓
+DataProviderInterface
+     ├── LocalJSONProvider (localStorage)
+     ├── YjsProvider (real-time collaboration)
+     └── RestAPIProvider (future: direct HTTP)
+```
+
+### Provider Selection Logic
+
+1. **Environment Detection**: Browser vs server-side rendering
+2. **Feature Flags**: Enable/disable collaboration features
+3. **Fallback Strategy**: Graceful degradation when features unavailable
+4. **Migration Support**: Seamless switching between providers
+
+### LocalJSONProvider Architecture
+
+```
+LocalJSONProvider
+     ├── localStorage (map data)
+     ├── localStorage (metadata)
+     ├── Subscription System (change notifications)
+     ├── Autosave Control (pause/resume)
+     └── Storage Management (quota, cleanup)
+```
+
+### Real-time Collaboration (YjsProvider)
+
+```
+YjsProvider → Y.Doc (local) → IndexedDB (persistence)
+     ↓              ↓
+WebSocket    Conflict Resolution
+     ↓              ↓
+YJS Server ← → SQLite (snapshots)
+```
+
+### Data Format Consistency
+
+All providers use the same JSON format:
+
+```javascript
+{
+  n: [...],  // Notes/nodes
+  c: [...],  // Connections
+  meta: {    // Metadata
+    version: 1,
+    created: "2025-09-23T10:30:00.000Z",
+    modified: "2025-09-23T10:30:00.000Z",
+    title: "Map Title"
+  }
+}
+```
+
+### Hydration Suppression
+
+For server-side rendering frameworks:
+
+- **Server Detection**: Prevents localStorage access during SSR
+- **Hydration Markers**: Tracks when client-side is ready
+- **Safe Initialization**: Defers provider creation until browser ready
+- **Fallback Handling**: Graceful degradation when APIs unavailable
+
+---
+
 This architecture provides a solid foundation for production deployment while maintaining clean separation of concerns and comprehensive data integrity guarantees.

@@ -1,10 +1,19 @@
 const path = require('path');
 const { promises: fs } = require('fs');
 const AdminTestEnvironment = require('./helpers/admin-test-env');
+const {
+  tempFileManager,
+  cleanupStrayTestFiles
+} = require('../utils/temp-files');
 
 describe('Admin Command: data:export', () => {
   let testEnv;
   let dataExport;
+
+  afterAll(async () => {
+    // Global cleanup of any stray files that might have been created
+    await cleanupStrayTestFiles();
+  });
 
   beforeEach(async () => {
     testEnv = new AdminTestEnvironment();
@@ -19,6 +28,7 @@ describe('Admin Command: data:export', () => {
 
   afterEach(async () => {
     await testEnv.teardown();
+    await tempFileManager.cleanup();
   });
 
   describe('data export functionality', () => {
@@ -143,20 +153,35 @@ describe('Admin Command: data:export', () => {
     });
 
     it('generates unique filename when path not specified', async () => {
-      const result = await dataExport.exportToFile({
-        format: 'json'
-      });
+      // Create a temporary directory for the export
+      const tempDir = await tempFileManager.createTempDir('export-test');
 
-      expect(result).toHaveProperty('filename');
-      expect(result.filename).toMatch(
-        /^mindmeld-export-\d{4}-\d{2}-\d{2}-\d{9}Z\.json$/
-      );
+      // Change working directory to temp dir for this test
+      const originalCwd = process.cwd();
+      process.chdir(tempDir);
 
-      const fileExists = await fs
-        .access(result.filename)
-        .then(() => true)
-        .catch(() => false);
-      expect(fileExists).toBe(true);
+      try {
+        const result = await dataExport.exportToFile({
+          format: 'json'
+        });
+
+        expect(result).toHaveProperty('filename');
+        expect(result.filename).toMatch(
+          /^mindmeld-export-\d{4}-\d{2}-\d{2}-\d{9}Z\.json$/
+        );
+
+        const filePath = path.join(tempDir, result.filename);
+        tempFileManager.registerFileForCleanup(filePath);
+
+        const fileExists = await fs
+          .access(filePath)
+          .then(() => true)
+          .catch(() => false);
+        expect(fileExists).toBe(true);
+      } finally {
+        // Restore working directory
+        process.chdir(originalCwd);
+      }
     });
   });
 

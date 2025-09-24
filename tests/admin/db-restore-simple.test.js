@@ -3,6 +3,7 @@ const path = require('path');
 const os = require('os');
 const { DatabaseRestore } = require('../../scripts/admin/db-restore');
 const { openDatabase, ensureSchema } = require('../../src/modules/maps/db');
+const { cleanupOldTestBackups } = require('../utils/temp-files');
 
 /**
  * Simplified test environment for focused behavior testing
@@ -220,13 +221,18 @@ describe('Database Restore Functionality', () => {
     }
   });
 
+  afterAll(async () => {
+    // Clean up old test safety backups
+    await cleanupOldTestBackups();
+  });
+
   describe('Core functionality', () => {
     it('creates DatabaseRestore with default options', () => {
       const restore = new DatabaseRestore();
 
       expect(restore.options.backupDir).toBe('./backups');
       expect(restore.options.verify).toBe(true);
-      expect(restore.options.createSafety).toBe(true);
+      expect(restore.options.createSafety).toBe(false);
       expect(restore.options.verbose).toBe(false);
       expect(restore.logger).toBeDefined();
     });
@@ -314,7 +320,9 @@ describe('Database Restore Functionality', () => {
     it('validates uncompressed backup file integrity', async () => {
       const backupPath = await testEnv.createTestBackupFile(false, '04');
 
-      const restore = new DatabaseRestore();
+      const restore = new DatabaseRestore({
+        safetyDir: testEnv.backupDir
+      });
       const isValid = await restore.validateBackupFile(backupPath);
 
       expect(isValid).toBe(true);
@@ -323,7 +331,9 @@ describe('Database Restore Functionality', () => {
     it('validates compressed backup file integrity', async () => {
       const backupPath = await testEnv.createTestBackupFile(true, '05');
 
-      const restore = new DatabaseRestore();
+      const restore = new DatabaseRestore({
+        safetyDir: testEnv.backupDir
+      });
       const isValid = await restore.validateBackupFile(backupPath);
 
       expect(isValid).toBe(true);
@@ -332,14 +342,18 @@ describe('Database Restore Functionality', () => {
     it('rejects corrupted backup files', async () => {
       const corruptedPath = await testEnv.createCorruptedBackup();
 
-      const restore = new DatabaseRestore();
+      const restore = new DatabaseRestore({
+        safetyDir: testEnv.backupDir
+      });
       const isValid = await restore.validateBackupFile(corruptedPath);
 
       expect(isValid).toBe(false);
     });
 
     it('rejects non-existent backup files', async () => {
-      const restore = new DatabaseRestore();
+      const restore = new DatabaseRestore({
+        safetyDir: testEnv.backupDir
+      });
 
       await expect(
         restore.validateBackupFile('/non/existent/file.sqlite')
@@ -410,7 +424,9 @@ describe('Database Restore Functionality', () => {
   describe('Error conditions', () => {
     it('handles non-existent backup file', async () => {
       const restore = new DatabaseRestore({
-        backupFile: '/non/existent/backup.sqlite'
+        backupFile: '/non/existent/backup.sqlite',
+        createSafety: false, // Don't create safety backups for error condition tests
+        safetyDir: testEnv.backupDir
       });
 
       await expect(restore.restoreDatabase()).rejects.toThrow(
@@ -423,7 +439,9 @@ describe('Database Restore Functionality', () => {
 
       const restore = new DatabaseRestore({
         backupFile: corruptedPath,
-        verify: true
+        verify: true,
+        createSafety: false, // Don't create safety backups for error condition tests
+        safetyDir: testEnv.backupDir
       });
 
       await expect(restore.restoreDatabase()).rejects.toThrow(
@@ -433,7 +451,9 @@ describe('Database Restore Functionality', () => {
 
     it('handles empty backup directory', async () => {
       const restore = new DatabaseRestore({
-        backupDir: testEnv.backupDir
+        backupDir: testEnv.backupDir,
+        createSafety: false, // Don't create safety backups for error condition tests
+        safetyDir: testEnv.backupDir
       });
 
       await expect(restore.restoreDatabase()).rejects.toThrow(
@@ -449,6 +469,7 @@ describe('Database Restore Functionality', () => {
 
       const restore = new DatabaseRestore({
         safetyDir: testEnv.backupDir,
+        createSafety: true,
         verbose: true
       });
 
@@ -481,7 +502,8 @@ describe('Database Restore Functionality', () => {
       await testEnv.createTestDatabase(1);
 
       const restore = new DatabaseRestore({
-        safetyDir: testEnv.backupDir
+        safetyDir: testEnv.backupDir,
+        createSafety: true
       });
 
       const safetyPath = await restore.createSafetyBackup();
@@ -514,7 +536,7 @@ describe('Database Restore Functionality', () => {
         '/path/to/backup.sqlite',
         '--backup-dir',
         '/custom/dir',
-        '--no-safety',
+        '--safety',
         '--no-verify',
         '--verbose',
         '--force'
@@ -524,7 +546,7 @@ describe('Database Restore Functionality', () => {
 
       expect(options.backupFile).toBe('/path/to/backup.sqlite');
       expect(options.backupDir).toBe('/custom/dir');
-      expect(options.createSafety).toBe(false);
+      expect(options.createSafety).toBe(true);
       expect(options.verify).toBe(false);
       expect(options.verbose).toBe(true);
       expect(options.force).toBe(true);

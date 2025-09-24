@@ -1,10 +1,22 @@
 const path = require('path');
 const { promises: fs } = require('fs');
 const { AdminTestEnvironment } = require('../helpers/admin-test-environment');
+const {
+  tempFileManager,
+  cleanupStrayTestFiles,
+  cleanupOldTestBackups
+} = require('../utils/temp-files');
 
 describe('Admin Command: data:import', () => {
   let testEnv;
   let dataImport;
+
+  afterAll(async () => {
+    // Global cleanup of any stray files that might have been created
+    await cleanupStrayTestFiles();
+    // Clean up old test safety backups
+    await cleanupOldTestBackups();
+  });
 
   beforeEach(async () => {
     testEnv = new AdminTestEnvironment();
@@ -16,6 +28,7 @@ describe('Admin Command: data:import', () => {
 
   afterEach(async () => {
     await testEnv.cleanup();
+    await tempFileManager.cleanup();
   });
 
   describe('import validation', () => {
@@ -333,6 +346,9 @@ describe('Admin Command: data:import', () => {
       expect(result.backup_path).toMatch(
         /pre-import-\d{4}-\d{2}-\d{2}-\d+Z?\.sqlite/
       );
+
+      // Register backup file for cleanup
+      tempFileManager.registerFileForCleanup(result.backup_path);
     });
 
     it('skips backup when explicitly disabled', async () => {
@@ -412,6 +428,7 @@ describe('Admin Command: data:import', () => {
 
       // Create backup - this should backup the current database with 2 maps
       const backupPath = await dataImport.createBackup();
+      tempFileManager.registerFileForCleanup(backupPath);
 
       // Modify database after backup
       await testEnv.createTestMaps([
