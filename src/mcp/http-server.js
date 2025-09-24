@@ -9,5 +9,5 @@
 module.exports = {};
 
 throw new Error(
-  'Standalone MCP HTTP server has been removed. MCP is now integrated into the main server.'
+  'Standalone MCP HTTP server has been removed. MCP is now integrated into the main server.',
 );

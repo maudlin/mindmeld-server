@@ -30,7 +30,7 @@ if (!process.env.VERBOSE) {
     log: jest.fn(),
     debug: jest.fn(),
     info: jest.fn(),
-    warn: jest.fn()
+    warn: jest.fn(),
     // Keep error for debugging
   };
 }

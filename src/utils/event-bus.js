@@ -13,7 +13,7 @@ class EventBus extends EventEmitter {
   }
 
   setupErrorHandling() {
-    this.on('error', error => {
+    this.on('error', (error) => {
       Logger.error('EventBus error:', error);
     });
   }
@@ -34,7 +34,7 @@ class EventBus extends EventEmitter {
    * @param {function} handler - Event handler function
    */
   subscribe(eventName, handler) {
-    const wrappedHandler = data => {
+    const wrappedHandler = (data) => {
       try {
         handler(data);
       } catch (error) {

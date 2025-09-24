@@ -24,13 +24,13 @@ function createServer(config = {}) {
   const {
     port = 3001,
     corsOrigin = 'http://localhost:8080',
-    jsonLimit = '50mb'
+    jsonLimit = '50mb',
   } = config;
 
   Logger.info('Creating server with configuration', {
     port,
     corsOrigin,
-    jsonLimit
+    jsonLimit,
   });
 
   // Create Express app
@@ -38,7 +38,7 @@ function createServer(config = {}) {
 
   // Apply middleware
   const middleware = createMiddleware({ corsOrigin, jsonLimit });
-  middleware.forEach(mw => app.use(mw));
+  middleware.forEach((mw) => app.use(mw));
 
   // Will be populated when WebSocket is set up
   let yjsService = null;
@@ -63,7 +63,7 @@ function createServer(config = {}) {
     // Log endpoints without exposing filesystem paths
     Logger.info('Maps API and MCP endpoints enabled', {
       endpoints: ['/maps', '/mcp', '/mcp/sse'],
-      database: 'sqlite'
+      database: 'sqlite',
     });
   }
 
@@ -72,45 +72,25 @@ function createServer(config = {}) {
     app.use('/', createDocsRouter());
   }
 
-  // 404 handler (after routes)
-  app.use((req, res) => {
-    const problem = {
-      type: 'https://mindmeld.dev/problems/not-found',
-      title: 'Not Found',
-      status: 404,
-      detail: `Route ${req.method} ${req.path} not found`,
-      instance: req.originalUrl,
-      error: 'Not Found' // legacy field
-    };
-    res
-      .status(404)
-      .set('Content-Type', 'application/problem+json')
-      .json(problem);
-  });
-
-  // Global error handler (must be after routes and 404)
-  const { errorHandler } = require('../core/error-handler');
-  app.use(errorHandler);
-
   // Store minimal config on app
   app.locals.config = {
     port,
     corsOrigin,
-    jsonLimit
+    jsonLimit,
   };
 
   // Add WebSocket setup function if Yjs is enabled
   const currentConfig = buildConfig(); // Get fresh config that reads current env vars
   Logger.debug('Checking SERVER_SYNC config', {
-    serverSync: currentConfig.serverSync
+    serverSync: currentConfig.serverSync,
   });
   if (currentConfig.serverSync === 'on') {
-    app.setupWebSocket = httpServer => {
+    app.setupWebSocket = (httpServer) => {
       const sqliteFile =
         config.sqliteFile || path.join(process.cwd(), 'data', 'db.sqlite');
       const yjsRoutes = createYjsRoutes(httpServer, {
         logger: Logger,
-        dbFile: sqliteFile.replace('.sqlite', '-yjs.sqlite') // Use separate Yjs database
+        dbFile: sqliteFile.replace('.sqlite', '-yjs.sqlite'), // Use separate Yjs database
       });
 
       // Store YjsService reference for health checks
@@ -131,6 +111,28 @@ function createServer(config = {}) {
     const apiRoutes = createApiRoutes();
     app.use('/', apiRoutes);
   }
+
+  Logger.info('API routes configured');
+
+  // 404 handler (after all routes)
+  app.use((req, res) => {
+    const problem = {
+      type: 'https://mindmeld.dev/problems/not-found',
+      title: 'Not Found',
+      status: 404,
+      detail: `Route ${req.method} ${req.path} not found`,
+      instance: req.originalUrl,
+      error: 'Not Found', // legacy field
+    };
+    res
+      .status(404)
+      .set('Content-Type', 'application/problem+json')
+      .json(problem);
+  });
+
+  // Global error handler (must be after routes and 404)
+  const { errorHandler } = require('../core/error-handler');
+  app.use(errorHandler);
 
   Logger.info('Server factory completed');
 

@@ -20,20 +20,20 @@ describe('LocalJSONProvider', () => {
     originalLocalStorage = global.localStorage;
 
     global.localStorage = {
-      getItem: jest.fn(key => mockStorage[key] || null),
+      getItem: jest.fn((key) => mockStorage[key] || null),
       setItem: jest.fn((key, value) => {
         mockStorage[key] = value;
       }),
-      removeItem: jest.fn(key => {
+      removeItem: jest.fn((key) => {
         delete mockStorage[key];
       }),
       clear: jest.fn(() => {
-        Object.keys(mockStorage).forEach(key => delete mockStorage[key]);
+        Object.keys(mockStorage).forEach((key) => delete mockStorage[key]);
       }),
-      key: jest.fn(index => Object.keys(mockStorage)[index] || null),
+      key: jest.fn((index) => Object.keys(mockStorage)[index] || null),
       get length() {
         return Object.keys(mockStorage).length;
-      }
+      },
     };
 
     // Allow Object.keys() to work on the mock localStorage by making it inherit the keys
@@ -45,7 +45,7 @@ describe('LocalJSONProvider', () => {
     provider = new LocalJSONProvider({
       storagePrefix: 'test_map_',
       metaPrefix: 'test_meta_',
-      maxMaps: 10 // Lower for testing
+      maxMaps: 10, // Lower for testing
     });
   });
 
@@ -64,7 +64,7 @@ describe('LocalJSONProvider', () => {
     test('should initialize with custom options', () => {
       const customProvider = new LocalJSONProvider({
         storagePrefix: 'custom_map_',
-        maxMaps: 50
+        maxMaps: 50,
       });
       expect(customProvider.options.storagePrefix).toBe('custom_map_');
       expect(customProvider.options.maxMaps).toBe(50);
@@ -73,7 +73,7 @@ describe('LocalJSONProvider', () => {
     test('should test localStorage availability on initialization', () => {
       expect(localStorage.setItem).toHaveBeenCalledWith(
         'test_map_test',
-        'test'
+        'test',
       );
       expect(localStorage.removeItem).toHaveBeenCalledWith('test_map_test');
     });
@@ -84,7 +84,7 @@ describe('LocalJSONProvider', () => {
       });
 
       expect(() => new LocalJSONProvider()).toThrow(
-        'LocalStorage not available'
+        'LocalStorage not available',
       );
     });
   });
@@ -96,7 +96,7 @@ describe('LocalJSONProvider', () => {
       const testMeta = {
         version: 1,
         title: 'Test Map',
-        created: '2024-01-01T00:00:00.000Z'
+        created: '2024-01-01T00:00:00.000Z',
       };
 
       localStorage.setItem('test_map_' + mapId, JSON.stringify(testData));
@@ -111,23 +111,23 @@ describe('LocalJSONProvider', () => {
           version: 1,
           title: 'Test Map',
           created: '2024-01-01T00:00:00.000Z',
-          modified: expect.any(String)
-        })
+          modified: expect.any(String),
+        }),
       });
     });
 
     test('should throw error for non-existent map', async () => {
       await expect(provider.load('non-existent-map')).rejects.toThrow(
-        'Map not found: non-existent-map'
+        'Map not found: non-existent-map',
       );
     });
 
     test('should throw error for invalid mapId', async () => {
       await expect(provider.load('')).rejects.toThrow(
-        'Invalid mapId: must be a non-empty string'
+        'Invalid mapId: must be a non-empty string',
       );
       await expect(provider.load(null)).rejects.toThrow(
-        'Invalid mapId: must be a non-empty string'
+        'Invalid mapId: must be a non-empty string',
       );
     });
 
@@ -136,7 +136,7 @@ describe('LocalJSONProvider', () => {
       localStorage.setItem('test_map_' + mapId, '{invalid json}');
 
       await expect(provider.load(mapId)).rejects.toThrow(
-        `Failed to load map ${mapId}`
+        `Failed to load map ${mapId}`,
       );
     });
 
@@ -161,7 +161,7 @@ describe('LocalJSONProvider', () => {
       const testData = {
         n: [{ i: 'note1', c: 'Saved Note', p: [100, 200] }],
         c: [{ f: 'note1', t: 'note2' }],
-        meta: { title: 'Saved Map' }
+        meta: { title: 'Saved Map' },
       };
 
       const result = await provider.save(mapId, testData);
@@ -177,11 +177,11 @@ describe('LocalJSONProvider', () => {
 
       expect(localStorage.setItem).toHaveBeenCalledWith(
         mapKey,
-        JSON.stringify({ n: testData.n, c: testData.c })
+        JSON.stringify({ n: testData.n, c: testData.c }),
       );
 
       const savedMeta = JSON.parse(
-        localStorage.setItem.mock.calls.find(call => call[0] === metaKey)[1]
+        localStorage.setItem.mock.calls.find((call) => call[0] === metaKey)[1],
       );
 
       expect(savedMeta.title).toBe('Saved Map');
@@ -197,8 +197,8 @@ describe('LocalJSONProvider', () => {
 
       const savedMeta = JSON.parse(
         localStorage.setItem.mock.calls.find(
-          call => call[0] === 'test_meta_' + mapId
-        )[1]
+          (call) => call[0] === 'test_meta_' + mapId,
+        )[1],
       );
 
       expect(savedMeta.autosave).toBe(true);
@@ -216,7 +216,7 @@ describe('LocalJSONProvider', () => {
       expect(result.reason).toBe('autosave_paused');
       expect(localStorage.setItem).not.toHaveBeenCalledWith(
         'test_map_' + mapId,
-        expect.any(String)
+        expect.any(String),
       );
     });
 
@@ -228,13 +228,13 @@ describe('LocalJSONProvider', () => {
 
       const result = await provider.save(mapId, testData, {
         autosave: true,
-        force: true
+        force: true,
       });
 
       expect(result.success).toBe(true);
       expect(localStorage.setItem).toHaveBeenCalledWith(
         'test_map_' + mapId,
-        expect.any(String)
+        expect.any(String),
       );
     });
 
@@ -249,7 +249,7 @@ describe('LocalJSONProvider', () => {
       });
 
       await expect(provider.save(mapId, testData)).rejects.toThrow(
-        `Storage quota exceeded when saving map ${mapId}`
+        `Storage quota exceeded when saving map ${mapId}`,
       );
     });
 
@@ -258,7 +258,7 @@ describe('LocalJSONProvider', () => {
 
       await expect(provider.save(mapId, null)).rejects.toThrow('Invalid data');
       await expect(provider.save(mapId, 'not an object')).rejects.toThrow(
-        'Invalid data'
+        'Invalid data',
       );
     });
   });
@@ -271,20 +271,20 @@ describe('LocalJSONProvider', () => {
           id: 'map1',
           title: 'First Map',
           created: '2024-01-01T00:00:00.000Z',
-          modified: '2024-01-01T01:00:00.000Z'
+          modified: '2024-01-01T01:00:00.000Z',
         },
         {
           id: 'map2',
           title: 'Second Map',
           created: '2024-01-02T00:00:00.000Z',
-          modified: '2024-01-02T01:00:00.000Z'
+          modified: '2024-01-02T01:00:00.000Z',
         },
         {
           id: 'map3',
           title: 'Third Map',
           created: '2024-01-03T00:00:00.000Z',
-          modified: '2024-01-03T01:00:00.000Z'
-        }
+          modified: '2024-01-03T01:00:00.000Z',
+        },
       ];
 
       for (const map of testMaps) {
@@ -352,7 +352,7 @@ describe('LocalJSONProvider', () => {
       expect(result).toBe(true);
       expect(localStorage.removeItem).toHaveBeenCalledWith('test_map_' + mapId);
       expect(localStorage.removeItem).toHaveBeenCalledWith(
-        'test_meta_' + mapId
+        'test_meta_' + mapId,
       );
     });
 
@@ -391,7 +391,7 @@ describe('LocalJSONProvider', () => {
       expect(callback).toHaveBeenCalledWith({
         type: 'subscribed',
         mapId,
-        data: null
+        data: null,
       });
     });
 
@@ -409,7 +409,7 @@ describe('LocalJSONProvider', () => {
         type: 'saved',
         mapId,
         data: expect.objectContaining({ n: [], c: [] }),
-        options: expect.any(Object)
+        options: expect.any(Object),
       });
     });
 
@@ -426,7 +426,7 @@ describe('LocalJSONProvider', () => {
 
       expect(callback).toHaveBeenCalledWith({
         type: 'deleted',
-        mapId
+        mapId,
       });
     });
 
@@ -442,10 +442,10 @@ describe('LocalJSONProvider', () => {
 
     test('should require valid callback for subscription', async () => {
       await expect(provider.subscribe('test-map', null)).rejects.toThrow(
-        'Callback must be a function'
+        'Callback must be a function',
       );
       await expect(
-        provider.subscribe('test-map', 'not a function')
+        provider.subscribe('test-map', 'not a function'),
       ).rejects.toThrow('Callback must be a function');
     });
 
@@ -485,7 +485,7 @@ describe('LocalJSONProvider', () => {
       localStorage.setItem('test_map_stat1', JSON.stringify({ n: [], c: [] }));
       localStorage.setItem(
         'test_meta_stat1',
-        JSON.stringify({ title: 'Test' })
+        JSON.stringify({ title: 'Test' }),
       );
       localStorage.setItem('other_key', 'should be ignored');
 
@@ -517,8 +517,8 @@ describe('LocalJSONProvider', () => {
         version: '1.0',
         maps: {
           import1: { n: [{ i: 'imported1' }], c: [] },
-          import2: { n: [{ i: 'imported2' }], c: [] }
-        }
+          import2: { n: [{ i: 'imported2' }], c: [] },
+        },
       };
 
       const result = await provider.importMaps(importData);
@@ -535,8 +535,8 @@ describe('LocalJSONProvider', () => {
       const invalidImportData = {
         maps: {
           'valid-map': { n: [], c: [] },
-          'invalid-map': null // This should cause an error
-        }
+          'invalid-map': null, // This should cause an error
+        },
       };
 
       const result = await provider.importMaps(invalidImportData);
@@ -548,10 +548,10 @@ describe('LocalJSONProvider', () => {
 
     test('should reject invalid import data', async () => {
       await expect(provider.importMaps({})).rejects.toThrow(
-        'Invalid export data structure'
+        'Invalid export data structure',
       );
       await expect(provider.importMaps({ maps: null })).rejects.toThrow(
-        'Invalid export data structure'
+        'Invalid export data structure',
       );
     });
   });
@@ -564,12 +564,12 @@ describe('LocalJSONProvider', () => {
         const metadata = {
           title: `Map ${i}`,
           created: `2024-01-${i.toString().padStart(2, '0')}T00:00:00.000Z`,
-          modified: `2024-01-${i.toString().padStart(2, '0')}T00:00:00.000Z`
+          modified: `2024-01-${i.toString().padStart(2, '0')}T00:00:00.000Z`,
         };
         localStorage.setItem(`test_meta_${mapId}`, JSON.stringify(metadata));
         localStorage.setItem(
           `test_map_${mapId}`,
-          JSON.stringify({ n: [], c: [] })
+          JSON.stringify({ n: [], c: [] }),
         );
       }
 
@@ -577,7 +577,7 @@ describe('LocalJSONProvider', () => {
       const cleanupProvider = new LocalJSONProvider({
         storagePrefix: 'test_map_',
         metaPrefix: 'test_meta_',
-        maxMaps: 10
+        maxMaps: 10,
       });
 
       // Should have cleaned up to maxMaps
@@ -591,8 +591,8 @@ describe('LocalJSONProvider', () => {
         localStorage.setItem(
           `test_meta_cleanup${i}`,
           JSON.stringify({
-            modified: `2024-01-${i.toString().padStart(2, '0')}T00:00:00.000Z`
-          })
+            modified: `2024-01-${i.toString().padStart(2, '0')}T00:00:00.000Z`,
+          }),
         );
         localStorage.setItem(`test_map_cleanup${i}`, '{}');
       }
@@ -604,11 +604,11 @@ describe('LocalJSONProvider', () => {
       new LocalJSONProvider({
         storagePrefix: 'test_map_',
         metaPrefix: 'test_meta_',
-        maxMaps: 10
+        maxMaps: 10,
       });
 
       expect(localStorage.removeItem).toHaveBeenCalledWith(
-        'test_meta_invalid1'
+        'test_meta_invalid1',
       );
       expect(localStorage.removeItem).toHaveBeenCalledWith('test_map_invalid1');
     });
@@ -621,20 +621,20 @@ describe('LocalJSONProvider', () => {
       });
 
       await expect(provider.load('error-test')).rejects.toThrow(
-        'Failed to load map error-test'
+        'Failed to load map error-test',
       );
     });
 
     test('should handle list operation errors', async () => {
       const originalLength = Object.getOwnPropertyDescriptor(
         localStorage,
-        'length'
+        'length',
       );
       Object.defineProperty(localStorage, 'length', {
         get: () => {
           throw new Error('localStorage error');
         },
-        configurable: true
+        configurable: true,
       });
 
       await expect(provider.list()).rejects.toThrow('Failed to list maps');

@@ -17,7 +17,7 @@ describe('Admin Command: debug:mcp', () => {
   describe('MCP transport testing', () => {
     it('tests SSE transport connectivity', async () => {
       const debugMcp = new DebugMcp({
-        transport: 'sse'
+        transport: 'sse',
       });
 
       const result = await debugMcp.testMcpTransport();
@@ -36,7 +36,7 @@ describe('Admin Command: debug:mcp', () => {
 
     it('tests HTTP transport connectivity', async () => {
       const debugMcp = new DebugMcp({
-        transport: 'http'
+        transport: 'http',
       });
 
       const result = await debugMcp.testMcpTransport();
@@ -47,7 +47,7 @@ describe('Admin Command: debug:mcp', () => {
 
     it('tests all transports when transport=all', async () => {
       const debugMcp = new DebugMcp({
-        transport: 'all'
+        transport: 'all',
       });
 
       const result = await debugMcp.testMcpTransport();
@@ -57,7 +57,7 @@ describe('Admin Command: debug:mcp', () => {
       expect(result.results.length).toBeGreaterThanOrEqual(2);
 
       // Should include both SSE and HTTP
-      const transportNames = result.results.map(r => r.transport);
+      const transportNames = result.results.map((r) => r.transport);
       expect(transportNames).toContain('sse');
       expect(transportNames).toContain('http');
     });
@@ -79,7 +79,7 @@ describe('Admin Command: debug:mcp', () => {
   describe('MCP tool testing', () => {
     it('tests all available tools', async () => {
       const debugMcp = new DebugMcp({
-        tool: 'all'
+        tool: 'all',
       });
 
       const result = await debugMcp.testMcpTools();
@@ -87,7 +87,7 @@ describe('Admin Command: debug:mcp', () => {
       expect(result).toHaveProperty('tools');
       expect(Array.isArray(result.tools)).toBe(true);
 
-      result.tools.forEach(tool => {
+      result.tools.forEach((tool) => {
         expect(tool).toHaveProperty('name');
         expect(tool).toHaveProperty('tested');
         expect(tool).toHaveProperty('success');
@@ -98,7 +98,7 @@ describe('Admin Command: debug:mcp', () => {
 
     it('tests specific tool when provided', async () => {
       const debugMcp = new DebugMcp({
-        tool: 'listMaps'
+        tool: 'listMaps',
       });
 
       const result = await debugMcp.testMcpTools();
@@ -110,12 +110,12 @@ describe('Admin Command: debug:mcp', () => {
     it('validates tool responses', async () => {
       const debugMcp = new DebugMcp({
         tool: 'all',
-        validateResponses: true
+        validateResponses: true,
       });
 
       const result = await debugMcp.testMcpTools();
 
-      result.tools.forEach(tool => {
+      result.tools.forEach((tool) => {
         if (tool.success) {
           expect(tool).toHaveProperty('validation');
           expect(tool.validation).toHaveProperty('valid');
@@ -126,7 +126,7 @@ describe('Admin Command: debug:mcp', () => {
 
     it('handles tool invocation errors', async () => {
       const debugMcp = new DebugMcp({
-        tool: 'nonexistentTool'
+        tool: 'nonexistentTool',
       });
 
       const result = await debugMcp.testMcpTools();
@@ -139,12 +139,12 @@ describe('Admin Command: debug:mcp', () => {
 
     it('measures tool performance', async () => {
       const debugMcp = new DebugMcp({
-        tool: 'listMaps'
+        tool: 'listMaps',
       });
 
       const result = await debugMcp.testMcpTools();
 
-      const listMapsTool = result.tools.find(t => t.name === 'listMaps');
+      const listMapsTool = result.tools.find((t) => t.name === 'listMaps');
       if (listMapsTool && listMapsTool.success) {
         expect(listMapsTool.responseTime).toBeGreaterThan(0);
         expect(listMapsTool.responseTime).toBeLessThan(10000); // 10 second max
@@ -155,7 +155,7 @@ describe('Admin Command: debug:mcp', () => {
   describe('MCP resource testing', () => {
     it('tests all available resources', async () => {
       const debugMcp = new DebugMcp({
-        resource: 'all'
+        resource: 'all',
       });
 
       const result = await debugMcp.testMcpResources();
@@ -163,7 +163,7 @@ describe('Admin Command: debug:mcp', () => {
       expect(result).toHaveProperty('resources');
       expect(Array.isArray(result.resources)).toBe(true);
 
-      result.resources.forEach(resource => {
+      result.resources.forEach((resource) => {
         expect(resource).toHaveProperty('uri');
         expect(resource).toHaveProperty('accessible');
         expect(resource).toHaveProperty('responseTime');
@@ -173,7 +173,7 @@ describe('Admin Command: debug:mcp', () => {
 
     it('tests specific resource when provided', async () => {
       const debugMcp = new DebugMcp({
-        resource: 'mindmeld://maps'
+        resource: 'mindmeld://maps',
       });
 
       const result = await debugMcp.testMcpResources();
@@ -187,13 +187,13 @@ describe('Admin Command: debug:mcp', () => {
 
       const debugMcp = new DebugMcp({
         resource: 'mindmeld://maps',
-        validateContent: true
+        validateContent: true,
       });
 
       const result = await debugMcp.testMcpResources();
 
       const mapsResource = result.resources.find(
-        r => r.uri === 'mindmeld://maps'
+        (r) => r.uri === 'mindmeld://maps',
       );
       if (mapsResource && mapsResource.accessible) {
         expect(mapsResource).toHaveProperty('validation');
@@ -205,7 +205,7 @@ describe('Admin Command: debug:mcp', () => {
 
     it('handles resource access errors', async () => {
       const debugMcp = new DebugMcp({
-        resource: 'mindmeld://nonexistent'
+        resource: 'mindmeld://nonexistent',
       });
 
       const result = await debugMcp.testMcpResources();
@@ -218,7 +218,7 @@ describe('Admin Command: debug:mcp', () => {
   describe('protocol communication', () => {
     it('shows detailed protocol communication when verbose', async () => {
       const debugMcp = new DebugMcp({
-        verbose: true
+        verbose: true,
       });
 
       const result = await debugMcp.testMcpTransport();
@@ -227,7 +227,7 @@ describe('Admin Command: debug:mcp', () => {
       expect(result.communication).toHaveProperty('messages');
       expect(Array.isArray(result.communication.messages)).toBe(true);
 
-      result.communication.messages.forEach(message => {
+      result.communication.messages.forEach((message) => {
         expect(message).toHaveProperty('direction'); // 'send' or 'receive'
         expect(message).toHaveProperty('timestamp');
         expect(message).toHaveProperty('payload');
@@ -237,12 +237,12 @@ describe('Admin Command: debug:mcp', () => {
     it('tracks message flow', async () => {
       const debugMcp = new DebugMcp({
         verbose: true,
-        tool: 'listMaps'
+        tool: 'listMaps',
       });
 
       const result = await debugMcp.testMcpTools();
 
-      const listMapsTool = result.tools.find(t => t.name === 'listMaps');
+      const listMapsTool = result.tools.find((t) => t.name === 'listMaps');
       if (listMapsTool && listMapsTool.success) {
         expect(listMapsTool).toHaveProperty('communication');
         expect(listMapsTool.communication.messages.length).toBeGreaterThan(0);
@@ -251,7 +251,7 @@ describe('Admin Command: debug:mcp', () => {
 
     it('measures protocol overhead', async () => {
       const debugMcp = new DebugMcp({
-        measureOverhead: true
+        measureOverhead: true,
       });
 
       const result = await debugMcp.testMcpTransport();
@@ -265,7 +265,7 @@ describe('Admin Command: debug:mcp', () => {
   describe('error handling and recovery', () => {
     it('tests error handling capabilities', async () => {
       const debugMcp = new DebugMcp({
-        testErrorHandling: true
+        testErrorHandling: true,
       });
 
       const result = await debugMcp.testErrorHandling();
@@ -273,7 +273,7 @@ describe('Admin Command: debug:mcp', () => {
       expect(result).toHaveProperty('errorTests');
       expect(Array.isArray(result.errorTests)).toBe(true);
 
-      result.errorTests.forEach(errorTest => {
+      result.errorTests.forEach((errorTest) => {
         expect(errorTest).toHaveProperty('scenario');
         expect(errorTest).toHaveProperty('handled');
         expect(errorTest).toHaveProperty('recovery');
@@ -282,7 +282,7 @@ describe('Admin Command: debug:mcp', () => {
 
     it('tests connection recovery', async () => {
       const debugMcp = new DebugMcp({
-        testRecovery: true
+        testRecovery: true,
       });
 
       const result = await debugMcp.testConnectionRecovery();
@@ -301,8 +301,8 @@ describe('Admin Command: debug:mcp', () => {
         ok: true,
         json: () =>
           Promise.resolve({
-            malformed: 'response without proper MCP structure'
-          })
+            malformed: 'response without proper MCP structure',
+          }),
       });
 
       const debugMcp = new DebugMcp();
@@ -318,7 +318,7 @@ describe('Admin Command: debug:mcp', () => {
   describe('performance and reliability', () => {
     it('measures performance metrics', async () => {
       const debugMcp = new DebugMcp({
-        measurePerformance: true
+        measurePerformance: true,
       });
 
       const result = await debugMcp.testMcpTransport();
@@ -332,7 +332,7 @@ describe('Admin Command: debug:mcp', () => {
     it('tests reliability under load', async () => {
       const debugMcp = new DebugMcp({
         loadTest: true,
-        loadTestRequests: 10
+        loadTestRequests: 10,
       });
 
       const result = await debugMcp.testReliability();
@@ -350,7 +350,7 @@ describe('Admin Command: debug:mcp', () => {
 
     it('identifies performance bottlenecks', async () => {
       const debugMcp = new DebugMcp({
-        analyzeBottlenecks: true
+        analyzeBottlenecks: true,
       });
 
       const result = await debugMcp.analyzePerformance();
@@ -358,7 +358,7 @@ describe('Admin Command: debug:mcp', () => {
       expect(result).toHaveProperty('bottlenecks');
       expect(Array.isArray(result.bottlenecks)).toBe(true);
 
-      result.bottlenecks.forEach(bottleneck => {
+      result.bottlenecks.forEach((bottleneck) => {
         expect(bottleneck).toHaveProperty('component');
         expect(bottleneck).toHaveProperty('impact');
         expect(bottleneck).toHaveProperty('suggestion');
@@ -369,7 +369,7 @@ describe('Admin Command: debug:mcp', () => {
   describe('output formatting', () => {
     it('generates comprehensive report', async () => {
       const debugMcp = new DebugMcp({
-        generateReport: true
+        generateReport: true,
       });
 
       const output = await debugMcp.generateOutput();
@@ -382,7 +382,7 @@ describe('Admin Command: debug:mcp', () => {
 
     it('generates JSON output when requested', async () => {
       const debugMcp = new DebugMcp({
-        format: 'json'
+        format: 'json',
       });
 
       const output = await debugMcp.generateOutput();
@@ -397,7 +397,7 @@ describe('Admin Command: debug:mcp', () => {
     it('includes verbose details when requested', async () => {
       const debugMcp = new DebugMcp({
         verbose: true,
-        format: 'table'
+        format: 'table',
       });
 
       const output = await debugMcp.generateOutput();
@@ -440,13 +440,13 @@ describe('Admin Command: debug:mcp', () => {
     it('validates options', () => {
       expect(() => {
         new DebugMcp({
-          transport: 'invalid'
+          transport: 'invalid',
         });
       }).toThrow('Invalid transport option');
 
       expect(() => {
         new DebugMcp({
-          format: 'invalid'
+          format: 'invalid',
         });
       }).toThrow('Invalid format option');
     });

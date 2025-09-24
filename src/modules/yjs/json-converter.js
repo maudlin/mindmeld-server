@@ -65,7 +65,7 @@ function validateNoteContent(content) {
   }
   if (content.length > NOTE_CONTENT_LIMIT) {
     throw new Error(
-      `Note content exceeds limit of ${NOTE_CONTENT_LIMIT} characters`
+      `Note content exceeds limit of ${NOTE_CONTENT_LIMIT} characters`,
     );
   }
   return true;
@@ -93,7 +93,7 @@ function checkPerformanceLimits(notes, connections) {
   }
   if (connections.size > MAX_CONNECTIONS_PER_MAP) {
     throw new Error(
-      `Too many connections: ${connections.size}/${MAX_CONNECTIONS_PER_MAP}`
+      `Too many connections: ${connections.size}/${MAX_CONNECTIONS_PER_MAP}`,
     );
   }
 }
@@ -162,19 +162,19 @@ function jsonToYDoc(jsonData, ydoc, options = {}) {
             const connId = generateConnectionId(
               connData.f,
               connData.t,
-              connData.type || 'arrow'
+              connData.type || 'arrow',
             );
             const connObj = {
               from: connData.f,
               to: connData.t,
-              type: connData.type || 'arrow'
+              type: connData.type || 'arrow',
             };
 
             connections.set(connId, connObj);
           } catch (error) {
             console.warn(
               `Skipping invalid connection ${connData.f}→${connData.t}:`,
-              error.message
+              error.message,
             );
           }
         }
@@ -193,7 +193,7 @@ function jsonToYDoc(jsonData, ydoc, options = {}) {
       // Check performance limits
       checkPerformanceLimits(notes, connections);
     },
-    suppressEvents ? 'import' : null
+    suppressEvents ? 'import' : null,
   ); // Use 'import' origin to suppress events
 }
 
@@ -209,7 +209,7 @@ function yDocToJSON(ydoc) {
   const jsonData = {
     n: [], // notes
     c: [], // connections
-    meta: {} // metadata
+    meta: {}, // metadata
   };
 
   // Export notes
@@ -243,7 +243,7 @@ function yDocToJSON(ydoc) {
     const noteData = {
       i: noteId,
       c: contentStr,
-      p: pos
+      p: pos,
     };
 
     if (color && color !== 'default') {
@@ -257,7 +257,7 @@ function yDocToJSON(ydoc) {
   for (const [, connObj] of connections.entries()) {
     const connData = {
       f: connObj.from,
-      t: connObj.to
+      t: connObj.to,
     };
 
     // Only include type if not default
@@ -297,7 +297,7 @@ function hasYDocContent(ydoc) {
     }
 
     return connections.size > 0;
-  } catch (_error) {
+  } catch {
     return false;
   }
 }
@@ -332,5 +332,5 @@ module.exports = {
   // Constants
   NOTE_CONTENT_LIMIT,
   MAX_NOTES_PER_MAP,
-  MAX_CONNECTIONS_PER_MAP
+  MAX_CONNECTIONS_PER_MAP,
 };

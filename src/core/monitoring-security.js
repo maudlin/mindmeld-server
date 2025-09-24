@@ -14,14 +14,14 @@ function getAllowedMonitoringHosts() {
     '127.0.0.1',
     '::1', // IPv6 localhost
     'localhost',
-    '::ffff:127.0.0.1' // IPv4-mapped IPv6 localhost
+    '::ffff:127.0.0.1', // IPv4-mapped IPv6 localhost
   ];
 
   // Add configured hosts (comma-separated)
   const configuredHosts = process.env.MONITORING_HOSTS
     ? process.env.MONITORING_HOSTS.split(',')
-      .map(h => h.trim())
-      .filter(Boolean)
+        .map((h) => h.trim())
+        .filter(Boolean)
     : [];
 
   return [...defaultHosts, ...configuredHosts];
@@ -89,13 +89,13 @@ function createMonitoringSecurityMiddleware(endpointType = 'health') {
         type: endpointType,
         clientIP,
         userAgent: req.headers['user-agent'],
-        allowedHosts: allowedHosts.length // Don't log actual allowed hosts
+        allowedHosts: allowedHosts.length, // Don't log actual allowed hosts
       });
 
       // Return generic 404 to avoid information disclosure
       return res.status(404).json({
         error: 'Not Found',
-        message: 'The requested resource was not found'
+        message: 'The requested resource was not found',
       });
     }
 
@@ -103,7 +103,7 @@ function createMonitoringSecurityMiddleware(endpointType = 'health') {
     Logger.debug('Monitoring endpoint access granted', {
       endpoint: req.path,
       type: endpointType,
-      clientIP
+      clientIP,
     });
 
     next();
@@ -136,11 +136,11 @@ function createBasicHealthSecurityMiddleware() {
     if (isObviouslyExternal && process.env.NODE_ENV === 'production') {
       Logger.warn('Basic health check denied for external IP', {
         clientIP,
-        userAgent: req.headers['user-agent']
+        userAgent: req.headers['user-agent'],
       });
 
       return res.status(404).json({
-        error: 'Not Found'
+        error: 'Not Found',
       });
     }
 
@@ -153,5 +153,5 @@ module.exports = {
   createBasicHealthSecurityMiddleware,
   getAllowedMonitoringHosts,
   getClientIP,
-  isIPAllowed
+  isIPAllowed,
 };

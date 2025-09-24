@@ -10,20 +10,20 @@ const LocalJSONProvider = require('../../src/client/providers/LocalJSONProvider'
 const mockLocalStorage = (() => {
   let store = {};
   return {
-    getItem: key => store[key] || null,
+    getItem: (key) => store[key] || null,
     setItem: (key, value) => (store[key] = value),
-    removeItem: key => delete store[key],
+    removeItem: (key) => delete store[key],
     clear: () => (store = {}),
     get length() {
       return Object.keys(store).length;
     },
-    key: index => Object.keys(store)[index] || null
+    key: (index) => Object.keys(store)[index] || null,
   };
 })();
 
 // Mock global objects for Node.js environment
 global.window = {
-  localStorage: mockLocalStorage
+  localStorage: mockLocalStorage,
 };
 global.localStorage = mockLocalStorage;
 
@@ -34,7 +34,7 @@ describe('LocalJSONProvider - Enhanced Features', () => {
     mockLocalStorage.clear();
     provider = new LocalJSONProvider({
       storagePrefix: 'test_map_',
-      metaPrefix: 'test_meta_'
+      metaPrefix: 'test_meta_',
     });
   });
 
@@ -69,8 +69,8 @@ describe('LocalJSONProvider - Enhanced Features', () => {
           c: [],
           meta: expect.objectContaining({
             version: expect.any(Number),
-            title: 'Untitled Map'
-          })
+            title: 'Untitled Map',
+          }),
         });
         expect(mapData.meta.version).toBeGreaterThanOrEqual(1);
       });
@@ -80,7 +80,7 @@ describe('LocalJSONProvider - Enhanced Features', () => {
         const existingData = {
           n: [{ i: 'note1', c: 'Test note', p: [100, 200] }],
           c: [],
-          meta: { version: 1, title: 'Existing Map' }
+          meta: { version: 1, title: 'Existing Map' },
         };
 
         await provider.save(mapId, existingData);
@@ -97,7 +97,7 @@ describe('LocalJSONProvider - Enhanced Features', () => {
         await provider.init('test-map', { serverSync: true });
 
         expect(consoleSpy).toHaveBeenCalledWith(
-          expect.stringContaining('serverSync option ignored')
+          expect.stringContaining('serverSync option ignored'),
         );
 
         consoleSpy.mockRestore();
@@ -130,10 +130,10 @@ describe('LocalJSONProvider - Enhanced Features', () => {
 
       it('validates callback parameter', () => {
         expect(() => provider.subscribeToChanges(null)).toThrow(
-          'onChange must be a function'
+          'onChange must be a function',
         );
         expect(() => provider.subscribeToChanges('not a function')).toThrow(
-          'onChange must be a function'
+          'onChange must be a function',
         );
       });
     });
@@ -144,13 +144,13 @@ describe('LocalJSONProvider - Enhanced Features', () => {
         const initialData = {
           n: [],
           c: [],
-          meta: { version: 1, title: 'Original Title' }
+          meta: { version: 1, title: 'Original Title' },
         };
 
         await provider.save(mapId, initialData);
         await provider.setMeta(mapId, {
           title: 'Updated Title',
-          zoomLevel: 1.5
+          zoomLevel: 1.5,
         });
 
         const updatedMap = await provider.load(mapId);
@@ -173,15 +173,15 @@ describe('LocalJSONProvider - Enhanced Features', () => {
           type: 'meta',
           payload: {
             mapId,
-            updates: { title: 'Test Title' }
-          }
+            updates: { title: 'Test Title' },
+          },
         });
       });
 
       it('validates inputs', async () => {
         await expect(provider.setMeta('', {})).rejects.toThrow('Invalid mapId');
         await expect(provider.setMeta('test', null)).rejects.toThrow(
-          'Meta updates must be an object'
+          'Meta updates must be an object',
         );
       });
     });
@@ -192,7 +192,7 @@ describe('LocalJSONProvider - Enhanced Features', () => {
         const testData = {
           n: [{ i: 'note1', c: 'Test', p: [0, 0] }],
           c: [{ f: 'note1', t: 'note2' }],
-          meta: { version: 1 }
+          meta: { version: 1 },
         };
 
         await provider.save(mapId, testData);
@@ -210,7 +210,7 @@ describe('LocalJSONProvider - Enhanced Features', () => {
         const testData = {
           n: [{ i: 'note1', c: 'Test note', p: [100, 200] }],
           c: [],
-          meta: { version: 1, title: 'Test Map' }
+          meta: { version: 1, title: 'Test Map' },
         };
 
         await provider.save(mapId, testData);
@@ -225,7 +225,7 @@ describe('LocalJSONProvider - Enhanced Features', () => {
         const importData = {
           n: [{ i: 'imported', c: 'Imported note', p: [50, 100] }],
           c: [],
-          meta: { title: 'Imported Map' }
+          meta: { title: 'Imported Map' },
         };
 
         await provider.importJSON(mapId, importData);
@@ -252,12 +252,12 @@ describe('LocalJSONProvider - Enhanced Features', () => {
         const existingData = {
           n: [{ i: 'existing', c: 'Existing note', p: [0, 0] }],
           c: [],
-          meta: { title: 'Existing' }
+          meta: { title: 'Existing' },
         };
         const importData = {
           n: [{ i: 'imported', c: 'Imported note', p: [100, 100] }],
           c: [],
-          meta: { title: 'Merged' }
+          meta: { title: 'Merged' },
         };
 
         await provider.save(mapId, existingData);
@@ -299,7 +299,7 @@ describe('LocalJSONProvider - Enhanced Features', () => {
       provider.notifyChangeSubscribers({ type: 'test', payload: {} });
 
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Suppressing change event during hydration')
+        expect.stringContaining('Suppressing change event during hydration'),
       );
 
       consoleSpy.mockRestore();
@@ -312,12 +312,12 @@ describe('LocalJSONProvider - Enhanced Features', () => {
 
       provider.pauseAutosave('test-reason');
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('paused (reason: test-reason)')
+        expect.stringContaining('paused (reason: test-reason)'),
       );
 
       provider.resumeAutosave('test-reason');
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('resumed (reason: test-reason)')
+        expect.stringContaining('resumed (reason: test-reason)'),
       );
 
       consoleSpy.mockRestore();
@@ -355,7 +355,7 @@ describe('LocalJSONProvider - Enhanced Features', () => {
 
       const result = await provider.save(mapId, testData, {
         autosave: true,
-        force: true
+        force: true,
       });
 
       expect(result.success).toBe(true);
@@ -367,8 +367,8 @@ describe('LocalJSONProvider - Enhanced Features', () => {
       const exportData = {
         maps: {
           map1: { n: [], c: [], meta: { title: 'Map 1' } },
-          map2: { n: [], c: [], meta: { title: 'Map 2' } }
-        }
+          map2: { n: [], c: [], meta: { title: 'Map 2' } },
+        },
       };
 
       const callback = jest.fn();
@@ -402,8 +402,8 @@ describe('LocalJSONProvider - Enhanced Features', () => {
 
       const exportData = {
         maps: {
-          map1: { n: [], c: [], meta: { title: 'Map 1' } }
-        }
+          map1: { n: [], c: [], meta: { title: 'Map 1' } },
+        },
       };
 
       const result = await provider.importMaps(exportData);
@@ -438,8 +438,8 @@ describe('LocalJSONProvider - Enhanced Features', () => {
       expect(callback).toHaveBeenCalledWith(
         expect.objectContaining({
           type: 'subscribed',
-          mapId
-        })
+          mapId,
+        }),
       );
     });
   });

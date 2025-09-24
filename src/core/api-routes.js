@@ -8,7 +8,7 @@ const Logger = require('../utils/logger');
 const eventBus = require('../utils/event-bus');
 const {
   createBasicHealthSecurityMiddleware,
-  createMonitoringSecurityMiddleware
+  createMonitoringSecurityMiddleware,
 } = require('./monitoring-security');
 
 /**
@@ -30,12 +30,12 @@ function createApiRoutes(services = {}) {
         const payload = {
           status: 'ok',
           timestamp: new Date().toISOString(),
-          uptime: Math.floor(process.uptime())
+          uptime: Math.floor(process.uptime()),
         };
 
         eventBus.emit('health.checked', {
           healthy: true,
-          timestamp: payload.timestamp
+          timestamp: payload.timestamp,
         });
 
         res.json(payload);
@@ -44,15 +44,15 @@ function createApiRoutes(services = {}) {
         eventBus.emit('health.checked', {
           healthy: false,
           error: error.message,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
         res.status(503).json({
           status: 'error',
           timestamp: new Date().toISOString(),
-          message: 'Service unavailable'
+          message: 'Service unavailable',
         });
       }
-    }
+    },
   );
 
   // Detailed health check endpoint (restricted to monitoring hosts)
@@ -77,7 +77,7 @@ function createApiRoutes(services = {}) {
           components.yjsService = {
             status: 'disabled',
             details: { reason: 'Y.js service not initialized' },
-            timestamp
+            timestamp,
           };
         }
 
@@ -87,13 +87,13 @@ function createApiRoutes(services = {}) {
           components.database = {
             status: 'healthy',
             details: { type: 'sqlite', accessible: true },
-            timestamp
+            timestamp,
           };
         } catch (dbError) {
           components.database = {
             status: 'unhealthy',
             details: { error: dbError.message },
-            timestamp
+            timestamp,
           };
           overallStatus = 'unhealthy';
         }
@@ -106,9 +106,9 @@ function createApiRoutes(services = {}) {
           details: {
             heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024),
             heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024),
-            external: Math.round(memUsage.external / 1024 / 1024)
+            external: Math.round(memUsage.external / 1024 / 1024),
           },
-          timestamp
+          timestamp,
         };
 
         if (!memHealthy && overallStatus === 'healthy') {
@@ -123,15 +123,15 @@ function createApiRoutes(services = {}) {
           summary: {
             totalComponents: Object.keys(components).length,
             healthyComponents: Object.values(components).filter(
-              c => c.status === 'healthy'
-            ).length
-          }
+              (c) => c.status === 'healthy',
+            ).length,
+          },
         };
 
         eventBus.emit('health.deep.checked', {
           healthy: overallStatus === 'healthy',
           components: Object.keys(components),
-          timestamp
+          timestamp,
         });
 
         // Return appropriate HTTP status
@@ -149,10 +149,10 @@ function createApiRoutes(services = {}) {
           status: 'error',
           timestamp: new Date().toISOString(),
           message: 'Deep health check failed',
-          error: error.message
+          error: error.message,
         });
       }
-    }
+    },
   );
 
   // Readiness probe
@@ -187,7 +187,7 @@ function createApiRoutes(services = {}) {
 
           // Metadata
           metrics_timestamp: timestamp,
-          metrics_version: '1.0'
+          metrics_version: '1.0',
         };
 
         // Add Y.js metrics if service is available
@@ -209,17 +209,17 @@ function createApiRoutes(services = {}) {
             uptime_seconds: 'Server uptime in seconds',
             memory_heap_used_bytes: 'Node.js heap memory used in bytes',
             yjs_documents_active: 'Number of active Y.js documents in memory',
-            yjs_connections_active: 'Number of active WebSocket connections'
-          }
+            yjs_connections_active: 'Number of active WebSocket connections',
+          },
         });
       } catch (error) {
         Logger.error('Metrics collection failed:', error);
         res.status(503).json({
           error: 'Metrics unavailable',
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
       }
-    }
+    },
   );
 
   Logger.info('API routes configured');

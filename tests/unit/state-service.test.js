@@ -30,7 +30,7 @@ class MockStorage {
       notes: state.notes?.length || 0,
       connections: state.connections?.length || 0,
       zoomLevel: state.zoomLevel,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
 
@@ -38,7 +38,7 @@ class MockStorage {
     return {
       notes: [],
       connections: [],
-      zoomLevel: 5
+      zoomLevel: 5,
     };
   }
 }
@@ -60,7 +60,7 @@ describe('StateService', () => {
       const testState = {
         notes: [{ id: '1', content: 'Test' }],
         connections: [],
-        zoomLevel: 3
+        zoomLevel: 3,
       };
 
       mockStorage.data = testState;
@@ -74,7 +74,7 @@ describe('StateService', () => {
       expect(result).toEqual({
         notes: [],
         connections: [],
-        zoomLevel: 5
+        zoomLevel: 5,
       });
     });
 
@@ -85,7 +85,7 @@ describe('StateService', () => {
       expect(result).toEqual({
         notes: [],
         connections: [],
-        zoomLevel: 5
+        zoomLevel: 5,
       });
     });
   });
@@ -95,7 +95,7 @@ describe('StateService', () => {
       const validState = {
         notes: [{ id: '1', content: 'Test Note' }],
         connections: [{ from: '1', to: '2' }],
-        zoomLevel: 4
+        zoomLevel: 4,
       };
 
       const result = await stateService.saveState(validState);
@@ -110,22 +110,22 @@ describe('StateService', () => {
     it('should reject state with missing notes array', async () => {
       const invalidState = {
         connections: [],
-        zoomLevel: 5
+        zoomLevel: 5,
       };
 
       await expect(stateService.saveState(invalidState)).rejects.toThrow(
-        'Invalid state: State must have notes array'
+        'Invalid state: State must have notes array',
       );
     });
 
     it('should reject state with missing connections array', async () => {
       const invalidState = {
         notes: [],
-        zoomLevel: 5
+        zoomLevel: 5,
       };
 
       await expect(stateService.saveState(invalidState)).rejects.toThrow(
-        'Invalid state: State must have connections array'
+        'Invalid state: State must have connections array',
       );
     });
 
@@ -133,23 +133,23 @@ describe('StateService', () => {
       const invalidState = {
         notes: [],
         connections: [],
-        zoomLevel: 'invalid'
+        zoomLevel: 'invalid',
       };
 
       await expect(stateService.saveState(invalidState)).rejects.toThrow(
-        'Invalid state: State must have numeric zoomLevel'
+        'Invalid state: State must have numeric zoomLevel',
       );
     });
 
     it('should reject non-object state', async () => {
       await expect(stateService.saveState('invalid')).rejects.toThrow(
-        'Invalid state: State must be an object'
+        'Invalid state: State must be an object',
       );
     });
 
     it('should reject null state', async () => {
       await expect(stateService.saveState(null)).rejects.toThrow(
-        'Invalid state: State must be an object'
+        'Invalid state: State must be an object',
       );
     });
   });
@@ -159,10 +159,10 @@ describe('StateService', () => {
       const validState = {
         notes: [
           { id: '1', content: 'Note 1' },
-          { id: '2', content: 'Note 2' }
+          { id: '2', content: 'Note 2' },
         ],
         connections: [{ from: '1', to: '2' }],
-        zoomLevel: 5
+        zoomLevel: 5,
       };
 
       const result = stateService.validateState(validState);
@@ -174,7 +174,7 @@ describe('StateService', () => {
       const invalidState = {
         notes: [{ content: 'Note without id' }],
         connections: [],
-        zoomLevel: 5
+        zoomLevel: 5,
       };
 
       const result = stateService.validateState(invalidState);
@@ -186,13 +186,13 @@ describe('StateService', () => {
       const invalidState = {
         notes: [{ id: '1' }],
         connections: [],
-        zoomLevel: 5
+        zoomLevel: 5,
       };
 
       const result = stateService.validateState(invalidState);
       expect(result.valid).toBe(false);
       expect(result.errors).toContain(
-        'Note at index 0 must have string content'
+        'Note at index 0 must have string content',
       );
     });
 
@@ -201,9 +201,9 @@ describe('StateService', () => {
         notes: [],
         connections: [
           { from: '1' }, // missing to
-          { to: '2' } // missing from
+          { to: '2' }, // missing from
         ],
-        zoomLevel: 5
+        zoomLevel: 5,
       };
 
       const result = stateService.validateState(invalidState);
@@ -218,10 +218,10 @@ describe('StateService', () => {
       const testState = {
         notes: [
           { id: '1', content: 'Note 1' },
-          { id: '2', content: 'Note 2' }
+          { id: '2', content: 'Note 2' },
         ],
         connections: [{ from: '1', to: '2' }],
-        zoomLevel: 7
+        zoomLevel: 7,
       };
 
       mockStorage.data = testState;
@@ -231,7 +231,7 @@ describe('StateService', () => {
         notesCount: 2,
         connectionsCount: 1,
         zoomLevel: 7,
-        isEmpty: false
+        isEmpty: false,
       });
     });
 
@@ -241,7 +241,7 @@ describe('StateService', () => {
         notesCount: 0,
         connectionsCount: 0,
         zoomLevel: 5,
-        isEmpty: true
+        isEmpty: true,
       });
     });
 
@@ -254,7 +254,7 @@ describe('StateService', () => {
         notesCount: 0,
         connectionsCount: 0,
         zoomLevel: 5,
-        isEmpty: true
+        isEmpty: true,
       });
     });
   });

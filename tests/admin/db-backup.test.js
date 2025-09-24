@@ -31,14 +31,14 @@ describe('Admin Command: db:backup', () => {
       // Create backup
       const backup = new DatabaseBackup({
         output: testEnv.backupDir,
-        verbose: false
+        verbose: false,
       });
 
       const result = await backup.createBackup();
 
       // Verify backup file was created
       expect(result.filename).toMatch(
-        /^mindmeld-backup-\d{4}-\d{2}-\d{2}-\d{6}\d{3}\d{3}\.sqlite$/
+        /^mindmeld-backup-\d{4}-\d{2}-\d{2}-\d{6}\d{3}\d{3}\.sqlite$/,
       );
       expect(result.path).toBe(path.join(testEnv.backupDir, result.filename));
 
@@ -56,7 +56,7 @@ describe('Admin Command: db:backup', () => {
 
       // Create backup
       const backup = new DatabaseBackup({
-        output: testEnv.backupDir
+        output: testEnv.backupDir,
       });
 
       const result = await backup.createBackup();
@@ -68,10 +68,10 @@ describe('Admin Command: db:backup', () => {
 
       // Sort both arrays by name for comparison
       const sortedOriginal = originalMaps.sort((a, b) =>
-        a.name.localeCompare(b.name)
+        a.name.localeCompare(b.name),
       );
       const sortedBackup = backupMaps.sort((a, b) =>
-        a.name.localeCompare(b.name)
+        a.name.localeCompare(b.name),
       );
 
       for (let i = 0; i < sortedOriginal.length; i++) {
@@ -88,7 +88,7 @@ describe('Admin Command: db:backup', () => {
       // Create uncompressed backup
       const uncompressedBackup = new DatabaseBackup({
         output: testEnv.backupDir,
-        compress: false
+        compress: false,
       });
 
       const uncompressedResult = await uncompressedBackup.createBackup();
@@ -96,7 +96,7 @@ describe('Admin Command: db:backup', () => {
       // Create compressed backup
       const compressedBackup = new DatabaseBackup({
         output: testEnv.backupDir,
-        compress: true
+        compress: true,
       });
 
       const compressedResult = await compressedBackup.createBackup();
@@ -116,7 +116,7 @@ describe('Admin Command: db:backup', () => {
 
       // Create backup with custom output
       const backup = new DatabaseBackup({
-        output: customOutput
+        output: customOutput,
       });
 
       const result = await backup.createBackup();
@@ -138,14 +138,14 @@ describe('Admin Command: db:backup', () => {
       // Create backup with custom name
       const backup = new DatabaseBackup({
         output: testEnv.backupDir,
-        name: 'custom-prefix'
+        name: 'custom-prefix',
       });
 
       const result = await backup.createBackup();
 
       // Verify custom prefix
       expect(result.filename).toMatch(
-        /^custom-prefix-\d{4}-\d{2}-\d{2}-\d{6}\d{3}\d{3}\.sqlite$/
+        /^custom-prefix-\d{4}-\d{2}-\d{2}-\d{6}\d{3}\d{3}\.sqlite$/,
       );
     });
 
@@ -156,7 +156,7 @@ describe('Admin Command: db:backup', () => {
       // Create backup with verification
       const backup = new DatabaseBackup({
         output: testEnv.backupDir,
-        verify: true
+        verify: true,
       });
 
       const result = await backup.createBackup();
@@ -171,7 +171,7 @@ describe('Admin Command: db:backup', () => {
 
       // Create backup
       const backup = new DatabaseBackup({
-        output: testEnv.backupDir
+        output: testEnv.backupDir,
       });
 
       const result = await backup.createBackup();
@@ -195,7 +195,7 @@ describe('Admin Command: db:backup', () => {
 
       // Create backup
       const backup = new DatabaseBackup({
-        output: testEnv.backupDir
+        output: testEnv.backupDir,
       });
 
       const result = await backup.createBackup();
@@ -224,11 +224,11 @@ describe('Admin Command: db:backup', () => {
       process.env.SQLITE_FILE = '/non/existent/database.sqlite';
 
       const backup = new DatabaseBackup({
-        output: testEnv.backupDir
+        output: testEnv.backupDir,
       });
 
       await expect(backup.createBackup()).rejects.toThrow(
-        'Cannot access source database'
+        'Cannot access source database',
       );
     });
 
@@ -240,12 +240,12 @@ describe('Admin Command: db:backup', () => {
         .mockRejectedValue(new Error('EACCES: permission denied'));
 
       const backup = new DatabaseBackup({
-        output: testEnv.backupDir
+        output: testEnv.backupDir,
       });
 
       try {
         await expect(backup.createBackup()).rejects.toThrow(
-          'Cannot prepare backup directory'
+          'Cannot prepare backup directory',
         );
       } finally {
         // Restore original function
@@ -269,12 +269,12 @@ describe('Admin Command: db:backup', () => {
       const backup = new DatabaseBackup({
         output: testEnv.backupDir,
         compress: true,
-        verify: false // Disable verification to focus on compression failure
+        verify: false, // Disable verification to focus on compression failure
       });
 
       try {
         await expect(backup.createBackup()).rejects.toThrow(
-          'Backup compression failed'
+          'Backup compression failed',
         );
       } finally {
         // Restore original function
@@ -289,7 +289,7 @@ describe('Admin Command: db:backup', () => {
       // Create backup with forced verification failure
       const backup = new DatabaseBackup({
         output: testEnv.backupDir,
-        verify: true
+        verify: true,
       });
 
       // Mock the verification to fail
@@ -298,7 +298,7 @@ describe('Admin Command: db:backup', () => {
         .mockRejectedValue(new Error('Verification failed'));
 
       await expect(backup.createBackup()).rejects.toThrow(
-        'Verification failed'
+        'Verification failed',
       );
     });
 
@@ -309,7 +309,7 @@ describe('Admin Command: db:backup', () => {
       // Create backup without verification
       const backup = new DatabaseBackup({
         output: testEnv.backupDir,
-        verify: false
+        verify: false,
       });
 
       // Should not throw even if verification would fail
@@ -323,7 +323,7 @@ describe('Admin Command: db:backup', () => {
       // Don't create any test data - use empty database
 
       const backup = new DatabaseBackup({
-        output: testEnv.backupDir
+        output: testEnv.backupDir,
       });
 
       const result = await backup.createBackup();
@@ -341,7 +341,7 @@ describe('Admin Command: db:backup', () => {
 
       const backup = new DatabaseBackup({
         output: testEnv.backupDir,
-        compress: true
+        compress: true,
       });
 
       const startTime = Date.now();
@@ -370,7 +370,7 @@ describe('Admin Command: db:backup', () => {
 
       const backup = new DatabaseBackup({
         output: testEnv.backupDir,
-        name: 'test-backup-with-special-chars'
+        name: 'test-backup-with-special-chars',
       });
 
       const result = await backup.createBackup();
@@ -383,14 +383,14 @@ describe('Admin Command: db:backup', () => {
         testEnv.tempDir,
         'nested',
         'backup',
-        'directory'
+        'directory',
       );
 
       // Create test data
       testEnv.createTestMaps(1);
 
       const backup = new DatabaseBackup({
-        output: nestedDir
+        output: nestedDir,
       });
 
       const result = await backup.createBackup();
@@ -426,7 +426,7 @@ describe('Admin Command: db:backup', () => {
       // Run backups concurrently
       const [result1, result2] = await Promise.all([
         backup1.createBackup(),
-        backup2.createBackup()
+        backup2.createBackup(),
       ]);
 
       // Both should succeed with different filenames
@@ -442,7 +442,7 @@ describe('Admin Command: db:backup', () => {
       await testEnv.createLargeDatabase(50);
 
       const backup = new DatabaseBackup({
-        output: testEnv.backupDir
+        output: testEnv.backupDir,
       });
 
       const startTime = Date.now();
@@ -461,7 +461,7 @@ describe('Admin Command: db:backup', () => {
 
       const backup = new DatabaseBackup({
         output: testEnv.backupDir,
-        compress: true
+        compress: true,
       });
 
       await backup.createBackup();
@@ -485,26 +485,26 @@ describe('Admin Command: db:backup', () => {
           `
         SELECT name, sql FROM sqlite_master 
         WHERE type = 'index' AND name NOT LIKE 'sqlite_%'
-      `
+      `,
         )
         .all();
 
       const backup = new DatabaseBackup({
-        output: testEnv.backupDir
+        output: testEnv.backupDir,
       });
 
       const result = await backup.createBackup();
 
       // Check backup database schema
       const backupDb = require('better-sqlite3')(result.path, {
-        readonly: true
+        readonly: true,
       });
       const backupIndexes = backupDb
         .prepare(
           `
         SELECT name, sql FROM sqlite_master 
         WHERE type = 'index' AND name NOT LIKE 'sqlite_%'
-      `
+      `,
         )
         .all();
       backupDb.close();
@@ -518,7 +518,7 @@ describe('Admin Command: db:backup', () => {
       testEnv.createTestMaps(3);
 
       const backup = new DatabaseBackup({
-        output: testEnv.backupDir
+        output: testEnv.backupDir,
       });
 
       const result = await backup.createBackup();

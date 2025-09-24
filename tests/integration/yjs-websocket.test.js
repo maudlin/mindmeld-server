@@ -45,7 +45,7 @@ describe('Yjs WebSocket Integration Tests', () => {
     const app = createServerFresh({
       port: 0, // Use random available port
       corsOrigin: 'http://localhost:3000',
-      jsonLimit: '1mb'
+      jsonLimit: '1mb',
     });
 
     // Start HTTP server
@@ -57,7 +57,7 @@ describe('Yjs WebSocket Integration Tests', () => {
       app.setupWebSocket(httpServer);
     }
 
-    await new Promise(resolve => {
+    await new Promise((resolve) => {
       httpServer.listen(0, resolve);
     });
 
@@ -67,7 +67,7 @@ describe('Yjs WebSocket Integration Tests', () => {
 
   afterEach(async () => {
     if (httpServer) {
-      await new Promise(resolve => {
+      await new Promise((resolve) => {
         httpServer.close(resolve);
       });
     }
@@ -89,7 +89,7 @@ describe('Yjs WebSocket Integration Tests', () => {
       expect(ws.readyState).toBe(WebSocket.OPEN);
 
       ws.close();
-      await new Promise(resolve => {
+      await new Promise((resolve) => {
         ws.on('close', resolve);
       });
     });
@@ -99,7 +99,7 @@ describe('Yjs WebSocket Integration Tests', () => {
 
       const ws = new WebSocket(wsUrl);
 
-      await new Promise(resolve => {
+      await new Promise((resolve) => {
         ws.on('close', (code, _reason) => {
           // WebSocket closes with 1006 (abnormal closure) when server destroys socket
           expect(code).toBe(1006);
@@ -133,7 +133,7 @@ describe('Yjs WebSocket Integration Tests', () => {
         new Promise((resolve, reject) => {
           ws3.on('open', resolve);
           ws3.on('error', reject);
-        })
+        }),
       ]);
 
       expect(ws1.readyState).toBe(WebSocket.OPEN);
@@ -146,9 +146,9 @@ describe('Yjs WebSocket Integration Tests', () => {
       ws3.close();
 
       await Promise.all([
-        new Promise(resolve => ws1.on('close', resolve)),
-        new Promise(resolve => ws2.on('close', resolve)),
-        new Promise(resolve => ws3.on('close', resolve))
+        new Promise((resolve) => ws1.on('close', resolve)),
+        new Promise((resolve) => ws2.on('close', resolve)),
+        new Promise((resolve) => ws3.on('close', resolve)),
       ]);
     });
   });
@@ -173,7 +173,7 @@ describe('Yjs WebSocket Integration Tests', () => {
       ws1.send(update);
 
       // Wait a bit for the update to be processed
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Second connection should receive initial state
       const ws2 = new WebSocket(wsUrl);
@@ -183,12 +183,12 @@ describe('Yjs WebSocket Integration Tests', () => {
       });
 
       const receivedUpdates = [];
-      ws2.on('message', data => {
+      ws2.on('message', (data) => {
         receivedUpdates.push(new Uint8Array(data));
       });
 
       // Wait for initial state message
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       expect(receivedUpdates.length).toBeGreaterThan(0);
 
@@ -216,25 +216,25 @@ describe('Yjs WebSocket Integration Tests', () => {
       const ws3 = new WebSocket(wsUrl);
 
       await Promise.all([
-        new Promise(resolve => ws1.on('open', resolve)),
-        new Promise(resolve => ws2.on('open', resolve)),
-        new Promise(resolve => ws3.on('open', resolve))
+        new Promise((resolve) => ws1.on('open', resolve)),
+        new Promise((resolve) => ws2.on('open', resolve)),
+        new Promise((resolve) => ws3.on('open', resolve)),
       ]);
 
       // Set up message listeners
       const ws2Updates = [];
       const ws3Updates = [];
 
-      ws2.on('message', data => {
+      ws2.on('message', (data) => {
         ws2Updates.push(new Uint8Array(data));
       });
 
-      ws3.on('message', data => {
+      ws3.on('message', (data) => {
         ws3Updates.push(new Uint8Array(data));
       });
 
       // Clear any initial state messages
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
       ws2Updates.length = 0;
       ws3Updates.length = 0;
 
@@ -247,7 +247,7 @@ describe('Yjs WebSocket Integration Tests', () => {
       ws1.send(update);
 
       // Wait for broadcast
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise((resolve) => setTimeout(resolve, 200));
 
       // ws2 and ws3 should receive the update, but not ws1
       expect(ws2Updates.length).toBeGreaterThan(0);
@@ -283,8 +283,8 @@ describe('Yjs WebSocket Integration Tests', () => {
       const ws2 = new WebSocket(wsUrl);
 
       await Promise.all([
-        new Promise(resolve => ws1.on('open', resolve)),
-        new Promise(resolve => ws2.on('open', resolve))
+        new Promise((resolve) => ws1.on('open', resolve)),
+        new Promise((resolve) => ws2.on('open', resolve)),
       ]);
 
       // Create documents for each client
@@ -294,40 +294,40 @@ describe('Yjs WebSocket Integration Tests', () => {
       const updates1 = [];
       const updates2 = [];
 
-      ws1.on('message', data => {
+      ws1.on('message', (data) => {
         const update = new Uint8Array(data);
         Y.applyUpdate(doc1, update);
         updates1.push(update);
       });
 
-      ws2.on('message', data => {
+      ws2.on('message', (data) => {
         const update = new Uint8Array(data);
         Y.applyUpdate(doc2, update);
         updates2.push(update);
       });
 
       // Wait for initial state
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Client 1 adds notes
       const notes1 = doc1.getArray('notes');
       notes1.insert(0, ['Note from client 1']);
       ws1.send(Y.encodeStateAsUpdate(doc1));
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Client 2 adds connections
       const connections2 = doc2.getArray('connections');
       connections2.insert(0, [{ f: 'note1', t: 'note2' }]);
       ws2.send(Y.encodeStateAsUpdate(doc2));
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Client 1 adds more notes
       notes1.insert(1, ['Another note from client 1']);
       ws1.send(Y.encodeStateAsUpdate(doc1));
 
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise((resolve) => setTimeout(resolve, 200));
 
       // Verify both documents have the same final state
       const finalNotes1 = doc1.getArray('notes');
@@ -352,14 +352,14 @@ describe('Yjs WebSocket Integration Tests', () => {
       const wsUrl = `${baseUrl}/yjs/${mapId}`;
 
       const ws = new WebSocket(wsUrl);
-      await new Promise(resolve => ws.on('open', resolve));
+      await new Promise((resolve) => ws.on('open', resolve));
 
       // Send invalid binary data
       const invalidData = Buffer.from('invalid yjs update data');
       ws.send(invalidData);
 
       // Connection should remain open despite invalid data
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise((resolve) => setTimeout(resolve, 200));
       expect(ws.readyState).toBe(WebSocket.OPEN);
 
       ws.close();
@@ -373,8 +373,8 @@ describe('Yjs WebSocket Integration Tests', () => {
       const ws2 = new WebSocket(wsUrl);
 
       await Promise.all([
-        new Promise(resolve => ws1.on('open', resolve)),
-        new Promise(resolve => ws2.on('open', resolve))
+        new Promise((resolve) => ws1.on('open', resolve)),
+        new Promise((resolve) => ws2.on('open', resolve)),
       ]);
 
       // Abruptly close ws1
@@ -388,7 +388,7 @@ describe('Yjs WebSocket Integration Tests', () => {
       ws2.send(Y.encodeStateAsUpdate(doc));
 
       // Wait a bit
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       expect(ws2.readyState).toBe(WebSocket.OPEN);
 
@@ -402,18 +402,18 @@ describe('Yjs WebSocket Integration Tests', () => {
       // Rapidly create and close connections
       for (let i = 0; i < 10; i++) {
         const ws = new WebSocket(wsUrl);
-        await new Promise(resolve => {
+        await new Promise((resolve) => {
           ws.on('open', () => {
             ws.close();
             resolve();
           });
         });
-        await new Promise(resolve => ws.on('close', resolve));
+        await new Promise((resolve) => ws.on('close', resolve));
       }
 
       // Final connection should still work
       const finalWs = new WebSocket(wsUrl);
-      await new Promise(resolve => finalWs.on('open', resolve));
+      await new Promise((resolve) => finalWs.on('open', resolve));
 
       expect(finalWs.readyState).toBe(WebSocket.OPEN);
 
@@ -453,7 +453,7 @@ describe('Yjs WebSocket Integration Tests', () => {
 
       // Close current server
       if (httpServer) {
-        await new Promise(resolve => {
+        await new Promise((resolve) => {
           httpServer.close(resolve);
         });
       }
@@ -463,7 +463,7 @@ describe('Yjs WebSocket Integration Tests', () => {
       const app = createServerFresh({
         port: 0,
         corsOrigin: 'http://localhost:3000',
-        jsonLimit: '1mb'
+        jsonLimit: '1mb',
       });
 
       httpServer = http.createServer(app);
@@ -474,7 +474,7 @@ describe('Yjs WebSocket Integration Tests', () => {
         app.setupWebSocket(httpServer);
       }
 
-      await new Promise(resolve => {
+      await new Promise((resolve) => {
         httpServer.listen(0, resolve);
       });
 
@@ -486,7 +486,7 @@ describe('Yjs WebSocket Integration Tests', () => {
       const ws = new WebSocket(wsUrl);
 
       // If feature is disabled, connection should be rejected or not available
-      await new Promise(resolve => {
+      await new Promise((resolve) => {
         ws.on('error', resolve);
         ws.on('close', resolve);
         setTimeout(resolve, 1000);
@@ -516,7 +516,7 @@ describe('Yjs WebSocket Integration Tests', () => {
 
       // First session: create content
       const ws1 = new WebSocket(wsUrl);
-      await new Promise(resolve => ws1.on('open', resolve));
+      await new Promise((resolve) => ws1.on('open', resolve));
 
       const doc1 = new Y.Doc();
       const notes1 = doc1.getArray('notes');
@@ -525,22 +525,22 @@ describe('Yjs WebSocket Integration Tests', () => {
       ws1.send(Y.encodeStateAsUpdate(doc1));
 
       // Wait for persistence
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise((resolve) => setTimeout(resolve, 200));
 
       ws1.close();
-      await new Promise(resolve => ws1.on('close', resolve));
+      await new Promise((resolve) => ws1.on('close', resolve));
 
       // Second session: should load persisted content
       const ws2 = new WebSocket(wsUrl);
-      await new Promise(resolve => ws2.on('open', resolve));
+      await new Promise((resolve) => ws2.on('open', resolve));
 
       const receivedUpdates = [];
-      ws2.on('message', data => {
+      ws2.on('message', (data) => {
         receivedUpdates.push(new Uint8Array(data));
       });
 
       // Wait for initial state (should include persisted content)
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise((resolve) => setTimeout(resolve, 200));
 
       if (receivedUpdates.length > 0) {
         const doc2 = new Y.Doc();
@@ -568,14 +568,14 @@ describe('Yjs WebSocket Integration Tests', () => {
       for (let i = 0; i < numConnections; i++) {
         const ws = new WebSocket(wsUrl);
         connections.push(ws);
-        await new Promise(resolve => ws.on('open', resolve));
+        await new Promise((resolve) => ws.on('open', resolve));
       }
 
       const startTime = Date.now();
 
       // Each connection sends updates simultaneously
       const updatePromises = connections.map((ws, index) => {
-        return new Promise(resolve => {
+        return new Promise((resolve) => {
           const doc = new Y.Doc();
           const array = doc.getArray('performance-test');
 
@@ -609,16 +609,16 @@ describe('Yjs WebSocket Integration Tests', () => {
       // Create and immediately close many connections
       for (let i = 0; i < 20; i++) {
         const ws = new WebSocket(wsUrl);
-        await new Promise(resolve => ws.on('open', resolve));
+        await new Promise((resolve) => ws.on('open', resolve));
         ws.close();
-        await new Promise(resolve => ws.on('close', resolve));
+        await new Promise((resolve) => ws.on('close', resolve));
       }
 
       // Final connection should still work efficiently
       const finalWs = new WebSocket(wsUrl);
       const startTime = Date.now();
 
-      await new Promise(resolve => finalWs.on('open', resolve));
+      await new Promise((resolve) => finalWs.on('open', resolve));
 
       const connectionTime = Date.now() - startTime;
       expect(connectionTime).toBeLessThan(1000); // Should connect quickly

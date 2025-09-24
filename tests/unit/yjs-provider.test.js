@@ -8,7 +8,7 @@
 const YjsProvider = require('../../src/client/providers/YjsProvider');
 const {
   DataProviderFactory,
-  PROVIDER_TYPES
+  PROVIDER_TYPES,
 } = require('../../src/client/providers/DataProviderFactory');
 
 // Mock browser environment for testing
@@ -25,16 +25,16 @@ const mockBrowserGlobals = () => {
             get: jest.fn(),
             put: jest.fn(),
             delete: jest.fn(),
-            getAllKeys: jest.fn()
-          }))
-        }))
-      }
+            getAllKeys: jest.fn(),
+          })),
+        })),
+      },
     })),
     deleteDatabase: jest.fn(() => ({
       onsuccess: null,
       onerror: null,
-      onblocked: null
-    }))
+      onblocked: null,
+    })),
   };
 
   // Mock WebSocket
@@ -43,7 +43,7 @@ const mockBrowserGlobals = () => {
     close: jest.fn(),
     addEventListener: jest.fn(),
     removeEventListener: jest.fn(),
-    readyState: 1
+    readyState: 1,
   }));
 
   // Mock window object
@@ -54,9 +54,9 @@ const mockBrowserGlobals = () => {
       removeItem: jest.fn(),
       clear: jest.fn(),
       length: 0,
-      key: jest.fn()
+      key: jest.fn(),
     },
-    indexedDB: global.indexedDB
+    indexedDB: global.indexedDB,
   };
 
   global.document = {};
@@ -68,7 +68,7 @@ jest.mock('yjs', () => {
     insert: jest.fn(),
     toString: jest.fn(() => 'mock content'),
     observe: jest.fn(),
-    unobserve: jest.fn()
+    unobserve: jest.fn(),
   };
 
   const mockYMap = {
@@ -99,7 +99,7 @@ jest.mock('yjs', () => {
     }),
     values: jest.fn(function () {
       return this._data.values();
-    })
+    }),
   };
 
   const mockYDoc = {
@@ -107,13 +107,13 @@ jest.mock('yjs', () => {
     on: jest.fn(),
     off: jest.fn(),
     destroy: jest.fn(),
-    toJSON: jest.fn(() => ({}))
+    toJSON: jest.fn(() => ({})),
   };
 
   return {
     Doc: jest.fn(() => mockYDoc),
     Text: jest.fn(() => mockYText),
-    Map: jest.fn(() => mockYMap)
+    Map: jest.fn(() => mockYMap),
   };
 });
 
@@ -124,8 +124,8 @@ jest.mock('y-indexeddb', () => ({
         setTimeout(callback, 0); // Simulate async sync
       }
     }),
-    destroy: jest.fn()
-  }))
+    destroy: jest.fn(),
+  })),
 }));
 
 jest.mock('y-websocket', () => ({
@@ -133,8 +133,8 @@ jest.mock('y-websocket', () => ({
     on: jest.fn(),
     disconnect: jest.fn(),
     destroy: jest.fn(),
-    wsconnected: false
-  }))
+    wsconnected: false,
+  })),
 }));
 
 describe('YjsProvider', () => {
@@ -143,7 +143,7 @@ describe('YjsProvider', () => {
   const testMapData = {
     n: [
       { i: 'note1', c: 'Hello World', p: [100, 200], color: 'yellow' },
-      { i: 'note2', c: 'Testing notes', p: [300, 400] }
+      { i: 'note2', c: 'Testing notes', p: [300, 400] },
     ],
     c: [{ f: 'note1', t: 'note2', type: 'arrow' }],
     meta: {
@@ -152,8 +152,8 @@ describe('YjsProvider', () => {
       modified: '2024-01-01T00:00:00.000Z',
       title: 'Test Map',
       zoomLevel: 1.0,
-      canvasType: 'default'
-    }
+      canvasType: 'default',
+    },
   };
 
   beforeAll(() => {
@@ -165,7 +165,7 @@ describe('YjsProvider', () => {
     provider = new YjsProvider({
       websocketUrl: 'ws://localhost:3001',
       offlineMode: true, // Start in offline mode for testing
-      storagePrefix: 'test_mindmeld_yjs_'
+      storagePrefix: 'test_mindmeld_yjs_',
     });
   });
 
@@ -224,7 +224,7 @@ describe('YjsProvider', () => {
         id: 'new-note',
         content: 'New note content',
         pos: [150, 250],
-        color: 'blue'
+        color: 'blue',
       });
 
       // Edit note
@@ -232,7 +232,7 @@ describe('YjsProvider', () => {
         id: 'new-note',
         content: 'Updated note content',
         pos: [150, 250],
-        color: 'blue'
+        color: 'blue',
       });
 
       // Move note
@@ -240,7 +240,7 @@ describe('YjsProvider', () => {
         id: 'new-note',
         content: 'Updated note content',
         pos: [200, 300], // New position
-        color: 'blue'
+        color: 'blue',
       });
 
       // Change color
@@ -248,7 +248,7 @@ describe('YjsProvider', () => {
         id: 'new-note',
         content: 'Updated note content',
         pos: [200, 300],
-        color: 'green' // New color
+        color: 'green', // New color
       });
 
       // Verify the operations worked
@@ -261,31 +261,31 @@ describe('YjsProvider', () => {
       await provider.upsertNote({
         id: 'note-a',
         content: 'Note A',
-        pos: [100, 100]
+        pos: [100, 100],
       });
 
       await provider.upsertNote({
         id: 'note-b',
         content: 'Note B',
-        pos: [200, 200]
+        pos: [200, 200],
       });
 
       // Create connection - need to manually ensure the notes exist in the mock
       provider.notes._data.set('note-a', {
         id: 'note-a',
         content: 'Note A',
-        pos: [100, 100]
+        pos: [100, 100],
       });
       provider.notes._data.set('note-b', {
         id: 'note-b',
         content: 'Note B',
-        pos: [200, 200]
+        pos: [200, 200],
       });
 
       await provider.upsertConnection({
         from: 'note-a',
         to: 'note-b',
-        type: 'arrow'
+        type: 'arrow',
       });
 
       // Verify connection exists
@@ -301,12 +301,12 @@ describe('YjsProvider', () => {
       provider.notes._data.set('note1', {
         id: 'note1',
         content: 'Hello World',
-        pos: [100, 200]
+        pos: [100, 200],
       });
       provider.connections._data.set('note1:note2:arrow', {
         from: 'note1',
         to: 'note2',
-        type: 'arrow'
+        type: 'arrow',
       });
 
       // Delete note (should also remove connections)
@@ -322,7 +322,7 @@ describe('YjsProvider', () => {
       await provider.setMeta({
         title: 'Updated Test Map',
         zoomLevel: 1.5,
-        customField: 'test value'
+        customField: 'test value',
       });
 
       const snapshot = await provider.getSnapshot();
@@ -340,7 +340,7 @@ describe('YjsProvider', () => {
       const newProvider = new YjsProvider({
         websocketUrl: 'ws://localhost:3001',
         offlineMode: true,
-        storagePrefix: 'test_mindmeld_yjs_'
+        storagePrefix: 'test_mindmeld_yjs_',
       });
 
       try {
@@ -376,7 +376,7 @@ describe('YjsProvider', () => {
       const newProvider = new YjsProvider({
         websocketUrl: 'ws://localhost:3001',
         offlineMode: true,
-        storagePrefix: 'test_import_mindmeld_yjs_'
+        storagePrefix: 'test_import_mindmeld_yjs_',
       });
 
       try {
@@ -390,16 +390,16 @@ describe('YjsProvider', () => {
           // Import may fail due to mock limitations, but we can still test structure
           console.log(
             'Import validation failed (expected in mock environment):',
-            error.message
+            error.message,
           );
         }
 
         // Verify export structure is reasonable
         expect(
-          Array.isArray(exportedData.n) || exportedData.n === undefined
+          Array.isArray(exportedData.n) || exportedData.n === undefined,
         ).toBe(true);
         expect(
-          Array.isArray(exportedData.c) || exportedData.c === undefined
+          Array.isArray(exportedData.c) || exportedData.c === undefined,
         ).toBe(true);
         expect(typeof exportedData.meta === 'object').toBe(true);
       } finally {
@@ -411,10 +411,10 @@ describe('YjsProvider', () => {
       const testData = {
         n: [
           { i: 'colored-note', c: 'Colored note', p: [123, 456], color: 'red' },
-          { i: 'default-note', c: 'Default note', p: [789, 101] }
+          { i: 'default-note', c: 'Default note', p: [789, 101] },
         ],
         c: [],
-        meta: { version: 1 }
+        meta: { version: 1 },
       };
 
       await provider.save(testMapId, testData);
@@ -428,13 +428,13 @@ describe('YjsProvider', () => {
       const testData = {
         n: [
           { i: 'note1', c: 'Note 1', p: [0, 0] },
-          { i: 'note2', c: 'Note 2', p: [100, 100] }
+          { i: 'note2', c: 'Note 2', p: [100, 100] },
         ],
         c: [
           { f: 'note1', t: 'note2', type: 'arrow' },
-          { f: 'note2', t: 'note1', type: 'line' }
+          { f: 'note2', t: 'note1', type: 'line' },
         ],
-        meta: { version: 1 }
+        meta: { version: 1 },
       };
 
       await provider.save(testMapId, testData);
@@ -448,7 +448,7 @@ describe('YjsProvider', () => {
       const emptyData = {
         n: [],
         c: [],
-        meta: { version: 1, title: 'Empty Map' }
+        meta: { version: 1, title: 'Empty Map' },
       };
 
       await provider.save(testMapId, emptyData);
@@ -457,12 +457,12 @@ describe('YjsProvider', () => {
       // In mock environment, some metadata entries may be created as notes
       // Filter out metadata-only notes (version, title, modified) and invalid connections
       const userNotes = (exported.n || []).filter(
-        note =>
-          note && note.i && !['version', 'title', 'modified'].includes(note.i)
+        (note) =>
+          note && note.i && !['version', 'title', 'modified'].includes(note.i),
       );
 
       const validConnections = (exported.c || []).filter(
-        conn => conn && conn.f && conn.t
+        (conn) => conn && conn.f && conn.t,
       );
 
       expect(userNotes).toEqual([]);
@@ -475,7 +475,7 @@ describe('YjsProvider', () => {
       const testData = {
         n: [{ i: 'large-note', c: largeContent, p: [0, 0] }],
         c: [],
-        meta: { version: 1 }
+        meta: { version: 1 },
       };
 
       await provider.save(testMapId, testData);
@@ -497,8 +497,8 @@ describe('YjsProvider', () => {
         provider.upsertNote({
           id: 'oversized-note',
           content: oversizedContent,
-          pos: [0, 0]
-        })
+          pos: [0, 0],
+        }),
       ).rejects.toThrow(/content exceeds limit/i);
     });
 
@@ -507,16 +507,16 @@ describe('YjsProvider', () => {
         provider.upsertNote({
           id: 'bad-position',
           content: 'Test',
-          pos: [100] // Invalid position array
-        })
+          pos: [100], // Invalid position array
+        }),
       ).rejects.toThrow(/Invalid note position: must be \[x, y\] array/);
 
       await expect(
         provider.upsertNote({
           id: 'bad-position-2',
           content: 'Test',
-          pos: 'not-array' // Not an array
-        })
+          pos: 'not-array', // Not an array
+        }),
       ).rejects.toThrow(/Invalid note position: must be \[x, y\] array/);
     });
 
@@ -524,15 +524,15 @@ describe('YjsProvider', () => {
       await provider.upsertNote({
         id: 'self-note',
         content: 'Self note',
-        pos: [0, 0]
+        pos: [0, 0],
       });
 
       await expect(
         provider.upsertConnection({
           from: 'self-note',
           to: 'self-note',
-          type: 'arrow'
-        })
+          type: 'arrow',
+        }),
       ).rejects.toThrow(/self-connections not allowed/i);
     });
 
@@ -541,8 +541,8 @@ describe('YjsProvider', () => {
         provider.upsertConnection({
           from: 'nonexistent-note-1',
           to: 'nonexistent-note-2',
-          type: 'arrow'
-        })
+          type: 'arrow',
+        }),
       ).rejects.toThrow(/does not exist/i);
     });
   });
@@ -560,7 +560,7 @@ describe('YjsProvider', () => {
       await provider.upsertNote({
         id: 'event-note',
         content: 'Event test',
-        pos: [0, 0]
+        pos: [0, 0],
       });
 
       expect(unsubscribe).toBeInstanceOf(Function);
@@ -597,13 +597,13 @@ describe('YjsProvider', () => {
     test('should handle initialization failures gracefully', async () => {
       // Simulate IndexedDB failure
       const failingProvider = new YjsProvider({
-        storagePrefix: 'failing_test_'
+        storagePrefix: 'failing_test_',
       });
 
       // Mock IndexedDB to fail
       global.indexedDB.open.mockImplementation(() => ({
         onerror: null,
-        onsuccess: null
+        onsuccess: null,
       }));
 
       // Initialization should handle the error
@@ -618,13 +618,13 @@ describe('YjsProvider', () => {
       await provider.init(testMapId);
 
       await expect(
-        provider.save(testMapId, { invalid: 'data' })
+        provider.save(testMapId, { invalid: 'data' }),
       ).rejects.toThrow();
     });
 
     test('should handle operations on uninitialized provider', async () => {
       await expect(
-        provider.upsertNote({ id: 'test', content: 'test', pos: [0, 0] })
+        provider.upsertNote({ id: 'test', content: 'test', pos: [0, 0] }),
       ).rejects.toThrow(/not initialized/i);
     });
   });
@@ -633,8 +633,8 @@ describe('YjsProvider', () => {
     test('should create YjsProvider with feature flag', async () => {
       const factory = new DataProviderFactory({
         featureFlags: {
-          DATA_PROVIDER: 'yjs'
-        }
+          DATA_PROVIDER: 'yjs',
+        },
       });
 
       const provider = await factory.createProvider();
@@ -651,18 +651,18 @@ describe('YjsProvider', () => {
         removeItem: jest.fn(),
         clear: jest.fn(),
         length: 0,
-        key: jest.fn()
+        key: jest.fn(),
       };
 
       const factory = new DataProviderFactory({
         featureFlags: {
-          enableYjsProvider: true
-        }
+          enableYjsProvider: true,
+        },
       });
 
       // Start with YJS provider
       const yjsProvider = await factory.createProvider({
-        type: PROVIDER_TYPES.YJS
+        type: PROVIDER_TYPES.YJS,
       });
       expect(yjsProvider).toBeInstanceOf(YjsProvider);
 

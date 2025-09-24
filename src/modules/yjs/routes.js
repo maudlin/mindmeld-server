@@ -10,7 +10,7 @@ class YjsRoutes {
     this.logger = options.logger || console;
     this.yjsService = new YjsService({
       logger: this.logger,
-      dbFile: options.dbFile
+      dbFile: options.dbFile,
     });
 
     // WebSocket server instance
@@ -25,7 +25,7 @@ class YjsRoutes {
     this.wss = new WebSocket.Server({
       noServer: true,
       perMessageDeflate: true,
-      maxPayload: 1024 * 1024 // 1MB max message size
+      maxPayload: 1024 * 1024, // 1MB max message size
     });
 
     // Handle WebSocket upgrade requests
@@ -34,7 +34,7 @@ class YjsRoutes {
 
       // Only handle /yjs/* paths
       if (url.pathname.startsWith('/yjs/')) {
-        this.wss.handleUpgrade(request, socket, head, ws => {
+        this.wss.handleUpgrade(request, socket, head, (ws) => {
           this.wss.emit('connection', ws, request);
         });
       } else {
@@ -50,17 +50,17 @@ class YjsRoutes {
       } catch (error) {
         this.logger.error('Failed to handle WebSocket connection', {
           url: request.url,
-          error: error.message
+          error: error.message,
         });
         ws.close(1011, 'Server error');
       }
     });
 
     // Handle WebSocket server errors
-    this.wss.on('error', error => {
+    this.wss.on('error', (error) => {
       this.logger.error('WebSocket server error', {
         error: error.message,
-        stack: error.stack
+        stack: error.stack,
       });
     });
 
@@ -76,7 +76,7 @@ class YjsRoutes {
     if (!this.wss) {
       return {
         connected: 0,
-        documents: 0
+        documents: 0,
       };
     }
 
@@ -87,9 +87,9 @@ class YjsRoutes {
         ([mapId, connections]) => ({
           mapId,
           clients: connections.size,
-          stats: this.yjsService.getDocumentStats(mapId)
-        })
-      )
+          stats: this.yjsService.getDocumentStats(mapId),
+        }),
+      ),
     };
   }
 
@@ -102,10 +102,10 @@ class YjsRoutes {
     }
 
     if (this.wss) {
-      this.wss.close(error => {
+      this.wss.close((error) => {
         if (error) {
           this.logger.error('Error closing WebSocket server', {
-            error: error.message
+            error: error.message,
           });
         } else {
           this.logger.info('Yjs WebSocket server closed');
@@ -126,5 +126,5 @@ function createYjsRoutes(httpServer, options = {}) {
 
 module.exports = {
   YjsRoutes,
-  createYjsRoutes
+  createYjsRoutes,
 };

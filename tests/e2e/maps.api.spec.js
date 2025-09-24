@@ -8,9 +8,9 @@ test.describe('Maps API E2E', () => {
         name: 'E2E Test Map',
         state: {
           n: [{ i: 'note1', p: [100, 100], c: 'Initial note', cl: 'blue' }],
-          c: []
-        }
-      }
+          c: [],
+        },
+      },
     });
 
     expect(createResponse.status()).toBe(201);
@@ -31,13 +31,13 @@ test.describe('Maps API E2E', () => {
         data: {
           n: [
             { i: 'note1', p: [100, 100], c: 'Initial note', cl: 'blue' },
-            { i: 'note2', p: [200, 200], c: 'Updated note', cl: 'green' }
+            { i: 'note2', p: [200, 200], c: 'Updated note', cl: 'green' },
           ],
-          c: [{ f: 'note1', t: 'note2' }]
+          c: [{ f: 'note1', t: 'note2' }],
         },
-        version: 1
+        version: 1,
       },
-      headers: { 'If-Match': etag }
+      headers: { 'If-Match': etag },
     });
 
     expect(updateResponse.status()).toBe(200);
@@ -51,7 +51,7 @@ test.describe('Maps API E2E', () => {
 
   test('should handle conflicts properly', async ({ request }) => {
     const createResponse = await request.post('/maps', {
-      data: { name: 'Conflict Test', state: { n: [], c: [] } }
+      data: { name: 'Conflict Test', state: { n: [], c: [] } },
     });
 
     const created = await createResponse.json();
@@ -61,25 +61,25 @@ test.describe('Maps API E2E', () => {
     await request.put(`/maps/${created.id}`, {
       data: {
         data: { n: [{ i: '1', p: [0, 0], c: 'First', cl: 'red' }], c: [] },
-        version: 1
+        version: 1,
       },
-      headers: { 'If-Match': staleEtag }
+      headers: { 'If-Match': staleEtag },
     });
 
     // Try to update with stale ETag - should get 409
     const conflictResponse = await request.put(`/maps/${created.id}`, {
       data: {
         data: { n: [{ i: '2', p: [0, 0], c: 'Second', cl: 'blue' }], c: [] },
-        version: 2
+        version: 2,
       },
-      headers: { 'If-Match': staleEtag }
+      headers: { 'If-Match': staleEtag },
     });
 
     expect(conflictResponse.status()).toBe(409);
   });
 
   test('should delete maps and handle not found properly', async ({
-    request
+    request,
   }) => {
     // Create a map to delete
     const createResponse = await request.post('/maps', {
@@ -87,9 +87,9 @@ test.describe('Maps API E2E', () => {
         name: 'To Be Deleted',
         state: {
           n: [{ i: 'temp1', p: [50, 50], c: 'Temporary note' }],
-          c: []
-        }
-      }
+          c: [],
+        },
+      },
     });
 
     expect(createResponse.status()).toBe(201);
@@ -106,7 +106,7 @@ test.describe('Maps API E2E', () => {
 
     const deleteResult = await deleteResponse.json();
     expect(deleteResult).toEqual({
-      message: `Map ${mapId} deleted successfully`
+      message: `Map ${mapId} deleted successfully`,
     });
 
     // Verify the map is gone - GET should return 404
@@ -115,7 +115,7 @@ test.describe('Maps API E2E', () => {
 
     // Try to delete non-existent map - should return 404
     const deleteNonExistentResponse = await request.delete(
-      '/maps/non-existent-id'
+      '/maps/non-existent-id',
     );
     expect(deleteNonExistentResponse.status()).toBe(404);
 
@@ -124,7 +124,7 @@ test.describe('Maps API E2E', () => {
       type: expect.any(String),
       title: expect.any(String),
       status: 404,
-      detail: expect.any(String)
+      detail: expect.any(String),
     });
   });
 
@@ -133,8 +133,8 @@ test.describe('Maps API E2E', () => {
     const createResponse = await request.post('/maps', {
       data: {
         name: 'Full Lifecycle Map',
-        state: { n: [], c: [] }
-      }
+        state: { n: [], c: [] },
+      },
     });
 
     const created = await createResponse.json();
@@ -149,9 +149,9 @@ test.describe('Maps API E2E', () => {
     const updateResponse = await request.put(`/maps/${mapId}`, {
       data: {
         data: { n: [{ i: 'final', p: [10, 10], c: 'Final note' }], c: [] },
-        version: 1
+        version: 1,
       },
-      headers: { 'If-Match': etag }
+      headers: { 'If-Match': etag },
     });
     expect(updateResponse.status()).toBe(200);
 

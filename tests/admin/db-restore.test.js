@@ -59,7 +59,7 @@ describe('Admin Command: db:restore', () => {
         verify: false,
         createSafety: false,
         verbose: true,
-        force: true
+        force: true,
       };
 
       const restore = new DatabaseRestore(options);
@@ -89,7 +89,7 @@ describe('Admin Command: db:restore', () => {
       expect(backups.length).toBeGreaterThan(0);
 
       // Verify backup info structure
-      backups.forEach(backup => {
+      backups.forEach((backup) => {
         expect(backup).toHaveProperty('filename');
         expect(backup).toHaveProperty('path');
         expect(backup).toHaveProperty('size');
@@ -111,7 +111,7 @@ describe('Admin Command: db:restore', () => {
       // Verify sorting (newer files first)
       for (let i = 1; i < backups.length; i++) {
         expect(backups[i - 1].modified.getTime()).toBeGreaterThanOrEqual(
-          backups[i].modified.getTime()
+          backups[i].modified.getTime(),
         );
       }
     });
@@ -138,7 +138,7 @@ describe('Admin Command: db:restore', () => {
       // Create some non-backup files
       await fs.writeFile(
         path.join(testEnv.backupDir, 'not-a-backup.txt'),
-        'test'
+        'test',
       );
       await fs.writeFile(path.join(testEnv.backupDir, 'random.db'), 'test');
 
@@ -146,9 +146,9 @@ describe('Admin Command: db:restore', () => {
       const backups = await restore.discoverBackups();
 
       // Should only find actual backup files
-      backups.forEach(backup => {
+      backups.forEach((backup) => {
         expect(backup.filename).toMatch(
-          /mindmeld-backup-\d{4}-\d{2}-\d{2}-\d+.*\.(sqlite|sqlite\.gz)$/
+          /mindmeld-backup-\d{4}-\d{2}-\d{2}-\d+.*\.(sqlite|sqlite\.gz)$/,
         );
       });
     });
@@ -175,7 +175,7 @@ describe('Admin Command: db:restore', () => {
 
       const restore = new DatabaseRestore({
         backupDir: testEnv.backupDir,
-        backupFile: specificBackup
+        backupFile: specificBackup,
       });
 
       const selectedBackup = await restore.selectBackupFile();
@@ -194,11 +194,11 @@ describe('Admin Command: db:restore', () => {
       }
 
       const backups = await testEnv.getBackupFiles();
-      const uncompressedBackup = backups.find(f => f.endsWith('.sqlite'));
+      const uncompressedBackup = backups.find((f) => f.endsWith('.sqlite'));
       const backupPath = path.join(testEnv.backupDir, uncompressedBackup);
 
       const restore = new DatabaseRestore({
-        safetyDir: testEnv.backupDir
+        safetyDir: testEnv.backupDir,
       });
       const isValid = await restore.validateBackupFile(backupPath);
 
@@ -211,13 +211,13 @@ describe('Admin Command: db:restore', () => {
       }
 
       const backups = await testEnv.getBackupFiles();
-      const compressedBackup = backups.find(f => f.endsWith('.sqlite.gz'));
+      const compressedBackup = backups.find((f) => f.endsWith('.sqlite.gz'));
 
       if (compressedBackup) {
         const backupPath = path.join(testEnv.backupDir, compressedBackup);
 
         const restore = new DatabaseRestore({
-          safetyDir: testEnv.backupDir
+          safetyDir: testEnv.backupDir,
         });
         const isValid = await restore.validateBackupFile(backupPath);
 
@@ -233,13 +233,13 @@ describe('Admin Command: db:restore', () => {
       // Create a corrupted backup file
       const corruptedPath = path.join(
         testEnv.backupDir,
-        'corrupted-backup.sqlite'
+        'corrupted-backup.sqlite',
       );
       await fs.writeFile(corruptedPath, 'This is not a valid SQLite file');
 
       try {
         const restore = new DatabaseRestore({
-          safetyDir: testEnv.backupDir
+          safetyDir: testEnv.backupDir,
         });
         const isValid = await restore.validateBackupFile(corruptedPath);
         expect(isValid).toBe(false);
@@ -260,14 +260,14 @@ describe('Admin Command: db:restore', () => {
 
       const nonExistentPath = path.join(
         testEnv.backupDir,
-        'does-not-exist.sqlite'
+        'does-not-exist.sqlite',
       );
 
       const restore = new DatabaseRestore({
-        safetyDir: testEnv.backupDir
+        safetyDir: testEnv.backupDir,
       });
       await expect(restore.validateBackupFile(nonExistentPath)).rejects.toThrow(
-        'Backup file not found'
+        'Backup file not found',
       );
     });
   });
@@ -285,7 +285,7 @@ describe('Admin Command: db:restore', () => {
 
       const restore = new DatabaseRestore({
         safetyDir: testEnv.backupDir,
-        createSafety: true
+        createSafety: true,
       });
 
       const safetyPath = await restore.createSafetyBackup();
@@ -295,10 +295,10 @@ describe('Admin Command: db:restore', () => {
         await fs
           .access(safetyPath)
           .then(() => true)
-          .catch(() => false)
+          .catch(() => false),
       ).toBe(true);
       expect(path.basename(safetyPath)).toMatch(
-        /^safety-backup-\d{4}-\d{2}-\d{2}-\d{6}\.sqlite$/
+        /^safety-backup-\d{4}-\d{2}-\d{2}-\d{6}\.sqlite$/,
       );
     });
 
@@ -322,7 +322,7 @@ describe('Admin Command: db:restore', () => {
 
       const restore = new DatabaseRestore({
         safetyDir: testEnv.backupDir,
-        createSafety: true
+        createSafety: true,
       });
 
       const safetyPath = await restore.createSafetyBackup();
@@ -357,7 +357,7 @@ describe('Admin Command: db:restore', () => {
 
       const restore = new DatabaseRestore({
         backupDir: testEnv.backupDir,
-        backupFile: backupFile
+        backupFile: backupFile,
       });
 
       const result = await restore.restoreDatabase();
@@ -384,7 +384,7 @@ describe('Admin Command: db:restore', () => {
 
       const restore = new DatabaseRestore({
         backupDir: testEnv.backupDir,
-        backupFile: compressedBackup
+        backupFile: compressedBackup,
       });
 
       const result = await restore.restoreDatabase();
@@ -404,7 +404,7 @@ describe('Admin Command: db:restore', () => {
       const restore = new DatabaseRestore({
         backupDir: testEnv.backupDir,
         backupFile: backupFile,
-        createSafety: true
+        createSafety: true,
       });
 
       const result = await restore.restoreDatabase();
@@ -414,7 +414,7 @@ describe('Admin Command: db:restore', () => {
         await fs
           .access(result.safetyBackup)
           .then(() => true)
-          .catch(() => false)
+          .catch(() => false),
       ).toBe(true);
     });
 
@@ -426,7 +426,7 @@ describe('Admin Command: db:restore', () => {
       const restore = new DatabaseRestore({
         backupDir: testEnv.backupDir,
         backupFile: backupFile,
-        verify: false
+        verify: false,
       });
 
       // Should not throw even if we had a corrupted backup
@@ -457,11 +457,11 @@ describe('Admin Command: db:restore', () => {
       const restore = new DatabaseRestore({
         backupFile: '/non/existent/backup.sqlite',
         createSafety: false, // Don't create safety backups for error condition tests
-        safetyDir: testEnv.backupDir
+        safetyDir: testEnv.backupDir,
       });
 
       await expect(restore.restoreDatabase()).rejects.toThrow(
-        'Backup file not found'
+        'Backup file not found',
       );
     });
 
@@ -476,11 +476,11 @@ describe('Admin Command: db:restore', () => {
 
       const restore = new DatabaseRestore({
         backupFile: corruptedPath,
-        verify: true
+        verify: true,
       });
 
       await expect(restore.restoreDatabase()).rejects.toThrow(
-        'Backup validation failed'
+        'Backup validation failed',
       );
     });
 
@@ -491,7 +491,7 @@ describe('Admin Command: db:restore', () => {
 
       const restore = new DatabaseRestore({
         backupFile: backupFile,
-        createSafety: true
+        createSafety: true,
       });
 
       // Mock restore failure after safety backup is created
@@ -513,7 +513,7 @@ describe('Admin Command: db:restore', () => {
 
       const restore = new DatabaseRestore({
         backupFile: backupFile,
-        createSafety: true
+        createSafety: true,
       });
 
       // Mock failure during restore
@@ -584,7 +584,7 @@ describe('Admin Command: db:restore', () => {
         '--no-safety',
         '--no-verify',
         '--force',
-        '--verbose'
+        '--verbose',
       ];
 
       // This would be called in main function
@@ -610,7 +610,7 @@ describe('Admin Command: db:restore', () => {
       const { DatabaseBackup } = require('../../scripts/admin/db-backup');
       const backup = new DatabaseBackup({
         output: testEnv.backupDir,
-        compress: false
+        compress: false,
       });
       const backupResult = await backup.createBackup();
 
@@ -619,7 +619,7 @@ describe('Admin Command: db:restore', () => {
 
       // Restore using new restore system
       const restore = new DatabaseRestore({
-        backupFile: backupResult.path
+        backupFile: backupResult.path,
       });
       const restoreResult = await restore.restoreDatabase();
 
@@ -650,7 +650,7 @@ describe('Admin Command: db:restore', () => {
 
       // Restore should work regardless of metadata file
       const restore = new DatabaseRestore({
-        backupFile: backupResult.path
+        backupFile: backupResult.path,
       });
 
       const restoreResult = await restore.restoreDatabase();
@@ -674,7 +674,7 @@ describe('Admin Command: db:restore', () => {
       const startTime = Date.now();
 
       const restore = new DatabaseRestore({
-        backupFile: backupResult.path
+        backupFile: backupResult.path,
       });
 
       await restore.restoreDatabase();
@@ -698,7 +698,7 @@ describe('Admin Command: db:restore', () => {
 
       // Restore empty database
       const restore = new DatabaseRestore({
-        backupFile: backupResult.path
+        backupFile: backupResult.path,
       });
 
       const result = await restore.restoreDatabase();
@@ -732,7 +732,7 @@ describe('Admin Command: db:restore', () => {
         const results = await Promise.allSettled(promises);
 
         // At least one should succeed
-        const successes = results.filter(r => r.status === 'fulfilled');
+        const successes = results.filter((r) => r.status === 'fulfilled');
         expect(successes.length).toBeGreaterThan(0);
       } catch (error) {
         // Concurrency handling is acceptable

@@ -9,7 +9,7 @@ jest.mock('better-sqlite3', () => {
     prepare: jest.fn(),
     close: jest.fn(),
     pragma: jest.fn(),
-    exec: jest.fn()
+    exec: jest.fn(),
   }));
 });
 jest.mock('../../src/modules/maps/db');
@@ -21,20 +21,20 @@ jest.mock('../../src/config/config', () => ({
     sqliteFile: '/test/path/database.db',
     nodeEnv: 'development',
     featureMapsApi: true,
-    featureMcp: true
-  }
+    featureMcp: true,
+  },
 }));
 jest.mock('fs', () => ({
   promises: {
     stat: jest.fn(),
     access: jest.fn(),
     writeFile: jest.fn(),
-    unlink: jest.fn()
+    unlink: jest.fn(),
   },
   constants: {
     R_OK: 4,
-    W_OK: 2
-  }
+    W_OK: 2,
+  },
 }));
 
 describe('ServerHealthCheck', () => {
@@ -54,13 +54,13 @@ describe('ServerHealthCheck', () => {
       sqliteFile: '/test/path/database.db',
       nodeEnv: 'development',
       featureMapsApi: true,
-      featureMcp: true
+      featureMcp: true,
     });
 
     // Mock console methods
     consoleSpy = {
       log: jest.spyOn(console, 'log').mockImplementation(() => {}),
-      error: jest.spyOn(console, 'error').mockImplementation(() => {})
+      error: jest.spyOn(console, 'error').mockImplementation(() => {}),
     };
 
     // Mock process.exit
@@ -69,7 +69,7 @@ describe('ServerHealthCheck', () => {
     // Setup mock database
     mockDb = {
       prepare: jest.fn(),
-      close: jest.fn()
+      close: jest.fn(),
     };
 
     openDatabase.mockReturnValue(mockDb);
@@ -78,7 +78,7 @@ describe('ServerHealthCheck', () => {
     healthCheck = new ServerHealthCheck({
       format: 'table',
       timeout: 1000,
-      verbose: false
+      verbose: false,
     });
   });
 
@@ -101,7 +101,7 @@ describe('ServerHealthCheck', () => {
       const hc = new ServerHealthCheck({
         format: 'json',
         timeout: 5000,
-        verbose: true
+        verbose: true,
       });
 
       expect(hc.options.format).toBe('json');
@@ -129,7 +129,7 @@ describe('ServerHealthCheck', () => {
       expect(results.checks).toHaveLength(8);
       expect(results.metadata.duration).toBeGreaterThan(0);
       expect(results.recommendations).toContain(
-        'System is healthy - continue regular monitoring'
+        'System is healthy - continue regular monitoring',
       );
     });
 
@@ -143,7 +143,7 @@ describe('ServerHealthCheck', () => {
 
       expect(results.overall).toBe('UNHEALTHY');
       const dbCheck = results.checks.find(
-        check => check.name === 'Database Connection'
+        (check) => check.name === 'Database Connection',
       );
       expect(dbCheck.status).toBe('FAILED');
       expect(dbCheck.message).toContain('Database connection failed');
@@ -158,14 +158,14 @@ describe('ServerHealthCheck', () => {
         rss: 600 * 1024 * 1024, // 600 MB (above warning threshold)
         heapUsed: 300 * 1024 * 1024,
         heapTotal: 400 * 1024 * 1024,
-        external: 50 * 1024 * 1024
+        external: 50 * 1024 * 1024,
       });
 
       const results = await healthCheck.runHealthCheck();
 
       expect(results.overall).toBe('WARNING');
       const memoryCheck = results.checks.find(
-        check => check.name === 'Memory Usage'
+        (check) => check.name === 'Memory Usage',
       );
       expect(memoryCheck.status).toBe('WARNING');
       expect(memoryCheck.warning).toContain('Elevated memory usage');
@@ -194,13 +194,13 @@ describe('ServerHealthCheck', () => {
       healthCheck.checkDatabaseConnection = jest
         .fn()
         .mockImplementation(
-          () => new Promise(resolve => setTimeout(resolve, 200))
+          () => new Promise((resolve) => setTimeout(resolve, 200)),
         );
 
       const results = await healthCheck.runHealthCheck();
 
       const dbCheck = results.checks.find(
-        check => check.name === 'Database Connection'
+        (check) => check.name === 'Database Connection',
       );
       expect(dbCheck.status).toBe('FAILED');
       expect(dbCheck.error).toContain('timed out');
@@ -211,7 +211,7 @@ describe('ServerHealthCheck', () => {
     describe('checkDatabaseConnection', () => {
       it('should pass when database connection works', async () => {
         mockDb.prepare.mockReturnValue({
-          get: jest.fn().mockReturnValue({ test: 1 })
+          get: jest.fn().mockReturnValue({ test: 1 }),
         });
 
         const result = await healthCheck.checkDatabaseConnection();
@@ -235,14 +235,14 @@ describe('ServerHealthCheck', () => {
 
       it('should fail when database query returns unexpected result', async () => {
         mockDb.prepare.mockReturnValue({
-          get: jest.fn().mockReturnValue({ test: 2 })
+          get: jest.fn().mockReturnValue({ test: 2 }),
         });
 
         const result = await healthCheck.checkDatabaseConnection();
 
         expect(result.status).toBe('FAILED');
         expect(result.message).toBe(
-          'Database query returned unexpected result'
+          'Database query returned unexpected result',
         );
       });
 
@@ -261,7 +261,7 @@ describe('ServerHealthCheck', () => {
     describe('checkDatabaseIntegrity', () => {
       it('should pass when integrity check returns ok', async () => {
         mockDb.prepare.mockReturnValue({
-          get: jest.fn().mockReturnValue({ integrity_check: 'ok' })
+          get: jest.fn().mockReturnValue({ integrity_check: 'ok' }),
         });
 
         const result = await healthCheck.checkDatabaseIntegrity();
@@ -274,7 +274,7 @@ describe('ServerHealthCheck', () => {
         mockDb.prepare.mockReturnValue({
           get: jest
             .fn()
-            .mockReturnValue({ integrity_check: 'corruption detected' })
+            .mockReturnValue({ integrity_check: 'corruption detected' }),
         });
 
         const result = await healthCheck.checkDatabaseIntegrity();
@@ -316,7 +316,7 @@ describe('ServerHealthCheck', () => {
 
         expect(result.status).toBe('FAILED');
         expect(result.message).toContain(
-          'File system access failed for Database file'
+          'File system access failed for Database file',
         );
       });
 
@@ -331,7 +331,7 @@ describe('ServerHealthCheck', () => {
 
         expect(result.status).toBe('FAILED');
         expect(result.message).toContain(
-          'File system access failed for Data directory'
+          'File system access failed for Data directory',
         );
       });
     });
@@ -352,7 +352,7 @@ describe('ServerHealthCheck', () => {
           rss: 100 * 1024 * 1024, // 100 MB
           heapUsed: 50 * 1024 * 1024,
           heapTotal: 75 * 1024 * 1024,
-          external: 10 * 1024 * 1024
+          external: 10 * 1024 * 1024,
         });
 
         const result = await healthCheck.checkMemoryUsage();
@@ -367,7 +367,7 @@ describe('ServerHealthCheck', () => {
           rss: 600 * 1024 * 1024, // 600 MB (above warning threshold)
           heapUsed: 300 * 1024 * 1024,
           heapTotal: 400 * 1024 * 1024,
-          external: 50 * 1024 * 1024
+          external: 50 * 1024 * 1024,
         });
 
         const result = await healthCheck.checkMemoryUsage();
@@ -382,7 +382,7 @@ describe('ServerHealthCheck', () => {
           rss: 1200 * 1024 * 1024, // 1200 MB (above critical threshold)
           heapUsed: 600 * 1024 * 1024,
           heapTotal: 800 * 1024 * 1024,
-          external: 100 * 1024 * 1024
+          external: 100 * 1024 * 1024,
         });
 
         const result = await healthCheck.checkMemoryUsage();
@@ -457,7 +457,7 @@ describe('ServerHealthCheck', () => {
     describe('checkDiskSpace', () => {
       it('should pass with adequate disk space', async () => {
         fs.stat.mockResolvedValue({
-          size: 10 * 1024 * 1024 // 10 MB database
+          size: 10 * 1024 * 1024, // 10 MB database
         });
         fs.writeFile.mockResolvedValue();
         fs.unlink.mockResolvedValue();
@@ -471,7 +471,7 @@ describe('ServerHealthCheck', () => {
 
       it('should warn with large database size', async () => {
         fs.stat.mockResolvedValue({
-          size: 150 * 1024 * 1024 // 150 MB database
+          size: 150 * 1024 * 1024, // 150 MB database
         });
         fs.writeFile.mockResolvedValue();
         fs.unlink.mockResolvedValue();
@@ -485,7 +485,7 @@ describe('ServerHealthCheck', () => {
 
       it('should warn when write test fails', async () => {
         fs.stat.mockResolvedValue({
-          size: 10 * 1024 * 1024
+          size: 10 * 1024 * 1024,
         });
         fs.writeFile.mockRejectedValue(new Error('No space left'));
 
@@ -493,7 +493,7 @@ describe('ServerHealthCheck', () => {
 
         expect(result.status).toBe('WARNING');
         expect(result.message).toBe(
-          'Disk space check inconclusive - write test failed'
+          'Disk space check inconclusive - write test failed',
         );
       });
 
@@ -568,7 +568,7 @@ describe('ServerHealthCheck', () => {
         healthCheck.results.checks = [
           { status: 'HEALTHY' },
           { status: 'HEALTHY' },
-          { status: 'HEALTHY' }
+          { status: 'HEALTHY' },
         ];
 
         healthCheck.calculateOverallStatus();
@@ -580,7 +580,7 @@ describe('ServerHealthCheck', () => {
         healthCheck.results.checks = [
           { status: 'HEALTHY' },
           { status: 'FAILED' },
-          { status: 'WARNING' }
+          { status: 'WARNING' },
         ];
 
         healthCheck.calculateOverallStatus();
@@ -592,7 +592,7 @@ describe('ServerHealthCheck', () => {
         healthCheck.results.checks = [
           { status: 'HEALTHY' },
           { status: 'WARNING' },
-          { status: 'HEALTHY' }
+          { status: 'HEALTHY' },
         ];
 
         healthCheck.calculateOverallStatus();
@@ -604,7 +604,7 @@ describe('ServerHealthCheck', () => {
         healthCheck.results.checks = [
           { status: 'HEALTHY' },
           { status: 'UNKNOWN' },
-          { status: 'HEALTHY' }
+          { status: 'HEALTHY' },
         ];
 
         healthCheck.calculateOverallStatus();
@@ -616,49 +616,49 @@ describe('ServerHealthCheck', () => {
     describe('generateRecommendations', () => {
       it('should recommend addressing failed checks', () => {
         healthCheck.results.checks = [
-          { status: 'FAILED', name: 'Database Connection' }
+          { status: 'FAILED', name: 'Database Connection' },
         ];
 
         healthCheck.generateRecommendations();
 
         expect(healthCheck.results.recommendations).toContain(
-          'Address failed health checks immediately'
+          'Address failed health checks immediately',
         );
       });
 
       it('should recommend reviewing warnings', () => {
         healthCheck.results.checks = [
-          { status: 'HEALTHY', warning: 'High memory usage' }
+          { status: 'HEALTHY', warning: 'High memory usage' },
         ];
 
         healthCheck.generateRecommendations();
 
         expect(healthCheck.results.recommendations).toContain(
-          'Review warning conditions and consider optimization'
+          'Review warning conditions and consider optimization',
         );
       });
 
       it('should recommend memory monitoring for memory warnings', () => {
         healthCheck.results.checks = [
-          { name: 'Memory Usage', status: 'WARNING' }
+          { name: 'Memory Usage', status: 'WARNING' },
         ];
 
         healthCheck.generateRecommendations();
 
         expect(healthCheck.results.recommendations).toContain(
-          'Monitor memory usage and consider process restart if high usage persists'
+          'Monitor memory usage and consider process restart if high usage persists',
         );
       });
 
       it('should recommend database cleanup for disk warnings', () => {
         healthCheck.results.checks = [
-          { name: 'Disk Space', status: 'HEALTHY', warning: 'Large database' }
+          { name: 'Disk Space', status: 'HEALTHY', warning: 'Large database' },
         ];
 
         healthCheck.generateRecommendations();
 
         expect(healthCheck.results.recommendations).toContain(
-          'Consider database maintenance and cleanup operations'
+          'Consider database maintenance and cleanup operations',
         );
       });
 
@@ -668,7 +668,7 @@ describe('ServerHealthCheck', () => {
         healthCheck.generateRecommendations();
 
         expect(healthCheck.results.recommendations).toContain(
-          'System is healthy - continue regular monitoring'
+          'System is healthy - continue regular monitoring',
         );
       });
     });
@@ -683,18 +683,18 @@ describe('ServerHealthCheck', () => {
             name: 'Database Connection',
             status: 'HEALTHY',
             duration: 45,
-            message: 'Connection successful'
+            message: 'Connection successful',
           },
           {
             name: 'Memory Usage',
             status: 'WARNING',
             duration: 23,
             message: 'Memory usage normal',
-            warning: 'Usage approaching limit'
-          }
+            warning: 'Usage approaching limit',
+          },
         ],
         recommendations: ['System is healthy'],
-        metadata: { duration: 150 }
+        metadata: { duration: 150 },
       };
     });
 
@@ -705,16 +705,16 @@ describe('ServerHealthCheck', () => {
         healthCheck.displayResults();
 
         expect(consoleSpy.log).toHaveBeenCalledWith(
-          'Deep Health Check Results'
+          'Deep Health Check Results',
         );
         expect(consoleSpy.log).toHaveBeenCalledWith(
-          expect.stringContaining('Overall Status:')
+          expect.stringContaining('Overall Status:'),
         );
         expect(consoleSpy.log).toHaveBeenCalledWith(
-          expect.stringContaining('Database Connection')
+          expect.stringContaining('Database Connection'),
         );
         expect(consoleSpy.log).toHaveBeenCalledWith(
-          expect.stringContaining('Total duration: 150ms')
+          expect.stringContaining('Total duration: 150ms'),
         );
       });
 
@@ -724,7 +724,7 @@ describe('ServerHealthCheck', () => {
         healthCheck.displayResults();
 
         expect(consoleSpy.log).toHaveBeenCalledWith(
-          JSON.stringify(healthCheck.results, null, 2)
+          JSON.stringify(healthCheck.results, null, 2),
         );
       });
 
@@ -734,7 +734,7 @@ describe('ServerHealthCheck', () => {
         healthCheck.displayResults();
 
         expect(consoleSpy.log).toHaveBeenCalledWith(
-          expect.stringContaining('⚠️  Usage approaching limit')
+          expect.stringContaining('⚠️  Usage approaching limit'),
         );
       });
 
@@ -768,18 +768,21 @@ describe('ServerHealthCheck', () => {
       healthCheck.checkDatabaseConnection = jest
         .fn()
         .mockImplementation(
-          () => new Promise(resolve => setTimeout(resolve, 100))
+          () => new Promise((resolve) => setTimeout(resolve, 100)),
         );
 
       // Run only the database check
       healthCheck.checks = [
-        { name: 'Database Connection', fn: healthCheck.checkDatabaseConnection }
+        {
+          name: 'Database Connection',
+          fn: healthCheck.checkDatabaseConnection,
+        },
       ];
 
       await healthCheck.executeChecks();
 
       const dbCheck = healthCheck.results.checks.find(
-        check => check.name === 'Database Connection'
+        (check) => check.name === 'Database Connection',
       );
       expect(dbCheck.status).toBe('FAILED');
       expect(dbCheck.error).toContain('timed out');
@@ -817,7 +820,7 @@ describe('ServerHealthCheck', () => {
       expect(results.checks.length).toBeGreaterThan(0);
 
       const memoryCheck = results.checks.find(
-        check => check.name === 'Memory Usage'
+        (check) => check.name === 'Memory Usage',
       );
       expect(memoryCheck.status).toBe('FAILED');
       expect(memoryCheck.error).toBe('Memory check failed');
@@ -853,7 +856,7 @@ describe('ServerHealthCheck', () => {
 
       expect(results.metadata.duration).toBeGreaterThanOrEqual(0);
       expect(results.metadata.duration).toBeLessThanOrEqual(
-        endTime - startTime + 50
+        endTime - startTime + 50,
       ); // Allow larger margin
     });
 
@@ -862,7 +865,7 @@ describe('ServerHealthCheck', () => {
 
       await healthCheck.runHealthCheck();
 
-      healthCheck.results.checks.forEach(check => {
+      healthCheck.results.checks.forEach((check) => {
         expect(check.duration).toBeGreaterThanOrEqual(0);
         expect(typeof check.duration).toBe('number');
       });
@@ -888,7 +891,7 @@ describe('ServerHealthCheck', () => {
       get: jest
         .fn()
         .mockReturnValueOnce({ test: 1 })
-        .mockReturnValueOnce({ integrity_check: 'ok' })
+        .mockReturnValueOnce({ integrity_check: 'ok' }),
     });
 
     // File system mocks
@@ -905,7 +908,7 @@ describe('ServerHealthCheck', () => {
       rss: 100 * 1024 * 1024,
       heapUsed: 50 * 1024 * 1024,
       heapTotal: 75 * 1024 * 1024,
-      external: 10 * 1024 * 1024
+      external: 10 * 1024 * 1024,
     });
 
     process.uptime = jest.fn().mockReturnValue(3661);

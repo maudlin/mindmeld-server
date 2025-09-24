@@ -10,7 +10,7 @@ const isDev = process.env.NODE_ENV !== 'production';
 
 const pinoOptions = {
   level: process.env.LOG_LEVEL || (isDev ? 'debug' : 'info'),
-  base: undefined // don't include pid, hostname by default
+  base: undefined, // don't include pid, hostname by default
 };
 
 if (isDev) {
@@ -19,8 +19,8 @@ if (isDev) {
     options: {
       colorize: true,
       translateTime: 'SYS:standard',
-      singleLine: true
-    }
+      singleLine: true,
+    },
   };
 }
 

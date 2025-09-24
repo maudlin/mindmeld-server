@@ -23,7 +23,7 @@ describe('Admin Command: debug:config', () => {
       process.env.CORS_ORIGIN = 'http://localhost:8080';
 
       const debugConfig = new DebugConfig({
-        format: 'table'
+        format: 'table',
       });
 
       const result = await debugConfig.getConfigurationDebug();
@@ -46,7 +46,7 @@ describe('Admin Command: debug:config', () => {
 
     it('formats output as JSON when requested', async () => {
       const debugConfig = new DebugConfig({
-        format: 'json'
+        format: 'json',
       });
 
       const result = await debugConfig.getConfigurationDebug();
@@ -63,7 +63,7 @@ describe('Admin Command: debug:config', () => {
       process.env.SECRET_KEY = 'should-be-sanitized';
 
       const debugConfig = new DebugConfig({
-        showEnv: true
+        showEnv: true,
       });
 
       const result = await debugConfig.getConfigurationDebug();
@@ -82,7 +82,7 @@ describe('Admin Command: debug:config', () => {
       process.env.CORS_ORIGIN = 'invalid-url';
 
       const debugConfig = new DebugConfig({
-        validate: true
+        validate: true,
       });
 
       const result = await debugConfig.getConfigurationDebug();
@@ -95,19 +95,19 @@ describe('Admin Command: debug:config', () => {
         expect.arrayContaining([
           expect.objectContaining({
             field: 'PORT',
-            message: expect.stringContaining('must be a number between')
+            message: expect.stringContaining('must be a number between'),
           }),
           expect.objectContaining({
             field: 'CORS_ORIGIN',
-            message: expect.stringContaining('must be a valid URL')
-          })
-        ])
+            message: expect.stringContaining('must be a valid URL'),
+          }),
+        ]),
       );
     });
 
     it('shows default values when requested', async () => {
       const debugConfig = new DebugConfig({
-        defaults: true
+        defaults: true,
       });
 
       const result = await debugConfig.getConfigurationDebug();
@@ -123,7 +123,7 @@ describe('Admin Command: debug:config', () => {
       delete process.env.SQLITE_FILE;
 
       const debugConfig = new DebugConfig({
-        validate: true
+        validate: true,
       });
 
       const result = await debugConfig.getConfigurationDebug();
@@ -134,9 +134,9 @@ describe('Admin Command: debug:config', () => {
         expect.arrayContaining([
           expect.objectContaining({
             field: 'SQLITE_FILE',
-            message: expect.stringContaining('using default')
-          })
-        ])
+            message: expect.stringContaining('using default'),
+          }),
+        ]),
       );
     });
   });
@@ -144,7 +144,7 @@ describe('Admin Command: debug:config', () => {
   describe('output formatting', () => {
     it('generates table format correctly', async () => {
       const debugConfig = new DebugConfig({
-        format: 'table'
+        format: 'table',
       });
 
       const output = await debugConfig.generateOutput();
@@ -158,7 +158,7 @@ describe('Admin Command: debug:config', () => {
 
     it('generates JSON format correctly', async () => {
       const debugConfig = new DebugConfig({
-        format: 'json'
+        format: 'json',
       });
 
       const output = await debugConfig.generateOutput();
@@ -180,7 +180,7 @@ describe('Admin Command: debug:config', () => {
       process.env.SQLITE_FILE = testDbPath;
 
       const debugConfig = new DebugConfig({
-        validate: true
+        validate: true,
       });
 
       const result = await debugConfig.getConfigurationDebug();
@@ -190,7 +190,7 @@ describe('Admin Command: debug:config', () => {
       expect(result.validation.filesystem.SQLITE_FILE).toMatchObject({
         exists: true,
         readable: true,
-        writable: true
+        writable: true,
       });
     });
 
@@ -199,7 +199,7 @@ describe('Admin Command: debug:config', () => {
       process.env.SQLITE_FILE = nonExistentPath;
 
       const debugConfig = new DebugConfig({
-        validate: true
+        validate: true,
       });
 
       const result = await debugConfig.getConfigurationDebug();
@@ -208,7 +208,7 @@ describe('Admin Command: debug:config', () => {
       expect(result.validation.filesystem.SQLITE_FILE).toMatchObject({
         exists: false,
         readable: false,
-        writable: false
+        writable: false,
       });
     });
   });
@@ -220,7 +220,7 @@ describe('Admin Command: debug:config', () => {
       Object.defineProperty(process, 'env', {
         get: () => {
           throw new Error('Environment access error');
-        }
+        },
       });
 
       const debugConfig = new DebugConfig();
@@ -233,14 +233,14 @@ describe('Admin Command: debug:config', () => {
 
       // Restore environment
       Object.defineProperty(process, 'env', {
-        value: originalEnv
+        value: originalEnv,
       });
     });
 
     it('validates required options', () => {
       expect(() => {
         new DebugConfig({
-          format: 'invalid-format'
+          format: 'invalid-format',
         });
       }).toThrow('Invalid format option');
     });
@@ -253,7 +253,7 @@ describe('Admin Command: debug:config', () => {
       const debugConfig = new DebugConfig({
         showEnv: true,
         validate: true,
-        defaults: true
+        defaults: true,
       });
 
       await debugConfig.getConfigurationDebug();

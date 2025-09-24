@@ -5,11 +5,11 @@ function stableStringify(value) {
     return JSON.stringify(value);
   }
   if (Array.isArray(value)) {
-    return `[${value.map(v => stableStringify(v)).join(',')}]`;
+    return `[${value.map((v) => stableStringify(v)).join(',')}]`;
   }
   const keys = Object.keys(value).sort();
   const entries = keys.map(
-    k => `${JSON.stringify(k)}:${stableStringify(value[k])}`
+    (k) => `${JSON.stringify(k)}:${stableStringify(value[k])}`,
   );
   return `{${entries.join(',')}}`;
 }
