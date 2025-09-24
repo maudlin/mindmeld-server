@@ -49,7 +49,14 @@ export default [
       // Possible Errors
       'no-console': 'off', // We use pino logger but allow console for dev
       'no-debugger': 'warn',
-      'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      'no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_'
+        }
+      ],
 
       // Best Practices
       curly: ['error', 'all'],
