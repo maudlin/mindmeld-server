@@ -19,26 +19,49 @@ This document outlines the comprehensive server administration commands and tool
 The MindMeld Server administration tools are implemented as npm scripts that provide:
 
 - **Database Operations**: Backup (✅ implemented), restore, maintenance, and health monitoring
-- **Server Monitoring**: Deep health diagnostics (✅ implemented), real-time metrics, logging
-- **Data Management**: Export, import, cleanup, and migration utilities (planned)
-- **Development Tools**: Debugging, testing, and profiling capabilities (planned)
+- **Server Monitoring**: Deep health diagnostics with real-time metrics and comprehensive logging
+- **Data Management**: Export, import, cleanup, and migration utilities
+- **Development Tools**: Debugging, testing, and profiling capabilities
 - **Documentation**: Interactive help and comprehensive guides
 
 ### Implementation Status
 
 ✅ **Currently Available:**
 
+**Database Management:**
+
 - `db:backup` - Complete database backup with compression and verification
 - `db:restore` - Database restore with safety backup and validation
+
+**Data Operations:**
+
+- `data:export` - Export maps data in JSON/CSV/SQL formats with filtering
+- `data:import` - Import data with conflict resolution and validation
+- `data:migrate` - Database schema migrations with version tracking
+- `data:backup` - Advanced backup/restore with compression & encryption
+
+**Server Monitoring:**
+
 - `server:health:deep` - Comprehensive health diagnostics and monitoring
+
+**Development & Debug:**
+
+- `debug:config` - Inspect application configuration and validation
+- `debug:endpoints` - Analyze and test API endpoints
+- `debug:mcp` - Debug Model Context Protocol integration
+- `debug:routes` - Examine Express.js routing structure
+- `debug:system` - System diagnostics and health checks
+
+**Testing:**
+
 - `test:admin` - Admin command test suite
 
-🔧 **In Development:**
+🔧 **Future Enhancements:**
 
-- Additional database maintenance commands
-- Data export/import utilities
-- Real-time monitoring and metrics
-- Debug and profiling tools
+- Automated backup scheduling (`db:backup:scheduled`)
+- Additional database maintenance commands (`db:vacuum`, `db:integrity`, `db:stats`)
+- Real-time monitoring dashboard
+- Performance profiling tools
 
 ### Command Naming Convention
 
