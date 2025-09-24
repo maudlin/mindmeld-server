@@ -357,6 +357,9 @@ class DataProviderInterface {
     }
 
     // Basic validation of meta structure
+    if (!data.meta || typeof data.meta !== 'object') {
+      return false;
+    }
     if (!data.meta.version || typeof data.meta.version !== 'number') {
       return false;
     }

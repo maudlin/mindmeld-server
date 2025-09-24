@@ -17,7 +17,7 @@
  */
 
 const LocalJSONProvider = require('./LocalJSONProvider');
-// const YjsProvider = require('./YjsProvider'); // Will be implemented in MS-63
+const YjsProvider = require('./YjsProvider');
 
 /**
  * Provider types
@@ -221,15 +221,20 @@ class DataProviderFactory {
 
     // Browser environment - check feature flags and capabilities
     if (EnvironmentDetector.isBrowser()) {
-      // Check feature flags
+      // Check YJS provider feature flag (works offline-first, WebSocket optional)
+      if (
+        this.config.featureFlags.enableYjsProvider ||
+        this.config.featureFlags.DATA_PROVIDER === 'yjs'
+      ) {
+        return PROVIDER_TYPES.YJS;
+      }
+
+      // Check legacy collaboration flags
       if (
         this.config.featureFlags.enableCollaboration &&
         this.config.featureFlags.enableYjsProvider
       ) {
-        // YJS provider requires WebSocket support
-        if (EnvironmentDetector.hasWebSocketSupport()) {
-          return PROVIDER_TYPES.YJS;
-        }
+        return PROVIDER_TYPES.YJS;
       }
 
       // Fall back to local provider if localStorage is available
@@ -289,27 +294,26 @@ class DataProviderFactory {
   }
 
   /**
-   * Create YjsProvider instance (placeholder for MS-63)
+   * Create YjsProvider instance
    *
    * @param {Object} options - Configuration options
    * @returns {YjsProvider} YJS provider instance
    */
-  createYjsProvider(_options = {}) {
-    // TODO: Implement in MS-63
-    throw new Error('YjsProvider not yet implemented - see MS-63');
+  createYjsProvider(options = {}) {
+    // YjsProvider works offline-first with IndexedDB, but WebSocket is optional for real-time sync
+    // We don't require WebSocket support as the provider can work entirely offline
 
-    /*
-    if (!EnvironmentDetector.hasWebSocketSupport()) {
-      throw new Error('YjsProvider requires WebSocket support');
-    }
-    
-    const _providerOptions = {
+    const providerOptions = {
       websocketUrl: this.config.websocketUrl,
+      storagePrefix: this.config.localStoragePrefix + 'yjs_',
+      offlineMode: options.offlineMode || false,
+      enableServerSync:
+        options.enableServerSync !== false &&
+        EnvironmentDetector.hasWebSocketSupport(),
       ...options
     };
-    
+
     return new YjsProvider(providerOptions);
-    */
   }
 
   /**
@@ -324,8 +328,9 @@ class DataProviderFactory {
         return EnvironmentDetector.hasLocalStorageSupport();
 
       case PROVIDER_TYPES.YJS:
+        // YJS provider works offline-first with IndexedDB, WebSocket is optional
         return (
-          EnvironmentDetector.hasWebSocketSupport() &&
+          EnvironmentDetector.isBrowser() &&
           this.config.featureFlags.enableYjsProvider !== false
         );
 

@@ -247,7 +247,7 @@ function checkPerformanceLimits(notes, connections) {
 
 /**
  * JSON ↔ Y.Doc Conversion Helpers
- * These will be used by the converters in MS-63
+ * Used by YjsProvider for full fidelity conversion between formats
  */
 
 /**
@@ -256,8 +256,16 @@ function checkPerformanceLimits(notes, connections) {
  * @param {Object} jsonData - MindMeld JSON format
  * @param {Y.Doc} ydoc - Target Y.Doc
  */
-
 function jsonToYDoc(jsonData, ydoc) {
+  // Import Y.js only when actually converting (for better error handling)
+  let Y;
+  try {
+    Y = require('yjs');
+  } catch (_error) {
+    // Fallback for environments without Y.js (e.g., server-side testing)
+    console.warn('Y.js not available, using simplified conversion');
+  }
+
   const { notes, connections, meta } = initializeYDoc(ydoc);
 
   // Clear existing data
@@ -267,7 +275,7 @@ function jsonToYDoc(jsonData, ydoc) {
   // Import notes
   if (jsonData.n && Array.isArray(jsonData.n)) {
     for (const noteData of jsonData.n) {
-      if (!noteData.i || !noteData.c) {
+      if (!noteData.i || typeof noteData.c !== 'string') {
         console.warn('Skipping invalid note:', noteData);
         continue;
       }
@@ -281,10 +289,15 @@ function jsonToYDoc(jsonData, ydoc) {
         color: noteData.color || 'default'
       };
 
-      // Create Y.Text for content (will be properly imported in MS-63)
-      // const yText = new Y.Text(noteData.c);
-      // For now, store as string until Y.js is properly integrated
-      noteObj.content = noteData.c;
+      // Create Y.Text for collaborative editing if Y.js is available
+      if (Y) {
+        const yText = new Y.Text();
+        yText.insert(0, noteData.c);
+        noteObj.content = yText;
+      } else {
+        // Fallback to string for testing environments
+        noteObj.content = noteData.c;
+      }
 
       notes.set(noteData.i, noteObj);
     }
@@ -333,7 +346,6 @@ function jsonToYDoc(jsonData, ydoc) {
  * @param {Y.Doc} ydoc - Source Y.Doc
  * @returns {Object} MindMeld JSON format
  */
-
 function yDocToJSON(ydoc) {
   const { notes, connections, meta } = initializeYDoc(ydoc);
 
@@ -345,9 +357,24 @@ function yDocToJSON(ydoc) {
 
   // Export notes
   for (const [noteId, noteObj] of notes.entries()) {
+    let contentStr = '';
+
+    // Handle Y.Text content or fallback string
+    if (noteObj.content) {
+      if (typeof noteObj.content === 'string') {
+        contentStr = noteObj.content;
+      } else if (noteObj.content.toString) {
+        // Y.Text has toString() method
+        contentStr = noteObj.content.toString();
+      } else {
+        // Fallback for unknown content types
+        contentStr = String(noteObj.content);
+      }
+    }
+
     const noteData = {
       i: noteId,
-      c: noteObj.content ? noteObj.content.toString() : '',
+      c: contentStr,
       p: noteObj.pos || [0, 0]
     };
 
