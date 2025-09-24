@@ -1,17 +1,19 @@
 # MindMeld Server Documentation
 
-This directory contains comprehensive documentation for the MindMeld Server.
+This directory contains comprehensive documentation for the MindMeld Server - a production-ready REST API with real-time collaboration, MCP integration, and flexible client architecture.
 
-## 📖 Documentation Index
+## 📚 Documentation Index
 
 ### Getting Started
 
-- **[MCP Client Integration](mcp-client-integration.md)** - MCP client integration for AI assistants
-- **[REST Client Integration](rest-client-integration.md)** - REST API client integration patterns
+- **[Client Integration Guide](client-integration.md)** - REST API and DataProvider client integration patterns
+- **[MCP Client Integration](mcp-client-integration.md)** - AI assistant integration via MCP protocol
+- **[DataProvider Reference](dataprovider-reference.md)** - Technical reference for client provider architecture
 
-### Developer Resources
+### AI Integration (MCP)
 
-- **[MCP Developer Guide](mcp-developer-guide.md)** - Complete integration reference
+- **[MCP User Guide](mcp-user-guide.md)** - User-friendly setup for AI assistants
+- **[MCP Developer Guide](mcp-developer-guide.md)** - Complete MCP integration reference
   - Node.js integration examples
   - Python integration examples
   - Claude Desktop configuration
@@ -24,13 +26,24 @@ This directory contains comprehensive documentation for the MindMeld Server.
 - **[Architecture Guide](architecture.md)** - System design and patterns
 - **[Developer Guide](developer-guide.md)** - Development workflows and testing
 - **[Testing Guide](testing-guide.md)** - Manual API testing workflows
+- **[Server Administration](server-admin.md)** - Database backup, health monitoring, and admin tools
+- **[Health Checks](health-checks.md)** - Health monitoring documentation
 
 ## 🏗️ Architecture Overview
 
 ```
-AI Assistant (Warp/Claude) → mcp-remote → MindMeld Server
+Client Applications → MindMeld Server
+    ├── REST API (/maps)
+    ├── WebSocket (YJS) (ws://localhost:3001/yjs/{mapId})
+    └── MCP Protocol (/mcp/sse)
+
+AI Assistant (Warp/Claude) → mcp-remote → MCP Endpoints
                                               ├── SSE Transport (/mcp/sse)
                                               └── HTTP JSON-RPC (/mcp/*)
+
+Browser Clients → DataProvider Architecture
+    ├── LocalJSONProvider (localStorage)
+    └── YjsProvider (real-time collaboration)
 ```
 
 ## 🚀 Quick Reference
@@ -38,7 +51,14 @@ AI Assistant (Warp/Claude) → mcp-remote → MindMeld Server
 ### Start Server
 
 ```bash
-npm start  # MCP enabled automatically with Maps API
+# Standard server (Maps API + MCP)
+npm start
+
+# With real-time collaboration
+SERVER_SYNC=on DATA_PROVIDER=yjs npm start
+
+# MCP disabled
+FEATURE_MCP=0 npm start
 ```
 
 ### Test Connection
@@ -69,10 +89,15 @@ docs/
 ├── README.md                    # This index file
 ├── mcp-client-integration.md   # MCP client integration for AI assistants
 ├── mcp-developer-guide.md      # Complete integration reference
-├── rest-client-integration.md  # REST API client integration patterns
+├── mcp-user-guide.md           # User-friendly MCP setup guide
+├── client-integration.md       # REST API and DataProvider client integration
+├── dataprovider-reference.md   # Technical reference for client providers
 ├── architecture.md             # System architecture
 ├── developer-guide.md          # Development workflows
-└── testing-guide.md            # Testing strategies
+├── testing-guide.md            # Testing strategies
+├── server-admin.md             # Server administration and monitoring
+├── health-checks.md            # Health monitoring documentation
+└── admin-testing.md            # Admin command testing
 ```
 
 ### Contributing to Documentation
