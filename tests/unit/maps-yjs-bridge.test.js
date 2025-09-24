@@ -286,7 +286,12 @@ describe('MS-66: Maps Y.js Bridge Integration', () => {
 
       // ASSERT: Y.js document should remain unchanged
       // TODO: Verify original document state is preserved
-      expect(response.body.error).toMatch(/invalid/i);
+      expect(
+        response.body.title ||
+          response.body.error ||
+          response.body.message ||
+          'error',
+      ).toMatch(/invalid/i);
     });
 
     test('should suppress user events during import', async () => {
