@@ -5,6 +5,13 @@
  * to support MindMeld's offline-first architecture with optional real-time
  * collaboration capabilities.
  *
+ * Key Design Principles:
+ * - Offline-first: Works without server connection
+ * - Idempotent writes: Same operation can be applied multiple times safely
+ * - No DOM assumptions: Pure data operations
+ * - Normalized change events: Consistent delta format
+ * - Markdown-only content: HTML disallowed for security
+ *
  * Implementations:
  * - LocalJSONProvider: Offline-first using localStorage (MS-62)
  * - YjsProvider: Real-time collaboration using Y.js and WebSockets (MS-63)
@@ -129,6 +136,126 @@ class DataProviderInterface {
    * @returns {boolean} True if online/connected, false if offline
    */
   isOnline() {
+    throw new Error('Not implemented');
+  }
+
+  // MS-61 Specific Methods - Granular Operations
+
+  /**
+   * Initialize provider for a specific map
+   *
+   * @param {string} mapId - Map identifier
+   * @param {Object} [options={}] - Initialization options
+   * @param {boolean} [options.serverSync=true] - Enable server synchronization
+   * @param {boolean} [options.offlineMode=false] - Start in offline-only mode
+   * @returns {Function|Array<Function>} Unsubscribe function(s)
+   */
+  async init(_mapId, _options = {}) {
+    throw new Error('Not implemented');
+  }
+
+  /**
+   * Subscribe to normalized change events
+   *
+   * @param {Function} onChange - Callback for change events
+   *   Receives: { type, payload } where:
+   *   - type: 'note'|'connection'|'meta'|'snapshot'
+   *   - payload: change delta or compact snapshot hash
+   * @returns {Function} Unsubscribe function
+   */
+  subscribeToChanges(_onChange) {
+    throw new Error('Not implemented');
+  }
+
+  /**
+   * Insert or update a note
+   *
+   * @param {Object} noteData - Note data
+   * @param {string} noteData.id - Unique note identifier
+   * @param {string} noteData.content - Markdown content (enforces NOTE_CONTENT_LIMIT)
+   * @param {Array<number>} noteData.pos - Position [x, y]
+   * @param {string} [noteData.color] - Note color
+   * @returns {Promise<void>}
+   */
+  async upsertNote(_noteData) {
+    throw new Error('Not implemented');
+  }
+
+  /**
+   * Delete a note by ID
+   *
+   * @param {string} noteId - Note identifier to delete
+   * @returns {Promise<boolean>} True if deleted, false if not found
+   */
+  async deleteNote(_noteId) {
+    throw new Error('Not implemented');
+  }
+
+  /**
+   * Insert or update a connection
+   *
+   * @param {Object} connectionData - Connection data
+   * @param {string} connectionData.id - Unique connection identifier
+   * @param {string} connectionData.from - Source note ID
+   * @param {string} connectionData.to - Target note ID
+   * @param {string} [connectionData.type='arrow'] - Connection type
+   * @returns {Promise<void>}
+   */
+  async upsertConnection(_connectionData) {
+    throw new Error('Not implemented');
+  }
+
+  /**
+   * Delete a connection by ID
+   *
+   * @param {string} connectionId - Connection identifier to delete
+   * @returns {Promise<boolean>} True if deleted, false if not found
+   */
+  async deleteConnection(_connectionId) {
+    throw new Error('Not implemented');
+  }
+
+  /**
+   * Update map metadata
+   *
+   * @param {Object} metaUpdates - Metadata updates
+   * @param {number} [metaUpdates.zoomLevel] - Canvas zoom level
+   * @param {string} [metaUpdates.canvasType] - Canvas type identifier
+   * @param {string} [metaUpdates.mapName] - Human-readable map name
+   * @returns {Promise<void>}
+   */
+  async setMeta(_metaUpdates) {
+    throw new Error('Not implemented');
+  }
+
+  /**
+   * Get current map data as JSON snapshot
+   *
+   * @returns {Promise<Object>} Map data { n: notes[], c: connections[], meta }
+   */
+  async getSnapshot() {
+    throw new Error('Not implemented');
+  }
+
+  /**
+   * Import JSON data, replacing current map contents
+   * Suppresses user events during import
+   *
+   * @param {Object} jsonData - Map data in MindMeld JSON format
+   * @param {Object} [options={}] - Import options
+   * @param {boolean} [options.merge=false] - Merge instead of replace
+   * @returns {Promise<void>}
+   */
+  async importJSON(_jsonData, _options = {}) {
+    throw new Error('Not implemented');
+  }
+
+  /**
+   * Export current map data as JSON for backup/interchange
+   *
+   * @returns {Promise<Object>} Map data in MindMeld JSON format
+   */
+  async exportJSON() {
     throw new Error('Not implemented');
   }
 
