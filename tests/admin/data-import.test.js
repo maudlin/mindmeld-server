@@ -4,7 +4,7 @@ const { AdminTestEnvironment } = require('../helpers/admin-test-environment');
 const {
   tempFileManager,
   cleanupStrayTestFiles,
-  cleanupOldTestBackups
+  cleanupOldTestBackups,
 } = require('../utils/temp-files');
 
 describe('Admin Command: data:import', () => {
@@ -37,7 +37,7 @@ describe('Admin Command: data:import', () => {
         export_info: {
           version: '1.0.0',
           format: 'json',
-          total_maps: 2
+          total_maps: 2,
         },
         maps: [
           {
@@ -45,16 +45,16 @@ describe('Admin Command: data:import', () => {
             name: 'Import Test 1',
             data: { nodes: [{ id: 1, label: 'Node 1' }] },
             created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
           },
           {
             id: 'test-id-2',
             name: 'Import Test 2',
             data: { nodes: [{ id: 2, label: 'Node 2' }] },
             created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }
-        ]
+            updated_at: new Date().toISOString(),
+          },
+        ],
       };
 
       const validation = await dataImport.validateImportFile(validImport);
@@ -66,7 +66,7 @@ describe('Admin Command: data:import', () => {
 
     it('rejects invalid import file format', async () => {
       const invalidImport = {
-        maps: 'not-an-array'
+        maps: 'not-an-array',
       };
 
       const validation = await dataImport.validateImportFile(invalidImport);
@@ -81,22 +81,22 @@ describe('Admin Command: data:import', () => {
         maps: [
           {
             // Missing required fields like id, name, data
-            created_at: new Date().toISOString()
-          }
-        ]
+            created_at: new Date().toISOString(),
+          },
+        ],
       };
 
       const validation = await dataImport.validateImportFile(incompleteImport);
 
       expect(validation).toHaveProperty('valid', false);
       expect(validation.errors).toContain(
-        'Map at index 0 missing required field: id'
+        'Map at index 0 missing required field: id',
       );
       expect(validation.errors).toContain(
-        'Map at index 0 missing required field: name'
+        'Map at index 0 missing required field: name',
       );
       expect(validation.errors).toContain(
-        'Map at index 0 missing required field: data'
+        'Map at index 0 missing required field: data',
       );
     });
 
@@ -108,16 +108,16 @@ describe('Admin Command: data:import', () => {
             id: 'test-id',
             name: 'Test Map',
             data: 'invalid-data-structure',
-            created_at: new Date().toISOString()
-          }
-        ]
+            created_at: new Date().toISOString(),
+          },
+        ],
       };
 
       const validation = await dataImport.validateImportFile(invalidDataImport);
 
       expect(validation).toHaveProperty('valid', false);
       expect(validation.errors).toContain(
-        'Map at index 0 has invalid data structure'
+        'Map at index 0 has invalid data structure',
       );
     });
   });
@@ -129,8 +129,8 @@ describe('Admin Command: data:import', () => {
         {
           id: 'existing-id',
           name: 'Existing Map',
-          data: { nodes: [{ id: 'existing', label: 'Existing Node' }] }
-        }
+          data: { nodes: [{ id: 'existing', label: 'Existing Node' }] },
+        },
       ]);
     });
 
@@ -143,9 +143,9 @@ describe('Admin Command: data:import', () => {
             name: 'Updated Map',
             data: { nodes: [{ id: 'updated', label: 'Updated Node' }] },
             created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }
-        ]
+            updated_at: new Date().toISOString(),
+          },
+        ],
       };
 
       const result = await dataImport.analyzeImport(importData);
@@ -165,20 +165,20 @@ describe('Admin Command: data:import', () => {
             name: 'Conflicting Map',
             data: { nodes: [] },
             created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
           },
           {
             id: 'new-id',
             name: 'New Map',
             data: { nodes: [] },
             created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }
-        ]
+            updated_at: new Date().toISOString(),
+          },
+        ],
       };
 
       const result = await dataImport.importData(importData, {
-        conflictResolution: 'skip'
+        conflictResolution: 'skip',
       });
 
       expect(result.imported).toBe(1);
@@ -195,13 +195,13 @@ describe('Admin Command: data:import', () => {
             name: 'Overwritten Map',
             data: { nodes: [{ id: 'new', label: 'New Node' }] },
             created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }
-        ]
+            updated_at: new Date().toISOString(),
+          },
+        ],
       };
 
       const result = await dataImport.importData(importData, {
-        conflictResolution: 'overwrite'
+        conflictResolution: 'overwrite',
       });
 
       expect(result.imported).toBe(1);
@@ -209,7 +209,7 @@ describe('Admin Command: data:import', () => {
 
       // Verify the data was actually overwritten
       const maps = await testEnv.getAllMaps();
-      const overwrittenMap = maps.find(m => m.id === 'existing-id');
+      const overwrittenMap = maps.find((m) => m.id === 'existing-id');
       expect(overwrittenMap.name).toBe('Overwritten Map');
     });
 
@@ -222,16 +222,16 @@ describe('Admin Command: data:import', () => {
             name: 'Merged Map',
             data: {
               nodes: [{ id: 'merged', label: 'Merged Node' }],
-              metadata: { merged: true }
+              metadata: { merged: true },
             },
             created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }
-        ]
+            updated_at: new Date().toISOString(),
+          },
+        ],
       };
 
       const result = await dataImport.importData(importData, {
-        conflictResolution: 'merge'
+        conflictResolution: 'merge',
       });
 
       expect(result.imported).toBe(1);
@@ -246,35 +246,35 @@ describe('Admin Command: data:import', () => {
         name: `Batch Map ${i}`,
         data: { nodes: [{ id: i, label: `Node ${i}` }] },
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       }));
 
       const importData = {
         export_info: { version: '1.0.0', format: 'json', total_maps: 50 },
-        maps: largeMaps
+        maps: largeMaps,
       };
 
       const progressUpdates = [];
 
       const result = await dataImport.importData(importData, {
         batchSize: 10,
-        onProgress: progress => {
+        onProgress: (progress) => {
           progressUpdates.push(progress);
-        }
+        },
       });
 
       expect(result.imported).toBe(50);
       expect(progressUpdates.length).toBeGreaterThanOrEqual(5); // At least 5 batches
       expect(progressUpdates[progressUpdates.length - 1]).toHaveProperty(
         'completed',
-        50
+        50,
       );
     });
 
     it('handles batch processing errors gracefully', async () => {
       // First create a map that will conflict with one we try to import
       await testEnv.createTestMaps([
-        { id: 'duplicate-id', name: 'Existing Map', data: { nodes: [] } }
+        { id: 'duplicate-id', name: 'Existing Map', data: { nodes: [] } },
       ]);
 
       const mixedMaps = [
@@ -283,32 +283,32 @@ describe('Admin Command: data:import', () => {
           name: 'Valid Map 1',
           data: { nodes: [] },
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         },
         {
           id: 'duplicate-id', // This will cause an insertion error due to duplicate key
           name: 'Conflicting Map',
           data: { nodes: [] },
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         },
         {
           id: 'valid-2',
           name: 'Valid Map 2',
           data: { nodes: [] },
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }
+          updated_at: new Date().toISOString(),
+        },
       ];
 
       const importData = {
         export_info: { version: '1.0.0', format: 'json', total_maps: 3 },
-        maps: mixedMaps
+        maps: mixedMaps,
       };
 
       const result = await dataImport.importData(importData, {
         conflictResolution: 'skip', // Skip conflicts, so no error handling for conflicts
-        continueOnError: true
+        continueOnError: true,
       });
 
       expect(result.imported).toBe(2); // valid-1 and valid-2
@@ -321,7 +321,7 @@ describe('Admin Command: data:import', () => {
     beforeEach(async () => {
       await testEnv.createTestMaps([
         { name: 'Existing 1', data: { nodes: [] } },
-        { name: 'Existing 2', data: { nodes: [] } }
+        { name: 'Existing 2', data: { nodes: [] } },
       ]);
     });
 
@@ -334,9 +334,9 @@ describe('Admin Command: data:import', () => {
             name: 'New Import',
             data: { nodes: [] },
             created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }
-        ]
+            updated_at: new Date().toISOString(),
+          },
+        ],
       };
 
       const result = await dataImport.importData(importData);
@@ -344,7 +344,7 @@ describe('Admin Command: data:import', () => {
       expect(result).toHaveProperty('backup_created', true);
       expect(result).toHaveProperty('backup_path');
       expect(result.backup_path).toMatch(
-        /pre-import-\d{4}-\d{2}-\d{2}-\d+Z?\.sqlite/
+        /pre-import-\d{4}-\d{2}-\d{2}-\d+Z?\.sqlite/,
       );
 
       // Register backup file for cleanup
@@ -360,13 +360,13 @@ describe('Admin Command: data:import', () => {
             name: 'No Backup Import',
             data: { nodes: [] },
             created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }
-        ]
+            updated_at: new Date().toISOString(),
+          },
+        ],
       };
 
       const result = await dataImport.importData(importData, {
-        createBackup: false
+        createBackup: false,
       });
 
       expect(result).toHaveProperty('backup_created', false);
@@ -378,7 +378,7 @@ describe('Admin Command: data:import', () => {
     it('supports rollback on import failure', async () => {
       // Create initial state
       await testEnv.createTestMaps([
-        { name: 'Original 1', data: { nodes: [] } }
+        { name: 'Original 1', data: { nodes: [] } },
       ]);
       const originalCount = await testEnv.getMapCount();
 
@@ -390,21 +390,21 @@ describe('Admin Command: data:import', () => {
             name: 'Valid Import',
             data: { nodes: [] },
             created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
           },
           {
             id: 'invalid-import',
             name: 'Invalid Import',
             data: 'invalid-structure', // This will cause an error
             created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }
-        ]
+            updated_at: new Date().toISOString(),
+          },
+        ],
       };
 
       try {
         await dataImport.importData(problematicImport, {
-          rollbackOnError: true
+          rollbackOnError: true,
         });
       } catch (error) {
         // Import should fail and rollback
@@ -420,7 +420,7 @@ describe('Admin Command: data:import', () => {
       // Create initial data
       await testEnv.createTestMaps([
         { name: 'Initial Map 1', data: { nodes: [] } },
-        { name: 'Initial Map 2', data: { nodes: [] } }
+        { name: 'Initial Map 2', data: { nodes: [] } },
       ]);
 
       const initialCount = await testEnv.getMapCount();
@@ -432,7 +432,7 @@ describe('Admin Command: data:import', () => {
 
       // Modify database after backup
       await testEnv.createTestMaps([
-        { name: 'Added After Backup', data: { nodes: [] } }
+        { name: 'Added After Backup', data: { nodes: [] } },
       ]);
       const modifiedCount = await testEnv.getMapCount();
       expect(modifiedCount).toBe(3); // Verify we now have 3 maps
@@ -446,7 +446,7 @@ describe('Admin Command: data:import', () => {
       // Reopen the test environment's database connection and ensure schema
       const {
         openDatabase,
-        ensureSchema
+        ensureSchema,
       } = require('../../src/modules/maps/db');
       testEnv.testDb = openDatabase(testEnv.testDbPath);
       ensureSchema(testEnv.testDb);
@@ -468,22 +468,22 @@ describe('Admin Command: data:import', () => {
             name: 'Dry Run Test 1',
             data: { nodes: [] },
             created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
           },
           {
             id: 'dry-run-2',
             name: 'Dry Run Test 2',
             data: { nodes: [] },
             created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }
-        ]
+            updated_at: new Date().toISOString(),
+          },
+        ],
       };
 
       const originalCount = await testEnv.getMapCount();
 
       const result = await dataImport.importData(importData, {
-        dryRun: true
+        dryRun: true,
       });
 
       expect(result).toHaveProperty('dry_run', true);
@@ -497,7 +497,7 @@ describe('Admin Command: data:import', () => {
 
     it('detects issues in dry run mode', async () => {
       await testEnv.createTestMaps([
-        { id: 'conflict-test', name: 'Existing', data: { nodes: [] } }
+        { id: 'conflict-test', name: 'Existing', data: { nodes: [] } },
       ]);
 
       const importData = {
@@ -508,13 +508,13 @@ describe('Admin Command: data:import', () => {
             name: 'Conflicting Import',
             data: { nodes: [] },
             created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }
-        ]
+            updated_at: new Date().toISOString(),
+          },
+        ],
       };
 
       const result = await dataImport.importData(importData, {
-        dryRun: true
+        dryRun: true,
       });
 
       expect(result).toHaveProperty('conflicts');
@@ -530,25 +530,25 @@ describe('Admin Command: data:import', () => {
         name: `Progress Map ${i}`,
         data: { nodes: [] },
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       }));
 
       const importData = {
         export_info: { version: '1.0.0', format: 'json', total_maps: 25 },
-        maps
+        maps,
       };
 
       const progressUpdates = [];
 
       await dataImport.importData(importData, {
         batchSize: 5,
-        onProgress: progress => {
+        onProgress: (progress) => {
           progressUpdates.push(progress);
-        }
+        },
       });
 
       expect(progressUpdates.length).toBeGreaterThan(0);
-      progressUpdates.forEach(update => {
+      progressUpdates.forEach((update) => {
         expect(update).toHaveProperty('completed');
         expect(update).toHaveProperty('total', 25);
         expect(update).toHaveProperty('percent');
@@ -566,17 +566,17 @@ describe('Admin Command: data:import', () => {
             name: 'Stats Test 1',
             data: { nodes: [] },
             created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }
-        ]
+            updated_at: new Date().toISOString(),
+          },
+        ],
       };
 
       const progressUpdates = [];
 
       await dataImport.importData(importData, {
-        onProgress: progress => {
+        onProgress: (progress) => {
           progressUpdates.push(progress);
-        }
+        },
       });
 
       const finalUpdate = progressUpdates[progressUpdates.length - 1];
@@ -596,9 +596,9 @@ describe('Admin Command: data:import', () => {
             name: 'File Import Test',
             data: { nodes: [] },
             created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }
-        ]
+            updated_at: new Date().toISOString(),
+          },
+        ],
       };
 
       const filePath = path.join(testEnv.tempDir, 'import.json');
@@ -619,9 +619,9 @@ describe('Admin Command: data:import', () => {
             name: 'Compressed Import',
             data: { nodes: [] },
             created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }
-        ]
+            updated_at: new Date().toISOString(),
+          },
+        ],
       };
 
       // Create a compressed file (simulated)
@@ -643,13 +643,13 @@ describe('Admin Command: data:import', () => {
           {
             id: 'error-test',
             // Missing required fields
-            created_at: 'invalid-date'
-          }
-        ]
+            created_at: 'invalid-date',
+          },
+        ],
       };
 
       await expect(dataImport.importData(invalidImport)).rejects.toThrow(
-        'Validation failed'
+        'Validation failed',
       );
     });
 
@@ -657,7 +657,7 @@ describe('Admin Command: data:import', () => {
       const nonExistentFile = '/nonexistent/import.json';
 
       await expect(dataImport.importFromFile(nonExistentFile)).rejects.toThrow(
-        'Import file not found'
+        'Import file not found',
       );
     });
 
@@ -670,8 +670,8 @@ describe('Admin Command: data:import', () => {
           name: `Recovery Test ${i}`,
           data: { nodes: [] },
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }))
+          updated_at: new Date().toISOString(),
+        })),
       };
 
       // Mock database to fail after first import
@@ -685,7 +685,7 @@ describe('Admin Command: data:import', () => {
 
       const result = await dataImport.importData(importData, {
         continueOnError: true,
-        rollbackOnError: false
+        rollbackOnError: false,
       });
 
       expect(result.imported).toBe(1);
@@ -698,7 +698,7 @@ describe('Admin Command: data:import', () => {
       // First, create and export some data
       await testEnv.createTestMaps([
         { name: 'Original 1', data: { nodes: [{ id: 1 }] } },
-        { name: 'Original 2', data: { nodes: [{ id: 2 }] } }
+        { name: 'Original 2', data: { nodes: [{ id: 2 }] } },
       ]);
 
       const dataExport = require('../../scripts/admin/data-export');
@@ -715,8 +715,8 @@ describe('Admin Command: data:import', () => {
       // Verify data integrity
       const maps = await testEnv.getAllMaps();
       expect(maps).toHaveLength(2);
-      expect(maps.map(m => m.name)).toContain('Original 1');
-      expect(maps.map(m => m.name)).toContain('Original 2');
+      expect(maps.map((m) => m.name)).toContain('Original 1');
+      expect(maps.map((m) => m.name)).toContain('Original 2');
     });
 
     it('maintains referential integrity during import', async () => {
@@ -728,22 +728,22 @@ describe('Admin Command: data:import', () => {
             name: 'Parent Map',
             data: {
               nodes: [{ id: 'parent-node', label: 'Parent' }],
-              connections: []
+              connections: [],
             },
             created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
           },
           {
             id: 'child-map',
             name: 'Child Map',
             data: {
               nodes: [{ id: 'child-node', label: 'Child' }],
-              parent_reference: 'parent-map'
+              parent_reference: 'parent-map',
             },
             created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }
-        ]
+            updated_at: new Date().toISOString(),
+          },
+        ],
       };
 
       const result = await dataImport.importData(importData);
@@ -752,8 +752,8 @@ describe('Admin Command: data:import', () => {
 
       // Verify both maps exist and relationships are intact
       const maps = await testEnv.getAllMaps();
-      const parentMap = maps.find(m => m.id === 'parent-map');
-      const childMap = maps.find(m => m.id === 'child-map');
+      const parentMap = maps.find((m) => m.id === 'parent-map');
+      const childMap = maps.find((m) => m.id === 'child-map');
 
       expect(parentMap).toBeDefined();
       expect(childMap).toBeDefined();

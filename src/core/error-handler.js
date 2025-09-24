@@ -52,7 +52,7 @@ function problemFromError(err, req) {
     title,
     status,
     detail,
-    instance: req.originalUrl
+    instance: req.originalUrl,
   };
 
   // Include validation details if provided (e.g., Zod mapping in future)
@@ -66,12 +66,12 @@ function problemFromError(err, req) {
   return problem;
 }
 
-function errorHandler(err, req, res, _next) {
+function errorHandler(err, req, res) {
   const problem = problemFromError(err, req);
 
   logger.error(
     { err, path: req.path, status: problem.status },
-    'Request error'
+    'Request error',
   );
 
   res

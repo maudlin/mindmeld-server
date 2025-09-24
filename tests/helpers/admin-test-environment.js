@@ -18,7 +18,7 @@ class AdminTestEnvironment {
   async setup() {
     // Create temporary directories
     this.tempDir = await fs.mkdtemp(
-      path.join(os.tmpdir(), 'mindmeld-admin-test-')
+      path.join(os.tmpdir(), 'mindmeld-admin-test-'),
     );
     this.backupDir = path.join(this.tempDir, 'backups');
     await fs.mkdir(this.backupDir, { recursive: true });
@@ -31,7 +31,7 @@ class AdminTestEnvironment {
     // Store original environment
     this.originalConfig = {
       SQLITE_FILE: process.env.SQLITE_FILE,
-      NODE_ENV: process.env.NODE_ENV
+      NODE_ENV: process.env.NODE_ENV,
     };
 
     // Set test environment
@@ -75,7 +75,7 @@ class AdminTestEnvironment {
       } catch (error) {
         if (error.code === 'EBUSY' || error.code === 'ENOTEMPTY') {
           // Wait a bit and retry
-          await new Promise(resolve => setTimeout(resolve, 100 * (i + 1)));
+          await new Promise((resolve) => setTimeout(resolve, 100 * (i + 1)));
           continue;
         }
         // Other errors should not be retried
@@ -111,8 +111,8 @@ class AdminTestEnvironment {
           updated_at: new Date().toISOString(),
           data: mapData.data || { nodes: [], connections: [] },
           size_bytes: JSON.stringify(
-            mapData.data || { nodes: [], connections: [] }
-          ).length
+            mapData.data || { nodes: [], connections: [] },
+          ).length,
         };
 
         stmt.run(
@@ -121,7 +121,7 @@ class AdminTestEnvironment {
           map.version,
           map.updated_at,
           JSON.stringify(map.data),
-          map.size_bytes
+          map.size_bytes,
         );
         maps.push(map);
       }
@@ -136,7 +136,7 @@ class AdminTestEnvironment {
           map.version,
           map.updated_at,
           JSON.stringify(map.data),
-          map.size_bytes
+          map.size_bytes,
         );
         maps.push(map);
       }
@@ -157,17 +157,17 @@ class AdminTestEnvironment {
         {
           id: `node-${index}-1`,
           position: [100 + index * 10, 50 + index * 10],
-          content: `Node ${index}-1`
+          content: `Node ${index}-1`,
         },
         {
           id: `node-${index}-2`,
           position: [200 + index * 10, 150 + index * 10],
-          content: `Node ${index}-2`
-        }
+          content: `Node ${index}-2`,
+        },
       ],
       connections: [
-        { from: `node-${index}-1`, to: `node-${index}-2`, type: 'arrow' }
-      ]
+        { from: `node-${index}-1`, to: `node-${index}-2`, type: 'arrow' },
+      ],
     };
 
     const state_json = JSON.stringify(data);
@@ -178,7 +178,7 @@ class AdminTestEnvironment {
       version: 1,
       updated_at: new Date().toISOString(),
       data,
-      size_bytes: Buffer.byteLength(state_json, 'utf8')
+      size_bytes: Buffer.byteLength(state_json, 'utf8'),
     };
   }
 
@@ -196,11 +196,11 @@ class AdminTestEnvironment {
   getAllMaps() {
     const maps = this.testDb.prepare('SELECT * FROM maps ORDER BY name').all();
     // Parse state_json to match the format returned by createTestMaps
-    return maps.map(map => {
+    return maps.map((map) => {
       const { state_json, ...mapWithoutStateJson } = map;
       return {
         ...mapWithoutStateJson,
-        data: JSON.parse(state_json)
+        data: JSON.parse(state_json),
       };
     });
   }
@@ -247,11 +247,11 @@ class AdminTestEnvironment {
     try {
       const maps = backupDb.prepare('SELECT * FROM maps ORDER BY name').all();
       // Parse state_json to match the format returned by createTestMaps
-      return maps.map(map => {
+      return maps.map((map) => {
         const { state_json, ...mapWithoutStateJson } = map;
         return {
           ...mapWithoutStateJson,
-          data: JSON.parse(state_json)
+          data: JSON.parse(state_json),
         };
       });
     } finally {
@@ -313,7 +313,7 @@ class AdminTestEnvironment {
    */
   async getBackupFiles() {
     const files = await fs.readdir(this.backupDir);
-    return files.filter(f => f.includes('mindmeld-backup'));
+    return files.filter((f) => f.includes('mindmeld-backup'));
   }
 
   /**
@@ -357,7 +357,7 @@ class AdminTestEnvironment {
    */
   parseBackupFilename(filename) {
     const match = filename.match(
-      /mindmeld-backup-(\\d{4}-\\d{2}-\\d{2}-\\d{6}\\d{3}\\d{3})\\.(sqlite|sqlite\\.gz)$/
+      /mindmeld-backup-(\\d{4}-\\d{2}-\\d{2}-\\d{6}\\d{3}\\d{3})\\.(sqlite|sqlite\\.gz)$/,
     );
     if (!match) {
       return null;
@@ -366,7 +366,7 @@ class AdminTestEnvironment {
     return {
       timestamp: match[1],
       compressed: match[2] === 'sqlite.gz',
-      fullPath: filename
+      fullPath: filename,
     };
   }
 
@@ -389,7 +389,7 @@ class AdminTestEnvironment {
       1,
       new Date().toISOString(),
       corruptedJson,
-      Buffer.byteLength(corruptedJson, 'utf8')
+      Buffer.byteLength(corruptedJson, 'utf8'),
     );
 
     return id;
@@ -417,7 +417,7 @@ class AdminTestEnvironment {
       1,
       new Date().toISOString(),
       '{"nodes":[],"connections":[]}',
-      25
+      25,
     );
     corruptedDb.close();
 
@@ -452,7 +452,7 @@ class AdminTestEnvironment {
           map.version,
           map.updated_at,
           JSON.stringify(map.data),
-          map.size_bytes
+          map.size_bytes,
         );
 
         if (i % 100 === 0) {
@@ -506,7 +506,7 @@ class AdminTestEnvironment {
       fileSize,
       mapCount,
       journalMode,
-      path: this.testDbPath
+      path: this.testDbPath,
     };
   }
 
@@ -518,7 +518,7 @@ class AdminTestEnvironment {
     const scenarios = [
       { maps: 3, name: 'small', compress: false },
       { maps: 5, name: 'medium', compress: true },
-      { maps: 0, name: 'empty', compress: false }
+      { maps: 0, name: 'empty', compress: false },
     ];
 
     for (let i = 0; i < scenarios.length; i++) {
@@ -541,14 +541,14 @@ class AdminTestEnvironment {
       const extension = scenario.compress ? '.sqlite.gz' : '.sqlite';
       const backupPath = path.join(
         this.backupDir,
-        `mindmeld-backup-${scenarioTime}-test-${scenario.name}${extension}`
+        `mindmeld-backup-${scenarioTime}-test-${scenario.name}${extension}`,
       );
 
       if (scenario.compress) {
         // Create uncompressed backup first
         const uncompressedPath = path.join(
           this.backupDir,
-          `temp-${scenarioTime}.sqlite`
+          `temp-${scenarioTime}.sqlite`,
         );
 
         try {
@@ -573,7 +573,7 @@ class AdminTestEnvironment {
           await fs.unlink(uncompressedPath);
         } catch (error) {
           throw new Error(
-            `Failed to create compressed backup: ${error.message}`
+            `Failed to create compressed backup: ${error.message}`,
           );
         }
       } else {
@@ -591,7 +591,7 @@ class AdminTestEnvironment {
       }
 
       // Small delay to ensure different timestamps
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
     }
 
     // Restore original test data

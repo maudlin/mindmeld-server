@@ -14,7 +14,7 @@ describe('MapsRepo', () => {
     // Create a unique test database file
     dbFile = path.join(
       testDir,
-      `maps-repo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.sqlite`
+      `maps-repo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.sqlite`,
     );
 
     // Ensure the test directory exists
@@ -39,7 +39,7 @@ describe('MapsRepo', () => {
         version: 1,
         updatedAt: new Date().toISOString(),
         stateJson: JSON.stringify({ n: [], c: [] }),
-        sizeBytes: 15
+        sizeBytes: 15,
       };
       repo.create(mapData);
 
@@ -75,7 +75,7 @@ describe('MapsRepo', () => {
         version: 1,
         updatedAt: new Date().toISOString(),
         stateJson: JSON.stringify({ n: [], c: [] }),
-        sizeBytes: 15
+        sizeBytes: 15,
       };
       repo.create(mapData);
 
@@ -96,7 +96,7 @@ describe('MapsRepo', () => {
         version: 1,
         updatedAt: new Date().toISOString(),
         stateJson: JSON.stringify({ n: [], c: [] }),
-        sizeBytes: 15
+        sizeBytes: 15,
       };
       const map2 = {
         id: 'map-2',
@@ -104,7 +104,7 @@ describe('MapsRepo', () => {
         version: 1,
         updatedAt: new Date().toISOString(),
         stateJson: JSON.stringify({ n: [], c: [] }),
-        sizeBytes: 15
+        sizeBytes: 15,
       };
       repo.create(map1);
       repo.create(map2);

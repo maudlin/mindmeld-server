@@ -13,7 +13,7 @@ describe('API Integration Tests', () => {
     app = createServer({
       port: 3002, // Different port for tests
       corsOrigin: 'http://localhost:3000',
-      jsonLimit: '1mb'
+      jsonLimit: '1mb',
     });
   });
 
@@ -24,7 +24,7 @@ describe('API Integration Tests', () => {
       expect(response.body).toMatchObject({
         status: 'ok',
         timestamp: expect.any(String),
-        uptime: expect.any(Number)
+        uptime: expect.any(Number),
       });
     });
   });
@@ -37,7 +37,7 @@ describe('API Integration Tests', () => {
         .expect(200);
 
       expect(response.headers['access-control-allow-origin']).toBe(
-        'http://localhost:3000'
+        'http://localhost:3000',
       );
       expect(response.headers['access-control-allow-credentials']).toBe('true');
     });
@@ -56,7 +56,7 @@ describe('API Integration Tests', () => {
         .expect(200);
 
       expect(response.headers['access-control-allow-origin']).toBe(
-        'http://127.0.0.1:3000'
+        'http://127.0.0.1:3000',
       );
     });
   });

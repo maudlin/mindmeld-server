@@ -6,5 +6,5 @@
 module.exports = {};
 
 throw new Error(
-  'STDIO MCP transport has been removed. Use SSE or HTTP transports instead.'
+  'STDIO MCP transport has been removed. Use SSE or HTTP transports instead.',
 );

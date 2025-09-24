@@ -25,7 +25,7 @@ function createMiddleware(config = {}) {
   middleware.push(
     pinoHttp({
       logger,
-      genReqId: req =>
+      genReqId: (req) =>
         req.headers['x-request-id'] ||
         `${Date.now()}-${Math.random().toString(36).slice(2)}`,
       // Ensure correct signature to avoid misclassification of log levels
@@ -37,8 +37,8 @@ function createMiddleware(config = {}) {
           return 'warn';
         }
         return 'info';
-      }
-    })
+      },
+    }),
   );
 
   // Security headers
@@ -54,15 +54,15 @@ function createMiddleware(config = {}) {
           eventBus.emit('request.large-payload', {
             size: buf.length,
             endpoint: req.path,
-            method: req.method
+            method: req.method,
           });
         }
-      }
-    })
+      },
+    }),
   );
 
   // CORS configuration - support localhost/127.0.0.1 variants and HTTPS/HTTP
-  const createCorsOrigin = configuredOrigin => {
+  const createCorsOrigin = (configuredOrigin) => {
     return (origin, callback) => {
       // Allow requests with no origin (mobile apps, Postman, etc.)
       if (!origin) {
@@ -119,7 +119,7 @@ function createMiddleware(config = {}) {
         'Content-Type',
         'Authorization',
         'If-Match',
-        'If-None-Match'
+        'If-None-Match',
       ],
       exposedHeaders: [
         // Allow client to read caching/concurrency and rate limit metadata
@@ -127,9 +127,9 @@ function createMiddleware(config = {}) {
         'RateLimit-Limit',
         'RateLimit-Remaining',
         'RateLimit-Reset',
-        'RateLimit-Policy'
-      ]
-    })
+        'RateLimit-Policy',
+      ],
+    }),
   );
 
   // Basic rate limiting for write endpoints
@@ -137,7 +137,7 @@ function createMiddleware(config = {}) {
     windowMs: 60 * 1000,
     max: 60,
     standardHeaders: true,
-    legacyHeaders: false
+    legacyHeaders: false,
   });
   middleware.push((req, res, next) => {
     const isWrite = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method);
@@ -150,7 +150,7 @@ function createMiddleware(config = {}) {
 
   logger.info(
     { corsOrigin, jsonLimit, middlewareCount: middleware.length },
-    'Middleware configured'
+    'Middleware configured',
   );
 
   return middleware;

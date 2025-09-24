@@ -38,7 +38,7 @@ function createMapsRouter({ sqliteFile }) {
       // Return with parsed data field for client convenience
       const response = {
         ...created,
-        data: payload
+        data: payload,
       };
       delete response.stateJson; // Remove internal field
       res.status(201).json(response);
@@ -71,7 +71,7 @@ function createMapsRouter({ sqliteFile }) {
       // Return with parsed data field for client convenience
       const response = {
         ...map,
-        data: payload
+        data: payload,
       };
       delete response.stateJson; // Remove internal field
       delete response.dataSource; // Remove internal field
@@ -112,7 +112,7 @@ function createMapsRouter({ sqliteFile }) {
       // Return with parsed data field for client convenience
       const response = {
         ...updated,
-        data: payload
+        data: payload,
       };
       delete response.stateJson; // Remove internal field
       res.json(response);
@@ -140,7 +140,7 @@ function createMapsRouter({ sqliteFile }) {
 
       const result = await service.importToYjs(id, jsonData, {
         suppressEvents: true, // Don't broadcast WebSocket events during import
-        createStaticRecord: true // Create metadata record in static storage
+        createStaticRecord: true, // Create metadata record in static storage
       });
 
       res.status(201).json(result);

@@ -14,11 +14,11 @@ class StateService {
 
   setupEventListeners() {
     // Log state operations for monitoring
-    eventBus.subscribe('state.saved', data => {
+    eventBus.subscribe('state.saved', (data) => {
       Logger.info('State operation completed', data.stats);
     });
 
-    eventBus.subscribe('state.error', data => {
+    eventBus.subscribe('state.error', (data) => {
       Logger.error(`State ${data.operation} failed:`, data.error);
     });
   }
@@ -48,12 +48,12 @@ class StateService {
     const validationResult = this.validateState(state);
     if (!validationResult.valid) {
       const error = new Error(
-        `Invalid state: ${validationResult.errors.join(', ')}`
+        `Invalid state: ${validationResult.errors.join(', ')}`,
       );
       eventBus.emit('state.error', {
         operation: 'save',
         error: error.message,
-        validation: validationResult.errors
+        validation: validationResult.errors,
       });
       throw error;
     }
@@ -61,7 +61,7 @@ class StateService {
     // Emit validation success
     eventBus.emit('state.validated', {
       notesCount: state.notes?.length || 0,
-      connectionsCount: state.connections?.length || 0
+      connectionsCount: state.connections?.length || 0,
     });
 
     return await this.storage.writeState(state);
@@ -117,7 +117,7 @@ class StateService {
 
     return {
       valid: errors.length === 0,
-      errors
+      errors,
     };
   }
 
@@ -132,7 +132,7 @@ class StateService {
         notesCount: state.notes?.length || 0,
         connectionsCount: state.connections?.length || 0,
         zoomLevel: state.zoomLevel || 5,
-        isEmpty: !state.notes?.length && !state.connections?.length
+        isEmpty: !state.notes?.length && !state.connections?.length,
       };
     } catch (error) {
       Logger.error('Error getting state stats:', error);

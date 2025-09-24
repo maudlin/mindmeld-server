@@ -117,7 +117,7 @@ class TempFileManager {
       } catch (error) {
         if (error.code !== 'ENOENT') {
           errors.push(
-            `Failed to delete directory ${dirPath}: ${error.message}`
+            `Failed to delete directory ${dirPath}: ${error.message}`,
           );
         }
       }
@@ -186,7 +186,7 @@ const cleanupStrayTestFiles = async () => {
       /^mindmeld-export-\d{4}-\d{2}-\d{2}-\d+Z?\.json$/,
       /^pre-import-\d{4}-\d{2}-\d{2}-\d+Z?\.sqlite$/,
       /^test-export-\d{4}-\d{2}-\d{2}-\d+Z?\.\w+$/,
-      /^test-backup-\d{4}-\d{2}-\d{2}-\d+Z?\.\w+$/
+      /^test-backup-\d{4}-\d{2}-\d{2}-\d+Z?\.\w+$/,
     ];
 
     const projectRoot = process.cwd();
@@ -196,7 +196,7 @@ const cleanupStrayTestFiles = async () => {
     for (const entry of entries) {
       if (entry.isFile()) {
         const filename = entry.name;
-        if (strayPatterns.some(pattern => pattern.test(filename))) {
+        if (strayPatterns.some((pattern) => pattern.test(filename))) {
           filesToClean.push(path.join(projectRoot, filename));
         }
       }
@@ -258,7 +258,7 @@ const cleanupOldTestBackups = async () => {
       try {
         await fs.unlink(filePath);
         console.log(
-          `Cleaned up test safety backup: ${path.basename(filePath)}`
+          `Cleaned up test safety backup: ${path.basename(filePath)}`,
         );
       } catch (error) {
         if (error.code !== 'ENOENT') {
@@ -285,5 +285,5 @@ module.exports = {
   setupTempFiles,
   cleanupTempFiles,
   cleanupStrayTestFiles,
-  cleanupOldTestBackups
+  cleanupOldTestBackups,
 };

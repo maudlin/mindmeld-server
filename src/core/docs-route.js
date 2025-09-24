@@ -10,7 +10,7 @@ function createDocsRouter() {
       process.cwd(),
       'design',
       'to-be',
-      'openapi.yaml'
+      'openapi.yaml',
     );
     res.sendFile(filePath);
   });
