@@ -10,6 +10,7 @@ class YjsService {
   constructor(options = {}) {
     this.options = options;
     this.logger = options.logger || console;
+    this.metrics = options.metrics || null;
 
     // Map of mapId -> Y.Doc instances
     this.docs = new Map();
@@ -20,11 +21,23 @@ class YjsService {
     // Document metadata
     this.docMetadata = new Map();
 
-    // Initialize persistence layer with database file
-    const dbFile =
-      options.dbFile ||
-      require('path').join(process.cwd(), 'data', 'yjs.sqlite');
-    this.persistence = new YjsPersistence(dbFile);
+    // Performance tracking
+    this.performanceData = {
+      startTime: Date.now(),
+      totalOperations: 0,
+      errorCount: 0,
+    };
+
+    // Initialize persistence layer if provided
+    if (options.persistence !== undefined) {
+      this.persistence = options.persistence;
+    } else {
+      // Default: create persistence with database file
+      const dbFile =
+        options.dbFile ||
+        require('path').join(process.cwd(), 'data', 'yjs.sqlite');
+      this.persistence = new YjsPersistence(dbFile);
+    }
   }
 
   /**
@@ -36,23 +49,67 @@ class YjsService {
       return this.docs.get(mapId);
     }
 
-    try {
-      // Try to restore from snapshot
-      const snapshot = await this.persistence.getSnapshot(mapId);
-      const doc = new Y.Doc();
+    const loadStartTime = Date.now();
+    let hasSnapshot = false;
+    let snapshotSize = 0;
 
-      if (snapshot && snapshot.snapshot) {
-        // Restore document state from snapshot
-        Y.applyUpdate(doc, new Uint8Array(snapshot.snapshot));
-        this.logger.debug('Restored Y.Doc from snapshot', {
-          mapId,
-          snapshotSize: snapshot.snapshot.length,
-        });
+    try {
+      const doc = new Y.Doc();
+      // Try to restore from snapshot if persistence is available
+      if (this.persistence) {
+        const snapshot = await this.persistence.getSnapshot(mapId);
+
+        if (snapshot && snapshot.snapshot) {
+          // Restore document state from snapshot
+          hasSnapshot = true;
+          snapshotSize = snapshot.snapshot.length;
+
+          Y.applyUpdate(doc, new Uint8Array(snapshot.snapshot));
+
+          const loadLatency = Date.now() - loadStartTime;
+
+          this.logger.info('Yjs snapshot loaded', {
+            mapId: mapId.substring(0, 8) + '...',
+            snapshotSize: snapshotSize,
+            loadLatency: loadLatency,
+            restorationSuccess: true,
+            documentState: {
+              documentSize: Y.encodeStateAsUpdate(doc).length,
+            },
+          });
+
+          if (this.metrics) {
+            this.metrics.recordSnapshotLoad(mapId, snapshotSize, loadLatency);
+          }
+        } else {
+          // Creating new room
+          const memoryUsage = this.getMemoryUsage();
+
+          this.logger.info('Yjs room created', {
+            mapId: mapId.substring(0, 8) + '...',
+            hasSnapshot: hasSnapshot,
+            totalRooms: this.docs.size + 1,
+            memoryUsage: memoryUsage,
+          });
+
+          if (this.metrics) {
+            this.metrics.recordRoomCreated(mapId);
+          }
+        }
       } else {
-        this.logger.debug('Created new Y.Doc', {
-          mapId,
-          docSize: this.docs.size + 1,
+        // No persistence - creating new room
+        const memoryUsage = this.getMemoryUsage();
+
+        this.logger.info('Yjs room created', {
+          mapId: mapId.substring(0, 8) + '...',
+          hasSnapshot: hasSnapshot,
+          totalRooms: this.docs.size + 1,
+          memoryUsage: memoryUsage,
         });
+
+        if (this.metrics) {
+          this.metrics.recordRoomCreated(mapId);
+        }
       }
 
       // Set up update handler for persistence
@@ -69,24 +126,42 @@ class YjsService {
 
       return doc;
     } catch (error) {
-      this.logger.error('Failed to load snapshot, creating new document', {
-        mapId,
+      const loadLatency = Date.now() - loadStartTime;
+
+      this.logger.error('Yjs snapshot load failed', {
+        mapId: mapId.substring(0, 8) + '...',
         error: error.message,
+        errorType: error.constructor.name,
+        fallbackAction: 'created_new_document',
+        loadLatency: loadLatency,
+        diagnostics: {
+          persistenceHealthy: !!this.persistence,
+          memoryUsage: this.getMemoryUsage(),
+        },
       });
 
       // Fallback: create new document
-      const doc = new Y.Doc();
-      doc.on('update', (update, origin) => {
-        this.handleDocumentUpdate(mapId, update, origin);
-      });
+      try {
+        const doc = new Y.Doc();
+        doc.on('update', (update, origin) => {
+          this.handleDocumentUpdate(mapId, update, origin);
+        });
 
-      this.docs.set(mapId, doc);
-      this.docMetadata.set(mapId, {
-        createdAt: new Date(),
-        lastUpdate: new Date(),
-      });
+        this.docs.set(mapId, doc);
+        this.docMetadata.set(mapId, {
+          createdAt: new Date(),
+          lastUpdate: new Date(),
+        });
 
-      return doc;
+        return doc;
+      } catch (fallbackError) {
+        this.logger.error('Failed to create Y.js document in fallback', {
+          mapId: mapId.substring(0, 8) + '...',
+          error: fallbackError.message,
+          errorType: fallbackError.constructor.name,
+        });
+        throw fallbackError;
+      }
     }
   }
 
@@ -108,17 +183,37 @@ class YjsService {
         !origin.startsWith('websocket-')
       ) {
         const doc = this.docs.get(mapId);
-        if (doc) {
+        if (doc && this.persistence) {
+          const saveStartTime = Date.now();
           const docState = Y.encodeStateAsUpdate(doc);
+
           await this.persistence.saveSnapshot(mapId, Buffer.from(docState));
 
-          this.logger.debug('Y.js document updated and persisted', {
-            mapId: mapId.substring(0, 8) + '...', // Truncate for security
-            updateSize: update.length,
-            documentSize: docState.length,
-            origin: origin ? 'local' : 'unknown',
-            activeClients: this.connections.get(mapId)?.size || 0,
+          const saveLatency = Date.now() - saveStartTime;
+
+          this.logger.debug('Yjs snapshot saved', {
+            mapId: mapId.substring(0, 8) + '...',
+            snapshotSize: docState.length,
+            saveLatency: saveLatency,
+            documentState: {
+              totalUpdates: this.performanceData.totalOperations,
+              documentSize: docState.length,
+            },
+            performance: {
+              memoryUsage: this.getMemoryUsage(),
+            },
           });
+
+          // Record metrics
+          if (this.metrics) {
+            this.metrics.recordSnapshotSave(
+              mapId,
+              docState.length,
+              saveLatency,
+            );
+          }
+
+          this.performanceData.totalOperations++;
         }
       } else {
         this.logger.debug('Skipping snapshot save for remote update', {
@@ -134,6 +229,19 @@ class YjsService {
         update,
         typeof origin === 'string' ? null : origin,
       );
+
+      // Create audit trail for document modifications
+      if (
+        origin &&
+        typeof origin === 'string' &&
+        origin.startsWith('websocket-')
+      ) {
+        this.logAuditEvent('document_modified', mapId, origin, {
+          updateSize: update.length,
+          documentVersion: this.performanceData.totalOperations,
+          clientCount: this.connections.get(mapId)?.size || 0,
+        });
+      }
     } catch (error) {
       this.logger.error('Failed to save document snapshot', {
         mapId,
@@ -159,6 +267,7 @@ class YjsService {
 
       const mapId = urlMatch[1];
       ws.id = `websocket-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      ws.connectTime = Date.now(); // Track connection time for session duration
 
       // Get or create document
       const doc = await this.getOrCreateDocument(mapId);
@@ -169,14 +278,29 @@ class YjsService {
       }
       this.connections.get(mapId).add(ws);
 
-      this.logger.info('WebSocket client connected', {
-        mapId: mapId.substring(0, 8) + '...', // Truncate for security
+      // Enhanced connection logging with detailed context
+      const userAgent =
+        request.headers['user-agent']?.substring(0, 100) || 'unknown';
+      const clientIP =
+        request.headers['x-forwarded-for'] ||
+        request.headers['x-real-ip'] ||
+        'unknown';
+      const origin = request.headers['origin'] || 'unknown';
+
+      this.logger.info('Yjs room connection established', {
+        mapId: mapId.substring(0, 8) + '...',
         clientId: ws.id.substring(0, 16),
-        totalClientsForDocument: this.connections.get(mapId).size,
-        totalDocuments: this.docs.size,
-        userAgent:
-          request.headers['user-agent']?.substring(0, 100) || 'unknown',
+        userAgent: userAgent,
+        origin: origin,
+        clientIP: clientIP,
+        totalClientsInRoom: this.connections.get(mapId).size,
+        totalActiveRooms: this.docs.size,
       });
+
+      // Record metrics
+      if (this.metrics) {
+        this.metrics.recordClientConnected(ws.id, mapId, userAgent);
+      }
 
       // Send initial document state to new client
       const initialState = Y.encodeStateAsUpdate(doc);
@@ -208,6 +332,9 @@ class YjsService {
 
       // Handle connection close
       ws.on('close', () => {
+        const connectTime = ws.connectTime || Date.now();
+        const sessionDuration = Date.now() - connectTime;
+
         const connections = this.connections.get(mapId);
         if (connections) {
           connections.delete(ws);
@@ -215,12 +342,19 @@ class YjsService {
             this.connections.delete(mapId);
           }
         }
-        this.logger.info('WebSocket client disconnected', {
-          mapId: mapId.substring(0, 8) + '...', // Truncate for security
-          remainingClientsForDocument: connections.size,
-          totalDocuments: this.docs.size,
-          documentCleanedUp: connections.size === 0,
+
+        this.logger.info('Yjs room connection closed', {
+          mapId: mapId.substring(0, 8) + '...',
+          clientId: ws.id?.substring(0, 16),
+          sessionDuration: Math.round(sessionDuration / 1000), // seconds
+          remainingClients: connections ? connections.size : 0,
+          roomCleanedUp: !connections || connections.size === 0,
         });
+
+        // Record metrics
+        if (this.metrics) {
+          this.metrics.recordClientDisconnected(ws.id);
+        }
       });
 
       // Handle connection errors
@@ -267,11 +401,28 @@ class YjsService {
         origin: ws.id,
       });
     } catch (error) {
-      this.logger.error('Failed to apply update to document', {
-        mapId,
-        updateSize: updateData.length,
+      // Enhanced error logging with diagnostics
+      this.logger.error('Yjs message processing error', {
+        mapId: mapId.substring(0, 8) + '...',
+        clientId: ws.id,
         error: error.message,
+        messageSize: updateData.length,
+        diagnostics: {
+          documentExists: this.docs.has(mapId),
+          clientConnected: ws.readyState === 1,
+        },
       });
+
+      // Record error metrics
+      if (this.metrics) {
+        this.metrics.recordWebSocketError('message', error.message, {
+          mapId: mapId,
+          clientId: ws.id,
+          messageSize: updateData.length,
+        });
+      }
+
+      this.performanceData.errorCount++;
     }
   }
 
@@ -422,6 +573,258 @@ class YjsService {
       },
       timestamp: new Date().toISOString(),
     };
+  }
+
+  /**
+   * Log REST bridge access events
+   */
+  logRestBridgeAccess(mapId, operation, clientInfo) {
+    this.logger.info('Yjs REST bridge access', {
+      mapId: mapId.substring(0, 8) + '...',
+      operation: operation,
+      clientInfo: clientInfo,
+      bridgeMode: 'rest_to_yjs',
+      documentExists: this.docs.has(mapId),
+      activeClients: this.connections.get(mapId)?.size || 0,
+    });
+  }
+
+  /**
+   * Log REST bridge conversion events
+   */
+  logRestBridgeConversion(mapId, conversionDetails) {
+    const conversionRate =
+      conversionDetails.dataSize / conversionDetails.conversionTime;
+
+    this.logger.debug('Yjs REST bridge conversion', {
+      mapId: mapId.substring(0, 8) + '...',
+      conversion: conversionDetails,
+      performance: {
+        conversionRate: Math.round(conversionRate * 100) / 100, // bytes per ms
+        memoryUsage: this.getMemoryUsage(),
+      },
+    });
+  }
+
+  /**
+   * Log WebSocket errors with diagnostic context
+   */
+  logWebSocketError(errorType, error, context) {
+    const diagnostics = {
+      activeConnections: Array.from(this.connections.values()).reduce(
+        (total, set) =>
+          total + Array.from(set).filter((ws) => ws.readyState === 1).length,
+        0,
+      ),
+      serverHealth: this.docs.size > 0 ? 'active' : 'idle',
+      memoryPressure: this.getMemoryUsage() > 500 * 1024 * 1024, // > 500MB
+    };
+
+    this.logger.error('Yjs WebSocket error', {
+      errorType: errorType,
+      error: error.message,
+      context: context,
+      diagnostics: diagnostics,
+    });
+
+    if (this.metrics) {
+      this.metrics.recordWebSocketError(errorType, error.message, context);
+    }
+  }
+
+  /**
+   * Log performance summaries
+   */
+  logPerformanceSummary() {
+    const uptime = Date.now() - this.performanceData.startTime;
+    const totalClients = Array.from(this.connections.values()).reduce(
+      (total, set) => total + set.size,
+      0,
+    );
+
+    const metrics = {
+      totalRooms: this.docs.size,
+      totalClients: totalClients,
+      averageRoomSize:
+        this.docs.size > 0
+          ? Math.round((totalClients / this.docs.size) * 100) / 100
+          : 0,
+      memoryUsage: this.getMemoryUsage(),
+    };
+
+    const performance = {
+      averageSnapshotLatency: 0, // Would be calculated from metrics
+      averageMessageProcessingTime: 0, // Would be calculated from metrics
+      errorRate:
+        this.performanceData.totalOperations > 0
+          ? this.performanceData.errorCount /
+            this.performanceData.totalOperations
+          : 0,
+    };
+
+    this.logger.info('Yjs performance summary', {
+      uptime: uptime,
+      metrics: metrics,
+      performance: performance,
+    });
+  }
+
+  /**
+   * Check resource usage and warn if thresholds exceeded
+   */
+  checkResourceUsage() {
+    const memUsage = process.memoryUsage();
+    const memoryThreshold = 500 * 1024 * 1024; // 500MB
+
+    if (memUsage.heapUsed > memoryThreshold) {
+      const recommendations = [
+        'Consider reducing document cache size',
+        'Review active connection count',
+        'Check for memory leaks in document handling',
+      ];
+
+      this.logger.warn('Yjs high resource usage detected', {
+        memoryUsage: {
+          rss: memUsage.rss,
+          heapUsed: memUsage.heapUsed,
+          percentage: Math.round(
+            (memUsage.heapUsed / memUsage.heapTotal) * 100,
+          ),
+        },
+        activeResources: {
+          rooms: this.docs.size,
+          clients: Array.from(this.connections.values()).reduce(
+            (total, set) => total + set.size,
+            0,
+          ),
+        },
+        recommendations: recommendations,
+      });
+    }
+  }
+
+  /**
+   * Create audit trail logs for significant events
+   */
+  logAuditEvent(event, mapId, clientId, metadata = {}) {
+    this.logger.info('Yjs audit event', {
+      event: event,
+      mapId: mapId.substring(0, 8) + '...',
+      clientId: clientId,
+      timestamp: new Date().toISOString(),
+      metadata: metadata,
+    });
+  }
+
+  /**
+   * Get memory usage in bytes
+   */
+  getMemoryUsage() {
+    return process.memoryUsage().heapUsed;
+  }
+
+  /**
+   * Delete a Y.js document and clean up all associated resources
+   * @param {string} mapId - The map ID to delete
+   * @returns {Promise<boolean>} - True if document was deleted, false if it didn't exist
+   */
+  async deleteDocument(mapId) {
+    try {
+      const hadDocument = this.docs.has(mapId);
+      const hadConnections = this.connections.has(mapId);
+
+      if (!hadDocument && !hadConnections) {
+        this.logger.debug(
+          'Document deletion requested for non-existent document',
+          {
+            mapId: mapId.substring(0, 8) + '...',
+          },
+        );
+        return false;
+      }
+
+      // Close all WebSocket connections for this document
+      if (hadConnections) {
+        const connections = this.connections.get(mapId);
+        const connectionCount = connections.size;
+
+        this.logger.info(
+          'Closing WebSocket connections for document deletion',
+          {
+            mapId: mapId.substring(0, 8) + '...',
+            connectionCount: connectionCount,
+          },
+        );
+
+        for (const ws of connections) {
+          if (ws.readyState === 1) {
+            // WebSocket.OPEN
+            ws.close(1000, 'Document deleted');
+          }
+        }
+
+        this.connections.delete(mapId);
+
+        // Record metrics
+        if (this.metrics) {
+          this.metrics.recordDocumentDeleted(mapId, connectionCount);
+        }
+      }
+
+      // Remove document from memory
+      if (hadDocument) {
+        const doc = this.docs.get(mapId);
+
+        // Destroy the Y.js document to free memory
+        if (doc && typeof doc.destroy === 'function') {
+          doc.destroy();
+        }
+
+        this.docs.delete(mapId);
+      }
+
+      // Remove metadata
+      this.docMetadata.delete(mapId);
+
+      // Delete persisted snapshot if persistence is available
+      if (this.persistence && this.persistence.deleteSnapshot) {
+        try {
+          await this.persistence.deleteSnapshot(mapId);
+
+          this.logger.info('Document and snapshot deleted', {
+            mapId: mapId.substring(0, 8) + '...',
+            hadDocument: hadDocument,
+            hadConnections: hadConnections,
+          });
+        } catch (error) {
+          this.logger.warn('Failed to delete document snapshot', {
+            mapId: mapId.substring(0, 8) + '...',
+            error: error.message,
+          });
+        }
+      } else {
+        this.logger.info('Document deleted from memory', {
+          mapId: mapId.substring(0, 8) + '...',
+          hadDocument: hadDocument,
+          hadConnections: hadConnections,
+        });
+      }
+
+      // Create audit trail
+      this.logAuditEvent('document_deleted', mapId, 'system', {
+        hadDocument: hadDocument,
+        hadConnections: hadConnections,
+        deletedAt: new Date().toISOString(),
+      });
+
+      return true;
+    } catch (error) {
+      this.logger.error('Failed to delete Y.js document', {
+        mapId: mapId.substring(0, 8) + '...',
+        error: error.message,
+      });
+      throw error;
+    }
   }
 
   /**

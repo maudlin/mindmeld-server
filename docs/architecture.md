@@ -162,6 +162,19 @@ WebSocket    Conflict Resolution
 YJS Server ← → SQLite (snapshots)
 ```
 
+### Y.js Document Lifecycle Management
+
+The YjsService manages document cleanup to prevent resource leaks:
+
+- **Document Creation**: Creates Y.js documents with persistence and connection tracking
+- **Document Deletion**: Comprehensive cleanup when maps are deleted:
+  - Closes all active WebSocket connections for the document
+  - Destroys the Y.js document instance to free memory
+  - Removes document metadata and connection tracking
+  - Deletes persisted snapshots from the database
+  - Creates audit trail entries for deletion events
+- **Resource Management**: Automatic cleanup prevents memory leaks and orphaned data
+
 ### Data Format Consistency
 
 All providers use the same JSON format:
