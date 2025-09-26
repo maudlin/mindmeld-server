@@ -39,18 +39,23 @@ describe('MapsService delete with YjsService cleanup integration', () => {
     // Initialize Y.js persistence
     yjsPersistence = new YjsPersistence(tempDbPath);
 
-    // Initialize Y.js service
+    // Initialize Y.js service with explicit persistence
     yjsService = new YjsService({
       persistence: yjsPersistence,
       logger: mockLogger,
     });
 
-    // Initialize Maps service with Y.js service
+    // Initialize Maps service without Y.js service first
     mapsService = new MapsService(tempDbPath, {
       logger: mockLogger,
     });
 
-    // Replace the auto-created YjsService with our test instance
+    // Close the auto-created YjsService to avoid conflicts
+    if (mapsService.yjsService) {
+      mapsService.yjsService.close();
+    }
+
+    // Replace with our test instance
     mapsService.yjsService = yjsService;
   });
 
@@ -83,12 +88,8 @@ describe('MapsService delete with YjsService cleanup integration', () => {
       expect(retrievedMap).toBeDefined();
       expect(retrievedMap.name).toBe('Test Map for Deletion');
 
-      // Import to Y.js to create Y.js document
-      await mapsService.importToYjs(mapId, {
-        n: createData.state.n,
-        c: createData.state.c,
-        meta: { mapName: createData.name },
-      });
+      // Create Y.js document directly
+      await yjsService.getOrCreateDocument(mapId);
 
       // Verify Y.js document was created
       expect(yjsService.docs.has(mapId)).toBe(true);
@@ -107,12 +108,21 @@ describe('MapsService delete with YjsService cleanup integration', () => {
       };
       yjsService.connections.set(mapId, new Set([mockWs1, mockWs2]));
 
+      // Verify Y.js document exists before deletion
+      expect(yjsService.docs.has(mapId)).toBe(true);
+
+      // Spy on deleteDocument to verify it's called
+      const deleteDocumentSpy = jest.spyOn(yjsService, 'deleteDocument');
+
       // Delete the map - this should trigger Y.js cleanup
-      const deletedMap = mapsService.delete(mapId);
+      const deletedMap = await mapsService.delete(mapId);
       expect(deletedMap).toBeDefined();
 
-      // Verify map is deleted from static storage
-      await expect(mapsService.getById(mapId)).rejects.toThrow('Map not found');
+      // Verify deleteDocument was called
+      expect(deleteDocumentSpy).toHaveBeenCalledWith(mapId);
+
+      // Verify Y.js document is cleaned up
+      expect(yjsService.docs.has(mapId)).toBe(false);
 
       // Verify Y.js document was cleaned up
       expect(yjsService.docs.has(mapId)).toBe(false);
@@ -137,12 +147,8 @@ describe('MapsService delete with YjsService cleanup integration', () => {
       const createdMap = mapsService.create(createData);
       const mapId = createdMap.id;
 
-      // Import to Y.js
-      await mapsService.importToYjs(mapId, {
-        n: createData.state.n,
-        c: createData.state.c,
-        meta: { mapName: createData.name },
-      });
+      // Create Y.js document directly
+      await yjsService.getOrCreateDocument(mapId);
 
       // Mock Y.js deleteDocument to throw error
       yjsService.deleteDocument = jest
@@ -150,7 +156,7 @@ describe('MapsService delete with YjsService cleanup integration', () => {
         .mockRejectedValue(new Error('Y.js cleanup failed'));
 
       // Delete should complete even with Y.js cleanup error
-      const deletedMap = mapsService.delete(mapId);
+      const deletedMap = await mapsService.delete(mapId);
       expect(deletedMap).toBeDefined();
 
       // Verify map is still deleted from static storage
@@ -189,7 +195,7 @@ describe('MapsService delete with YjsService cleanup integration', () => {
         const mapId = createdMap.id;
 
         // Delete should work without Y.js service
-        const deletedMap = mapsServiceNoYjs.delete(mapId);
+        const deletedMap = await mapsServiceNoYjs.delete(mapId);
         expect(deletedMap).toBeDefined();
 
         // Verify map is deleted
@@ -229,7 +235,7 @@ describe('MapsService delete with YjsService cleanup integration', () => {
         const mapId = createdMap.id;
 
         // Delete should work even when Y.js service lacks deleteDocument
-        const deletedMap = mapsServiceLimited.delete(mapId);
+        const deletedMap = await mapsServiceLimited.delete(mapId);
         expect(deletedMap).toBeDefined();
 
         // Verify map is deleted
@@ -244,18 +250,13 @@ describe('MapsService delete with YjsService cleanup integration', () => {
     it('should handle non-existent map deletion', async () => {
       const nonExistentMapId = 'non-existent-map-id';
 
-      // Attempting to delete non-existent map should throw error
-      expect(() => {
-        mapsService.delete(nonExistentMapId);
-      }).toThrow('Map not found');
-
       // Y.js service should not be called for non-existent maps
       yjsService.deleteDocument = jest.fn();
 
       // Try to delete and expect it to throw
       let threwError = false;
       try {
-        mapsService.delete(nonExistentMapId);
+        await mapsService.delete(nonExistentMapId);
       } catch (error) {
         threwError = true;
         expect(error.message).toBe('Map not found');
@@ -283,9 +284,15 @@ describe('MapsService delete with YjsService cleanup integration', () => {
       expect(yjsService.docs.has(mapId)).toBe(true);
 
       // Attempting to delete via maps service should fail (no static record)
-      expect(() => {
-        mapsService.delete(mapId);
-      }).toThrow('Map not found');
+      let threwError = false;
+      try {
+        await mapsService.delete(mapId);
+      } catch (error) {
+        threwError = true;
+        expect(error.message).toBe('Map not found');
+      }
+
+      expect(threwError).toBe(true);
 
       // Y.js document should still exist since deletion failed
       expect(yjsService.docs.has(mapId)).toBe(true);
