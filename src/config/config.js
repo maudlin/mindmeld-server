@@ -3,7 +3,7 @@ const { z } = require('zod');
 
 const EnvSchema = z.object({
   PORT: z.string().regex(/^\d+$/).default('3001'),
-  CORS_ORIGIN: z.string().default('http://localhost:8080'),
+  CORS_ORIGIN: z.string().default('http://127.0.0.1:8080'), // Updated default for better localhost compatibility
   JSON_LIMIT: z.string().default('50mb'),
   NODE_ENV: z
     .enum(['development', 'production', 'test'])
@@ -14,12 +14,12 @@ const EnvSchema = z.object({
   LOG_LEVEL: z.string().optional(),
   // Legacy state file (for MCP state resource)
   STATE_FILE: z.string().optional(),
-  // MCP (Model Context Protocol) - always uses integrated SSE + HTTP transports
-  FEATURE_MCP: z.string().optional(),
+  // MCP (Model Context Protocol) - enabled by default for AI assistant integration
+  FEATURE_MCP: z.string().default('true'),
   MCP_TOKEN: z.string().optional(),
-  // Yjs feature flags (MS-60/MS-68)
-  DATA_PROVIDER: z.enum(['json', 'yjs']).default('json'),
-  SERVER_SYNC: z.enum(['on', 'off']).default('off'),
+  // Yjs feature flags - enabled by default for real-time collaboration
+  DATA_PROVIDER: z.enum(['json', 'yjs']).default('yjs'),
+  SERVER_SYNC: z.enum(['on', 'off']).default('on'),
   VERIFY_YJS: z.string().optional(),
 });
 

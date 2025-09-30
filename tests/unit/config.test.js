@@ -26,25 +26,25 @@ describe('config', () => {
       const config = buildConfig();
 
       expect(config.port).toBe(3001);
-      expect(config.corsOrigin).toBe('http://localhost:8080');
+      expect(config.corsOrigin).toBe('http://127.0.0.1:8080'); // Updated default
       expect(config.jsonLimit).toBe('50mb');
       expect(config.nodeEnv).toBe('development');
-      expect(config.dataProvider).toBe('json');
-      expect(config.serverSync).toBe('off');
+      expect(config.dataProvider).toBe('yjs'); // Updated default for full collaboration
+      expect(config.serverSync).toBe('on'); // Updated default for real-time collaboration
     });
   });
 
   describe('Yjs feature flags (MS-60)', () => {
-    it('defaults DATA_PROVIDER to json', () => {
+    it('defaults DATA_PROVIDER to yjs for collaboration-first approach', () => {
       delete process.env.DATA_PROVIDER;
       const config = buildConfig();
-      expect(config.dataProvider).toBe('json');
+      expect(config.dataProvider).toBe('yjs');
     });
 
-    it('defaults SERVER_SYNC to off', () => {
+    it('defaults SERVER_SYNC to on for real-time collaboration', () => {
       delete process.env.SERVER_SYNC;
       const config = buildConfig();
-      expect(config.serverSync).toBe('off');
+      expect(config.serverSync).toBe('on');
     });
 
     it('accepts yjs as DATA_PROVIDER value', () => {

@@ -14,22 +14,22 @@ describe('Feature Flags Configuration', () => {
   });
 
   describe('Production Rollout Flags', () => {
-    test('should default DATA_PROVIDER to json for safe rollout', () => {
-      // Clean environment should use safe defaults
+    test('should default DATA_PROVIDER to yjs for collaboration-first approach', () => {
+      // Clean environment should use collaboration defaults
       delete process.env.DATA_PROVIDER;
 
       const testConfig = buildConfig();
 
-      expect(testConfig.dataProvider).toBe('json');
+      expect(testConfig.dataProvider).toBe('yjs');
     });
 
-    test('should default SERVER_SYNC to off for safe rollout', () => {
-      // Clean environment should use safe defaults
+    test('should default SERVER_SYNC to on for real-time collaboration', () => {
+      // Clean environment should use collaboration defaults
       delete process.env.SERVER_SYNC;
 
       const testConfig = buildConfig();
 
-      expect(testConfig.serverSync).toBe('off');
+      expect(testConfig.serverSync).toBe('on');
     });
 
     test('should allow DATA_PROVIDER to be set to yjs for enabled instances', () => {
@@ -183,9 +183,9 @@ describe('Feature Flags Configuration', () => {
 
       const testConfig = buildConfig();
 
-      // All flags should be in safe/conservative mode
-      expect(testConfig.dataProvider).toBe('json'); // Safe existing provider
-      expect(testConfig.serverSync).toBe('off'); // No real-time sync by default
+      // All flags should use collaboration-first defaults
+      expect(testConfig.dataProvider).toBe('yjs'); // Collaboration-first provider
+      expect(testConfig.serverSync).toBe('on'); // Real-time sync enabled by default
       expect(testConfig.verifyYjs).toBe(false); // No verification overhead
     });
 
@@ -208,9 +208,9 @@ describe('Feature Flags Configuration', () => {
 
       const testConfig = buildConfig();
 
-      // Development should still use safe defaults but be more permissive
-      expect(testConfig.dataProvider).toBe('json');
-      expect(testConfig.serverSync).toBe('off');
+      // Development should use collaboration defaults for full testing
+      expect(testConfig.dataProvider).toBe('yjs');
+      expect(testConfig.serverSync).toBe('on');
       expect(testConfig.verifyYjs).toBe(false);
     });
 
@@ -222,9 +222,9 @@ describe('Feature Flags Configuration', () => {
 
       const testConfig = buildConfig();
 
-      // Test environment should use predictable defaults
-      expect(testConfig.dataProvider).toBe('json');
-      expect(testConfig.serverSync).toBe('off');
+      // Test environment should use collaboration defaults for comprehensive testing
+      expect(testConfig.dataProvider).toBe('yjs');
+      expect(testConfig.serverSync).toBe('on');
       expect(testConfig.verifyYjs).toBe(false);
     });
   });
@@ -236,14 +236,14 @@ describe('Feature Flags Configuration', () => {
         dataProvider: {
           description: 'Controls which data provider to use for map storage',
           values: ['json', 'yjs'],
-          default: 'json',
-          rolloutSafe: true,
+          default: 'yjs',
+          collaborationFirst: true,
         },
         serverSync: {
           description: 'Enables real-time collaborative editing via WebSocket',
           values: ['on', 'off'],
-          default: 'off',
-          rolloutSafe: true,
+          default: 'on',
+          collaborationFirst: true,
         },
         verifyYjs: {
           description: 'Enables Yjs document verification for debugging',
@@ -254,14 +254,13 @@ describe('Feature Flags Configuration', () => {
       };
 
       // Metadata should be accurate
-      expect(flagMetadata.dataProvider.default).toBe('json');
-      expect(flagMetadata.serverSync.default).toBe('off');
+      expect(flagMetadata.dataProvider.default).toBe('yjs');
+      expect(flagMetadata.serverSync.default).toBe('on');
       expect(flagMetadata.verifyYjs.default).toBe(false);
 
-      // All flags should be marked as rollout safe
-      expect(flagMetadata.dataProvider.rolloutSafe).toBe(true);
-      expect(flagMetadata.serverSync.rolloutSafe).toBe(true);
-      expect(flagMetadata.verifyYjs.rolloutSafe).toBe(true);
+      // Main flags should be marked as collaboration-first
+      expect(flagMetadata.dataProvider.collaborationFirst).toBe(true);
+      expect(flagMetadata.serverSync.collaborationFirst).toBe(true);
     });
   });
 });
