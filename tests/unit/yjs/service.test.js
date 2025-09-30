@@ -69,9 +69,11 @@ describe('YjsService', () => {
       expect(doc).toBeInstanceOf(Y.Doc);
       expect(yjsService.docs.has(mapId)).toBe(true);
       expect(mockPersistence.getSnapshot).toHaveBeenCalledWith(mapId);
-      expect(mockLogger.debug).toHaveBeenCalledWith('Created new Y.Doc', {
-        mapId,
-        docSize: yjsService.docs.size,
+      expect(mockLogger.info).toHaveBeenCalledWith('Yjs room created', {
+        mapId: mapId.substring(0, 8) + '...',
+        hasSnapshot: false,
+        totalRooms: 1,
+        memoryUsage: expect.any(Number),
       });
     });
 
@@ -100,9 +102,14 @@ describe('YjsService', () => {
       const doc = await yjsService.getOrCreateDocument(mapId);
 
       expect(doc).toBeInstanceOf(Y.Doc);
-      expect(mockLogger.debug).toHaveBeenCalledWith(
-        'Restored Y.Doc from snapshot',
-        { mapId, snapshotSize: snapshotData.length },
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Yjs snapshot loaded',
+        expect.objectContaining({
+          mapId: mapId.substring(0, 8) + '...',
+          snapshotSize: snapshotData.length,
+          loadLatency: expect.any(Number),
+          restorationSuccess: true,
+        }),
       );
     });
 
@@ -115,8 +122,17 @@ describe('YjsService', () => {
 
       expect(doc).toBeInstanceOf(Y.Doc);
       expect(mockLogger.error).toHaveBeenCalledWith(
-        'Failed to load snapshot, creating new document',
-        { mapId, error: error.message },
+        'Yjs snapshot load failed',
+        expect.objectContaining({
+          mapId: mapId.substring(0, 8) + '...',
+          error: error.message,
+          errorType: 'Error',
+          fallbackAction: 'created_new_document',
+          diagnostics: expect.objectContaining({
+            persistenceHealthy: expect.any(Boolean),
+            memoryUsage: expect.any(Number),
+          }),
+        }),
       );
     });
 
@@ -164,14 +180,19 @@ describe('YjsService', () => {
         expect.any(Buffer),
       );
       expect(mockLogger.debug).toHaveBeenCalledWith(
-        'Y.js document updated and persisted',
-        {
+        'Yjs snapshot saved',
+        expect.objectContaining({
           mapId: mapId.substring(0, 8) + '...',
-          updateSize: updateData.length,
-          documentSize: expect.any(Number),
-          origin: 'unknown',
-          activeClients: 0,
-        },
+          snapshotSize: expect.any(Number),
+          saveLatency: expect.any(Number),
+          documentState: expect.objectContaining({
+            totalUpdates: expect.any(Number),
+            documentSize: expect.any(Number),
+          }),
+          performance: expect.objectContaining({
+            memoryUsage: expect.any(Number),
+          }),
+        }),
       );
     });
 
@@ -228,14 +249,16 @@ describe('YjsService', () => {
 
       expect(yjsService.docs.has(mapId)).toBe(true);
       expect(mockLogger.info).toHaveBeenCalledWith(
-        'WebSocket client connected',
-        {
+        'Yjs room connection established',
+        expect.objectContaining({
           mapId: mapId.substring(0, 8) + '...',
           clientId: expect.stringContaining('websocket-'),
-          totalClientsForDocument: 1,
-          totalDocuments: 1,
           userAgent: 'test-client',
-        },
+          origin: 'unknown',
+          clientIP: 'unknown',
+          totalClientsInRoom: 1,
+          totalActiveRooms: 1,
+        }),
       );
     });
 
@@ -278,13 +301,14 @@ describe('YjsService', () => {
       mockWs.emit('close');
 
       expect(mockLogger.info).toHaveBeenCalledWith(
-        'WebSocket client disconnected',
-        {
+        'Yjs room connection closed',
+        expect.objectContaining({
           mapId: mapId.substring(0, 8) + '...',
-          remainingClientsForDocument: 0,
-          totalDocuments: 1,
-          documentCleanedUp: true,
-        },
+          clientId: expect.stringContaining('websocket-'),
+          sessionDuration: expect.any(Number),
+          remainingClients: 0,
+          roomCleanedUp: true,
+        }),
       );
     });
 
@@ -370,8 +394,17 @@ describe('YjsService', () => {
       yjsService.applyUpdateToDocument(mapId, invalidData, mockWs);
 
       expect(mockLogger.error).toHaveBeenCalledWith(
-        'Failed to apply update to document',
-        expect.objectContaining({ mapId }),
+        'Yjs message processing error',
+        expect.objectContaining({
+          mapId: mapId.substring(0, 8) + '...',
+          clientId: mockWs.id,
+          error: expect.any(String),
+          messageSize: invalidData.length,
+          diagnostics: expect.objectContaining({
+            documentExists: true,
+            clientConnected: expect.any(Boolean),
+          }),
+        }),
       );
     });
 

@@ -216,8 +216,9 @@ class MapsService {
 
     // Also clean up any Y.js document for this map
     try {
-      // TODO: Add cleanup method to YjsService
-      // await this.yjsService.deleteDocument(id);
+      if (this.yjsService && this.yjsService.deleteDocument) {
+        await this.yjsService.deleteDocument(id);
+      }
     } catch (error) {
       console.warn(`Failed to cleanup Y.js document for ${id}:`, error.message);
     }
