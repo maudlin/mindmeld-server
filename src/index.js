@@ -108,6 +108,23 @@ async function startServer() {
     // Start listening
     const server = app.listen(CONFIG.port, () => {
       Logger.info({ port: CONFIG.port }, '🚀 MindMeld Server running');
+
+      // Initialize WebSocket if function exists (when SERVER_SYNC=on)
+      if (typeof app.setupWebSocket === 'function') {
+        app.setupWebSocket(server);
+
+        // Setup API routes after WebSocket initialization
+        if (typeof app.setupApiRoutes === 'function') {
+          app.setupApiRoutes();
+        }
+
+        // Setup final handlers (404 and error handlers) after all routes are registered
+        if (typeof app.setupFinalHandlers === 'function') {
+          app.setupFinalHandlers();
+        }
+      }
+      // Note: For non-WebSocket mode, setupFinalHandlers is called automatically in server-factory.js
+
       Logger.info({ health: '/health', ready: '/ready' }, 'Probes available');
       Logger.info({ corsOrigin: CONFIG.corsOrigin }, '🌐 CORS origin');
       Logger.info({ maps: '/maps' }, '🗺️ Maps API enabled');
