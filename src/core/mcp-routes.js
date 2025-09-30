@@ -631,21 +631,6 @@ function createMcpRoutes(apiServices) {
     }
   });
 
-  // Health check specific to MCP endpoints
-  router.get('/health', (req, res) => {
-    res.json({
-      status: 'ok',
-      service: 'mindmeld-mcp-endpoints',
-      timestamp: new Date().toISOString(),
-      version: '0.1.0',
-      capabilities: ['resources', 'tools'],
-      auth: {
-        enabled: false, // Will be true when OAuth is implemented
-        methods: [], // Will include ['oauth', 'jwt'] when implemented
-      },
-    });
-  });
-
   return router;
 }
 
