@@ -8,13 +8,23 @@ const createServer = require('../../src/factories/server-factory');
 
 describe('API Integration Tests', () => {
   let app;
+  let originalEnv;
 
   beforeEach(() => {
+    // Save original env and disable WebSocket features for simpler API testing
+    originalEnv = { ...process.env };
+    process.env.SERVER_SYNC = 'off';
+
     app = createServer({
       port: 3002, // Different port for tests
       corsOrigin: 'http://localhost:3000',
       jsonLimit: '1mb',
     });
+  });
+
+  afterEach(() => {
+    // Restore original environment
+    process.env = originalEnv;
   });
 
   describe('GET /health', () => {
