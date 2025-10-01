@@ -7,8 +7,9 @@ A comprehensive guide for integrating client applications with MindMeld, coverin
 MindMeld provides flexible client integration options:
 
 - **REST API**: Direct HTTP integration for any client
+- **WebSocket Client (Server Bundle)**: Real-time collaboration for zero-dependency clients
 - **LocalJSONProvider**: Offline-first browser storage with localStorage
-- **YjsProvider**: Real-time collaborative editing (coming in MS-63)
+- **YjsProvider**: Real-time collaborative editing with npm packages
 - **DataProviderFactory**: Smart provider selection and switching
 - **Hydration Suppression**: SSR-safe client initialization
 
@@ -26,6 +27,89 @@ npm start  # Server runs on http://localhost:3001
 1. **REST API Only**: Direct HTTP calls (any language/framework)
 2. **LocalJSONProvider**: Browser JavaScript with offline support
 3. **DataProviderFactory**: Smart switching between providers
+
+---
+
+# WebSocket Integration (Zero Dependencies)
+
+## For Clients Without npm/Build Tools
+
+If you're writing vanilla JavaScript without npm dependencies or a build step, you can upgrade from REST polling to real-time WebSocket collaboration by loading a pre-built bundle from the server.
+
+### Quick Start
+
+```html
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>MindMeld App</title>
+  </head>
+  <body>
+    <!-- Load Yjs client from server (95KB, cached) -->
+    <script src="http://localhost:3001/client/mindmeld-yjs-client.js"></script>
+
+    <script>
+      // Create WebSocket client
+      const wsClient = new MindMeldWebSocketClient(
+        'http://localhost:3001',
+        'my-map-id',
+      );
+
+      // Wait for initial sync
+      wsClient.whenSynced().then(() => {
+        console.log('✅ Synced!');
+        renderMap();
+      });
+
+      // Listen for real-time updates
+      wsClient.onNotesChange(() => {
+        console.log('📝 Notes updated by another user');
+        renderMap();
+      });
+
+      // Make changes (automatically synced!)
+      function addNote() {
+        const noteMap = new window.Y.Map();
+        noteMap.set('id', 'note-' + Date.now());
+        noteMap.set('pos', [100, 100]);
+        noteMap.set('color', 'yellow');
+
+        const content = new window.Y.Text();
+        content.insert(0, 'My note');
+        noteMap.set('content', content);
+
+        wsClient.notes.set(noteMap.get('id'), noteMap);
+      }
+
+      function renderMap() {
+        const json = wsClient.toJSON();
+        // Your rendering code...
+      }
+    </script>
+  </body>
+</html>
+```
+
+### Key Benefits
+
+- ✅ **Zero npm dependencies** - Bundle served by your trusted server
+- ✅ **Real-time updates** - <100ms latency vs 5+ seconds with REST polling
+- ✅ **CRDT conflict resolution** - Automatic merging of concurrent edits
+- ✅ **Collaborative text editing** - Multiple users editing same note
+- ✅ **Standard Web APIs** - Just load via `<script>` tag
+- ✅ **Small bundle** - 95KB minified (cached by browser)
+
+### API Reference
+
+See [zero-dependency-client.md](./zero-dependency-client.md) for complete API documentation and examples.
+
+### Philosophy
+
+This approach respects zero-dependency architecture by treating the server as your dependency source:
+
+- You already trust the server for your REST API
+- Now the server also provides the real-time client library
+- No `package.json`, no npm, no build step required
 
 ---
 
@@ -50,11 +134,11 @@ const response = await fetch(`${API_BASE_URL}/maps`, {
     data: {
       n: [
         { i: '1', p: [100, 200], c: 'First idea' },
-        { i: '2', p: [300, 400], c: 'Second idea' }
+        { i: '2', p: [300, 400], c: 'Second idea' },
       ],
-      c: [{ f: '1', t: '2' }]
-    }
-  })
+      c: [{ f: '1', t: '2' }],
+    },
+  }),
 });
 
 const etag = response.headers.get('ETag');
@@ -78,12 +162,12 @@ const response = await fetch(`${API_BASE_URL}/maps/${mapId}`, {
   method: 'PUT',
   headers: {
     'Content-Type': 'application/json',
-    'If-Match': etag // Prevent conflicts
+    'If-Match': etag, // Prevent conflicts
   },
   body: JSON.stringify({
     data: updatedData,
-    version: currentVersion
-  })
+    version: currentVersion,
+  }),
 });
 
 if (response.status === 409) {
@@ -106,7 +190,7 @@ const maps = await response.json();
 
 ```javascript
 const response = await fetch(`${API_BASE_URL}/maps/${mapId}`, {
-  method: 'DELETE'
+  method: 'DELETE',
 });
 
 if (response.status === 200) {
@@ -214,14 +298,14 @@ function updateMapData(newData) {
 ```javascript
 function updateNodeOptimistically(nodeId, newContent) {
   // 1. Update UI immediately
-  setNodes(prev =>
-    prev.map(node => (node.i === nodeId ? { ...node, c: newContent } : node))
+  setNodes((prev) =>
+    prev.map((node) => (node.i === nodeId ? { ...node, c: newContent } : node)),
   );
 
   // 2. Save to server in background
   const updatedData = { ...currentData };
-  updatedData.n = updatedData.n.map(node =>
-    node.i === nodeId ? { ...node, c: newContent } : node
+  updatedData.n = updatedData.n.map((node) =>
+    node.i === nodeId ? { ...node, c: newContent } : node,
   );
 
   autoSave(mapId, updatedData, currentVersion, currentEtag).catch(() => {
@@ -260,14 +344,14 @@ const provider = new LocalJSONProvider({
   storagePrefix: 'myapp_map_',
   metaPrefix: 'myapp_meta_',
   maxMaps: 100,
-  storageQuotaWarning: 5 * 1024 * 1024 // 5MB
+  storageQuotaWarning: 5 * 1024 * 1024, // 5MB
 });
 
 // Save a map
 await provider.save('my-map-id', {
   n: [{ i: 'note1', c: 'My Note', p: [100, 200] }],
   c: [],
-  meta: { title: 'My Mind Map' }
+  meta: { title: 'My Mind Map' },
 });
 
 // Load a map
@@ -278,11 +362,11 @@ console.log('Loaded:', mapData.meta.title);
 const maps = await provider.list({
   sortBy: 'modified',
   sortOrder: 'desc',
-  limit: 20
+  limit: 20,
 });
 
 // Subscribe to changes
-await provider.subscribe('my-map-id', update => {
+await provider.subscribe('my-map-id', (update) => {
   console.log('Map updated:', update.type, update.data);
 });
 ```
@@ -314,7 +398,7 @@ The factory manages provider creation and switching based on environment and con
 ```javascript
 const {
   DataProviderFactory,
-  PROVIDER_TYPES
+  PROVIDER_TYPES,
 } = require('./src/client/providers/DataProviderFactory');
 
 // Initialize factory
@@ -323,8 +407,8 @@ const factory = new DataProviderFactory({
   localStoragePrefix: 'myapp_',
   featureFlags: {
     enableCollaboration: false,
-    enableYjsProvider: false
-  }
+    enableYjsProvider: false,
+  },
 });
 
 // Create provider (auto-detects best option)
@@ -333,13 +417,13 @@ const provider = await factory.createProvider();
 // Force specific provider type
 const localProvider = await factory.createProvider({
   type: PROVIDER_TYPES.LOCAL,
-  maxMaps: 50
+  maxMaps: 50,
 });
 
 // Switch provider types
 const newProvider = await factory.switchProvider(PROVIDER_TYPES.YJS, {
   pauseAutosave: true,
-  resumeAutosave: true
+  resumeAutosave: true,
 });
 
 // Get environment info
@@ -376,7 +460,7 @@ Utilities to prevent server-side execution of client-only features.
 ```javascript
 const {
   HydrationChecker,
-  HydrationSuppressor
+  HydrationSuppressor,
 } = require('./src/client/utils/HydrationSuppression');
 
 // Environment detection
@@ -391,7 +475,7 @@ if (HydrationChecker.isHydrating()) {
 // Suppress execution
 const suppressor = new HydrationSuppressor({
   suppressOnServer: true,
-  suppressDuringHydration: true
+  suppressDuringHydration: true,
 });
 
 const result = suppressor.suppress(() => {
@@ -407,7 +491,7 @@ const data = await suppressor.suppressAsync(async () => {
 
 // Initialize provider safely
 const provider = await suppressor.initializeDataProvider(factory, {
-  type: PROVIDER_TYPES.LOCAL
+  type: PROVIDER_TYPES.LOCAL,
 });
 ```
 
@@ -418,7 +502,7 @@ const provider = await suppressor.initializeDataProvider(factory, {
 ```jsx
 import {
   DataProviderFactory,
-  PROVIDER_TYPES
+  PROVIDER_TYPES,
 } from './src/client/providers/DataProviderFactory';
 import { HydrationSuppressor } from './src/client/utils/HydrationSuppression';
 
@@ -430,7 +514,7 @@ const useDataProvider = () => {
   useEffect(() => {
     const factory = new DataProviderFactory({
       defaultProvider: PROVIDER_TYPES.LOCAL,
-      enableHydrationSuppression: true
+      enableHydrationSuppression: true,
     });
 
     const suppressor = new HydrationSuppressor();
@@ -470,7 +554,7 @@ let dataProviderFactory = null;
 
 if (typeof window !== 'undefined') {
   dataProviderFactory = new DataProviderFactory({
-    enableHydrationSuppression: true
+    enableHydrationSuppression: true,
   });
 }
 
@@ -510,7 +594,7 @@ export default function MapPage({ mapId }) {
    ```javascript
    // Start with LocalJSONProvider for all users
    const factory = new DataProviderFactory({
-     defaultProvider: PROVIDER_TYPES.LOCAL
+     defaultProvider: PROVIDER_TYPES.LOCAL,
    });
    ```
 
@@ -520,8 +604,8 @@ export default function MapPage({ mapId }) {
    const factory = new DataProviderFactory({
      defaultProvider: PROVIDER_TYPES.AUTO,
      featureFlags: {
-       enableYjsProvider: user.isInYjsBeta
-     }
+       enableYjsProvider: user.isInYjsBeta,
+     },
    });
    ```
 
@@ -529,7 +613,7 @@ export default function MapPage({ mapId }) {
    ```javascript
    const factory = new DataProviderFactory({
      defaultProvider: PROVIDER_TYPES.YJS,
-     fallbackProvider: PROVIDER_TYPES.LOCAL
+     fallbackProvider: PROVIDER_TYPES.LOCAL,
    });
    ```
 
@@ -600,12 +684,12 @@ describe('LocalJSONProvider', () => {
       removeItem: jest.fn(),
       clear: jest.fn(),
       key: jest.fn(),
-      length: 0
+      length: 0,
     };
 
     provider = new LocalJSONProvider({
       storagePrefix: 'test_',
-      metaPrefix: 'test_meta_'
+      metaPrefix: 'test_meta_',
     });
   });
 
@@ -629,7 +713,7 @@ describe('DataProvider Integration', () => {
     const factory = new DataProviderFactory();
 
     const localProvider = await factory.createProvider({
-      type: PROVIDER_TYPES.LOCAL
+      type: PROVIDER_TYPES.LOCAL,
     });
 
     await localProvider.save('test', { n: [], c: [] });
@@ -637,7 +721,7 @@ describe('DataProvider Integration', () => {
     // Switch providers
     const newProvider = await factory.switchProvider(PROVIDER_TYPES.LOCAL, {
       storagePrefix: 'new_',
-      forceNew: true
+      forceNew: true,
     });
 
     expect(newProvider).not.toBe(localProvider);
