@@ -14,6 +14,7 @@ const { createMcpSseEndpoint } = require('../core/mcp-sse');
 const Logger = require('../utils/logger');
 const { buildConfig } = require('../config/config');
 const { createYjsRoutes } = require('../modules/yjs/routes');
+const createClientBundleRouter = require('../modules/yjs/client-bundle-route');
 
 /**
  * Create configured Express server
@@ -71,6 +72,12 @@ function createServer(config = {}) {
   if (process.env.NODE_ENV !== 'production') {
     app.use('/', createDocsRouter());
   }
+
+  // Client bundle route (serves pre-built Yjs client for zero-dependency clients)
+  app.use('/client', createClientBundleRouter());
+  Logger.info('Client bundle route enabled', {
+    endpoint: '/client/mindmeld-yjs-client.js',
+  });
 
   // Store minimal config on app
   app.locals.config = {

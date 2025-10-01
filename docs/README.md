@@ -6,7 +6,10 @@ This directory contains comprehensive documentation for the MindMeld Server - a 
 
 ### Getting Started
 
-- **[Client Integration Guide](client-integration.md)** - REST API and DataProvider client integration patterns
+- **[Client Integration Guide](client-integration.md)** - REST API, WebSocket, and DataProvider client integration
+- **[Zero-Dependency WebSocket Client](zero-dependency-client.md)** - Real-time collaboration without npm/build tools
+- **[WebSocket Protocol Explained](websocket-protocol.md)** - Why binary not JSON, protocol details
+- **[Client Team Summary](client-team-summary.md)** - Quick summary of WebSocket bundle solution
 - **[MCP Client Integration](mcp-client-integration.md)** - AI assistant integration via MCP protocol
 - **[DataProvider Reference](dataprovider-reference.md)** - Technical reference for client provider architecture
 
@@ -36,6 +39,7 @@ This directory contains comprehensive documentation for the MindMeld Server - a 
 Client Applications → MindMeld Server
     ├── REST API (/maps)
     ├── WebSocket (YJS) (ws://localhost:3001/yjs/{mapId})
+    ├── Client Bundle (/client/mindmeld-yjs-client.js) - For zero-dep clients
     └── MCP Protocol (/mcp/sse)
 
 AI Assistant (Warp/Claude) → mcp-remote → MCP Endpoints
@@ -87,19 +91,23 @@ curl http://localhost:3001/health
 
 ```
 docs/
-├── README.md                    # This index file
-├── mcp-client-integration.md   # MCP client integration for AI assistants
-├── mcp-developer-guide.md      # Complete integration reference
-├── mcp-user-guide.md           # User-friendly MCP setup guide
-├── client-integration.md       # REST API and DataProvider client integration
-├── dataprovider-reference.md   # Technical reference for client providers
-├── architecture.md             # System architecture
-├── developer-guide.md          # Development workflows
-├── testing-guide.md            # Testing strategies
-├── server-admin.md             # Server administration and monitoring
-├── health-checks.md            # Code quality health check documentation
-├── monitoring-security.md      # Runtime monitoring endpoints and security
-└── admin-testing.md            # Admin command testing
+├── README.md                         # This index file
+├── client-team-summary.md           # WebSocket bundle implementation summary
+├── client-integration.md            # REST API, WebSocket, and DataProvider integration
+├── zero-dependency-client.md        # WebSocket client for zero-dep architecture
+├── websocket-protocol.md            # Binary protocol explanation
+├── mcp-client-integration.md        # MCP client integration for AI assistants
+├── mcp-developer-guide.md           # Complete MCP integration reference
+├── mcp-user-guide.md                # User-friendly MCP setup guide
+├── dataprovider-reference.md        # Technical reference for client providers
+├── yjs-dataprovider-contract.md     # Yjs DataProvider contract specification
+├── architecture.md                  # System architecture
+├── developer-guide.md               # Development workflows
+├── testing-guide.md                 # Testing strategies
+├── server-admin.md                  # Server administration and monitoring
+├── health-checks.md                 # Code quality health check documentation
+├── monitoring-security.md           # Runtime monitoring endpoints and security
+└── admin-testing.md                 # Admin command testing
 ```
 
 ### Contributing to Documentation

@@ -36,7 +36,8 @@
     "test:admin:watch": "jest tests/admin --watch --testTimeout=30000",
     "health:check": "bash scripts/health-check-server.sh",
     "health:pre-commit": "bash scripts/pre-commit-health.sh",
-    "cleanup:backups": "node -e \"require('./tests/utils/temp-files').cleanupOldTestBackups()\""
+    "cleanup:backups": "node -e \"require('./tests/utils/temp-files').cleanupOldTestBackups()\"",
+    "build:client": "node scripts/build-yjs-client.js"
   },
   "dependencies": {
     "better-sqlite3": "^12.2.0",
@@ -62,6 +63,7 @@
     "@types/jest": "^30.0.0",
     "@types/node": "^24.5.2",
     "cross-env": "^10.0.0",
+    "esbuild": "^0.25.10",
     "eslint": "^9.36.0",
     "eslint-plugin-jest": "^29.0.1",
     "eslint-plugin-no-unsanitized": "^4.1.4",
