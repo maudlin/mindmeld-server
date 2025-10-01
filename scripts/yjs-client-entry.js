@@ -25,9 +25,10 @@ class MindMeldWebSocketClient {
     this.doc = new Y.Doc();
 
     // Connect WebSocket provider
+    // y-websocket appends the room name to the URL, so we need: ws://host/yjs + /mapId
     this.provider = new WebsocketProvider(
-      `${protocol}://${wsUrl}/yjs`,
-      mapId,
+      `${protocol}://${wsUrl}`,
+      `yjs/${mapId}`,
       this.doc,
       options,
     );
