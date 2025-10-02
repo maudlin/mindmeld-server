@@ -12,3 +12,7 @@ test-data
 .env
 .devcontainer
 .vscode
+# Data directory (mounted as volume)
+data
+# Built artifacts (created during Docker build)
+dist

@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  mindmeld:
+    build: .
+    image: mindmeld-server:latest
+    container_name: mindmeld-server
+    restart: unless-stopped
+
+    ports:
+      - '3001:3001'
+
+    volumes:
+      # Persist data directory
+      - ./data:/app/data
+      # Optional: mount .env file for configuration
+      - ./.env:/app/.env:ro
+
+    environment:
+      # Server configuration
+      - NODE_ENV=production
+      - PORT=3001
+      # CORS - adjust for your client URL
+      # Use CORS_ORIGIN=* to allow all origins (development)
+      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:8080}
+      # Feature flags
+      - FEATURE_MAPS_API=${FEATURE_MAPS_API:-true}
+      - FEATURE_MCP=${FEATURE_MCP:-true}
+      # Logging
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      # Database location
+      - SQLITE_FILE=/app/data/db.sqlite
+
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:3001/health']
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+    networks:
+      - mindmeld-network
+
+networks:
+  mindmeld-network:
+    driver: bridge
+# Optional: Use named volume instead of bind mount for data persistence
+# Uncomment the following and change the volume mount above to: mindmeld-data:/app/data
+# volumes:
+#   mindmeld-data:

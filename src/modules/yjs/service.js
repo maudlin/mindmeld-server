@@ -1,5 +1,9 @@
 const Y = require('yjs');
 const YjsPersistence = require('./persistence');
+const syncProtocol = require('y-protocols/sync');
+const awarenessProtocol = require('y-protocols/awareness');
+const encoding = require('lib0/encoding');
+const decoding = require('lib0/decoding');
 // Removed unused performance import
 
 /**
@@ -302,11 +306,11 @@ class YjsService {
         this.metrics.recordClientConnected(ws.id, mapId, userAgent);
       }
 
-      // Send initial document state to new client
-      const initialState = Y.encodeStateAsUpdate(doc);
-      if (initialState.length > 0) {
-        ws.send(initialState);
-      }
+      // Send initial document state to new client using y-protocols sync
+      const encoder = encoding.createEncoder();
+      encoding.writeVarUint(encoder, syncProtocol.messageYjsSyncStep1);
+      syncProtocol.writeSyncStep1(encoder, doc);
+      ws.send(encoding.toUint8Array(encoder));
 
       // Set up message handler
       ws.on('message', (data) => {
@@ -319,9 +323,9 @@ class YjsService {
             return;
           }
 
-          const updateData =
+          const message =
             data instanceof Uint8Array ? data : new Uint8Array(data);
-          this.applyUpdateToDocument(mapId, updateData, ws);
+          this.handleProtocolMessage(mapId, message, ws, doc);
         } catch (error) {
           this.logger.error('Error processing WebSocket message', {
             mapId,
@@ -377,48 +381,82 @@ class YjsService {
   }
 
   /**
-   * Apply update from WebSocket client to document
+   * Handle y-websocket protocol messages
+   * Decodes the message type and routes to appropriate handler
    */
-  applyUpdateToDocument(mapId, updateData, ws) {
+  handleProtocolMessage(mapId, message, ws, doc) {
     try {
-      const doc = this.docs.get(mapId);
-      if (!doc) {
-        this.logger.error(
-          'Attempted to apply update to non-existent document',
-          {
-            mapId,
-          },
-        );
-        return;
+      const decoder = decoding.createDecoder(message);
+      const encoder = encoding.createEncoder();
+      const messageType = decoding.readVarUint(decoder);
+
+      switch (messageType) {
+        case syncProtocol.messageYjsSyncStep1:
+          // Client is asking for the current state
+          encoding.writeVarUint(encoder, syncProtocol.messageYjsSyncStep2);
+          syncProtocol.writeSyncStep2(decoder, encoder, doc);
+          ws.send(encoding.toUint8Array(encoder));
+          break;
+
+        case syncProtocol.messageYjsSyncStep2:
+          // Client is sending us an update
+          syncProtocol.readSyncStep2(decoder, doc, ws.id);
+          break;
+
+        case syncProtocol.messageYjsUpdate:
+          // Client is sending us an incremental update
+          syncProtocol.readUpdate(decoder, doc, ws.id);
+          break;
+
+        case awarenessProtocol.messageAwareness:
+          // Awareness updates (cursor positions, etc.) - we can ignore for now
+          // or broadcast to other clients if needed
+          awarenessProtocol.applyAwarenessUpdate(
+            ws.awareness,
+            decoding.readVarUint8Array(decoder),
+            ws.id,
+          );
+          break;
+
+        default:
+          this.logger.debug('Unknown message type from y-websocket client', {
+            mapId: mapId.substring(0, 8) + '...',
+            messageType,
+            messageSize: message.length,
+            clientId: ws.id,
+          });
       }
 
-      // Apply update with WebSocket origin to prevent echo-back
-      Y.applyUpdate(doc, updateData, ws.id);
-
-      this.logger.debug('Applied update to document', {
+      this.logger.debug('Processed y-websocket protocol message', {
         mapId,
-        updateSize: updateData.length,
+        messageType,
+        messageSize: message.length,
         origin: ws.id,
       });
     } catch (error) {
       // Enhanced error logging with diagnostics
-      this.logger.error('Yjs message processing error', {
+      const errorDetails = {
         mapId: mapId.substring(0, 8) + '...',
         clientId: ws.id,
         error: error.message,
-        messageSize: updateData.length,
+        errorStack: error.stack,
+        messageSize: message.length,
         diagnostics: {
           documentExists: this.docs.has(mapId),
           clientConnected: ws.readyState === 1,
         },
-      });
+      };
+      this.logger.error('Yjs message processing error', errorDetails);
+      console.error('\n=== FULL ERROR DETAILS ===');
+      console.error(JSON.stringify(errorDetails, null, 2));
+      console.error('========================\n');
 
       // Record error metrics
       if (this.metrics) {
         this.metrics.recordWebSocketError('message', error.message, {
           mapId: mapId,
           clientId: ws.id,
-          messageSize: updateData.length,
+          messageSize: message.length,
         });
       }
 
