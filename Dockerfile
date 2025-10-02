@@ -1,5 +1,16 @@
 # syntax=docker/dockerfile:1
 
+# Stage 1: Build the client bundle
+FROM node:24-alpine AS builder
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci
+
+COPY scripts ./scripts
+RUN npm run build:client
+
+# Stage 2: Production image
 FROM node:24-alpine AS base
 WORKDIR /app
 ENV NODE_ENV=production
@@ -11,7 +22,11 @@ RUN apk add --no-cache curl
 COPY package*.json ./
 RUN npm ci --omit=dev || npm ci
 
+# Copy built client bundle from builder stage
+COPY --from=builder /app/dist ./dist
+
 COPY src ./src
+COPY scripts ./scripts
 COPY docs ./docs
 COPY design ./design
 

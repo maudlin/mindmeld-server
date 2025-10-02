@@ -2,6 +2,8 @@ const YjsService = require('../../../src/modules/yjs/service');
 const YjsPersistence = require('../../../src/modules/yjs/persistence');
 const { EventEmitter } = require('events');
 const Y = require('yjs');
+const encoding = require('lib0/encoding');
+const syncProtocol = require('y-protocols/sync');
 
 // Mock the persistence module
 jest.mock('../../../src/modules/yjs/persistence');
@@ -282,12 +284,22 @@ describe('YjsService', () => {
 
       await yjsService.handleWebSocketConnection(mockWs, mockRequest);
 
-      const messageData = new Uint8Array([1, 2, 3, 4]);
-      const applySpy = jest.spyOn(yjsService, 'applyUpdateToDocument');
+      // Create a proper y-websocket sync step 1 message
+      const doc = await yjsService.getOrCreateDocument(mapId);
+      const encoder = encoding.createEncoder();
+      encoding.writeVarUint(encoder, syncProtocol.messageYjsSyncStep1);
+      syncProtocol.writeSyncStep1(encoder, doc);
+      const messageData = encoding.toUint8Array(encoder);
+      const handleSpy = jest.spyOn(yjsService, 'handleProtocolMessage');
 
       mockWs.emit('message', messageData);
 
-      expect(applySpy).toHaveBeenCalledWith(mapId, messageData, mockWs);
+      expect(handleSpy).toHaveBeenCalledWith(
+        mapId,
+        messageData,
+        mockWs,
+        expect.any(Y.Doc),
+      );
     });
 
     it('should handle WebSocket close events', async () => {
@@ -358,40 +370,51 @@ describe('YjsService', () => {
     });
   });
 
-  describe('applyUpdateToDocument', () => {
+  describe('handleProtocolMessage', () => {
     let mockWs;
-    // let doc; // unused in this describe block
+    let doc;
     const mapId = 'test-map-id';
 
     beforeEach(async () => {
       mockPersistence.getSnapshot.mockResolvedValue(null);
-      await yjsService.getOrCreateDocument(mapId);
+      doc = await yjsService.getOrCreateDocument(mapId);
 
       mockWs = new EventEmitter();
       mockWs.send = jest.fn();
       mockWs.id = 'websocket-123';
+      mockWs.readyState = 1;
     });
 
-    it('should apply update to document', async () => {
-      // Create a proper Y.Doc update
+    it('should process update messages to document', async () => {
+      // Create a proper Y.Doc update wrapped in protocol message
       const sourceDoc = new Y.Doc();
       const sourceArray = sourceDoc.getArray('test');
       sourceArray.insert(0, ['hello']);
       const updateData = Y.encodeStateAsUpdate(sourceDoc);
 
-      await yjsService.applyUpdateToDocument(mapId, updateData, mockWs);
+      // Wrap in y-websocket protocol format
+      const encoder = encoding.createEncoder();
+      encoding.writeVarUint(encoder, syncProtocol.messageYjsUpdate);
+      encoding.writeVarUint8Array(encoder, updateData);
+      const protocolMessage = encoding.toUint8Array(encoder);
 
-      // Should have logged applied update (not document creation)
+      yjsService.handleProtocolMessage(mapId, protocolMessage, mockWs, doc);
+
+      // Should have logged processed message
       expect(mockLogger.debug).toHaveBeenCalledWith(
-        'Applied update to document',
-        { mapId, updateSize: updateData.length, origin: mockWs.id },
+        'Processed y-websocket protocol message',
+        expect.objectContaining({
+          mapId,
+          messageType: syncProtocol.messageYjsUpdate,
+          origin: mockWs.id,
+        }),
       );
     });
 
-    it('should handle invalid update data gracefully', () => {
-      const invalidData = new Uint8Array([255, 255, 255]); // Invalid Yjs update
+    it('should handle invalid protocol data gracefully', () => {
+      const invalidData = new Uint8Array([255, 255, 255]); // Invalid protocol message
 
-      yjsService.applyUpdateToDocument(mapId, invalidData, mockWs);
+      yjsService.handleProtocolMessage(mapId, invalidData, mockWs, doc);
 
       expect(mockLogger.error).toHaveBeenCalledWith(
         'Yjs message processing error',
@@ -408,17 +431,9 @@ describe('YjsService', () => {
       );
     });
 
-    it('should handle missing document gracefully', () => {
-      const updateData = new Uint8Array([1, 2, 3]);
-      const nonExistentMapId = 'non-existent';
-
-      yjsService.applyUpdateToDocument(nonExistentMapId, updateData, mockWs);
-
-      expect(mockLogger.error).toHaveBeenCalledWith(
-        'Attempted to apply update to non-existent document',
-        { mapId: nonExistentMapId },
-      );
-    });
+    // Note: Sync step 1 tests are complex because they involve y-protocols internals
+    // The integration tests cover the full sync protocol behavior
+    // Here we just verify the error handling works correctly (tested above)
   });
 
   describe('broadcastUpdate', () => {
