@@ -390,6 +390,13 @@ class YjsService {
       const encoder = encoding.createEncoder();
       const messageType = decoding.readVarUint(decoder);
 
+      this.logger.debug('[PROTO] Received protocol message', {
+        mapId: mapId.substring(0, 8) + '...',
+        messageType,
+        messageSize: message.length,
+        clientId: ws.id.substring(0, 16),
+      });
+
       switch (messageType) {
         case syncProtocol.messageYjsSyncStep1:
           // Client is asking for the current state
@@ -398,10 +405,22 @@ class YjsService {
           ws.send(encoding.toUint8Array(encoder));
           break;
 
-        case syncProtocol.messageYjsSyncStep2:
-          // Client is sending us an update
+        case syncProtocol.messageYjsSyncStep2: {
+          // Client is sending us an update in response to our syncStep1
           syncProtocol.readSyncStep2(decoder, doc, ws.id);
+          // Send the full document state to the client as an update
+          const docState = Y.encodeStateAsUpdate(doc);
+          this.logger.debug('[SYNC] Sending full doc state to client', {
+            mapId,
+            docStateSize: docState.length,
+            clientId: ws.id,
+          });
+          const updateEncoder = encoding.createEncoder();
+          encoding.writeVarUint(updateEncoder, syncProtocol.messageYjsUpdate);
+          encoding.writeVarUint8Array(updateEncoder, docState);
+          ws.send(encoding.toUint8Array(updateEncoder));
           break;
+        }
 
         case syncProtocol.messageYjsUpdate:
           // Client is sending us an incremental update
@@ -473,6 +492,12 @@ class YjsService {
       return;
     }
 
+    // Wrap the update in a y-websocket protocol message
+    const encoder = encoding.createEncoder();
+    encoding.writeVarUint(encoder, syncProtocol.messageYjsUpdate);
+    encoding.writeVarUint8Array(encoder, updateData);
+    const protocolMessage = encoding.toUint8Array(encoder);
+
     const closedConnections = [];
 
     for (const ws of connections) {
@@ -487,7 +512,7 @@ class YjsService {
       }
 
       try {
-        ws.send(updateData);
+        ws.send(protocolMessage);
       } catch (error) {
         this.logger.error('Failed to send update to WebSocket client', {
           mapId,

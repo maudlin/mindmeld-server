@@ -183,67 +183,58 @@ describe('Yjs WebSocket Integration Tests', () => {
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Second connection should receive initial state
+      // Set up doc2 and message handler BEFORE connecting
+      const doc2 = new Y.Doc();
       const ws2 = new WebSocket(wsUrl);
-      await new Promise((resolve, reject) => {
-        ws2.on('open', resolve);
-        ws2.on('error', reject);
-      });
 
-      const receivedUpdates = [];
       ws2.on('message', (data) => {
         const message = new Uint8Array(data);
         const decoder = decoding.createDecoder(message);
         const messageType = decoding.readVarUint(decoder);
 
-        // Extract the actual update from the protocol message
-        if (
-          messageType === syncProtocol.messageYjsSyncStep1 ||
-          messageType === syncProtocol.messageYjsSyncStep2
-        ) {
-          receivedUpdates.push(message);
+        console.log(
+          '[TEST] Received message type:',
+          messageType,
+          '(0=syncStep1, 1=syncStep2, 2=update)',
+        );
+
+        if (messageType === syncProtocol.messageYjsSyncStep1) {
+          // Server is asking for our state
+          console.log(
+            '[TEST] Handling syncStep1 - server asking for our state',
+          );
+          const encoder = encoding.createEncoder();
+          encoding.writeVarUint(encoder, syncProtocol.messageYjsSyncStep2);
+          syncProtocol.writeSyncStep2(decoder, encoder, doc2);
+          // Send our sync step 2 response
+          ws2.send(encoding.toUint8Array(encoder));
+        } else if (messageType === syncProtocol.messageYjsSyncStep2) {
+          // Server is sending us state
+          console.log('[TEST] Handling syncStep2 - server sending us state');
+          syncProtocol.readSyncStep2(decoder, doc2, 'server');
+          console.log(
+            '[TEST] After syncStep2, doc2 notes array length:',
+            doc2.getArray('notes').length,
+          );
         } else if (messageType === syncProtocol.messageYjsUpdate) {
-          const update = decoding.readVarUint8Array(decoder);
-          receivedUpdates.push(update);
+          // Server is sending us an update
+          console.log('[TEST] Handling update message');
+          syncProtocol.readUpdate(decoder, doc2, 'server');
+          console.log(
+            '[TEST] After update, doc2 notes array length:',
+            doc2.getArray('notes').length,
+          );
         }
       });
 
-      // Wait for initial state message
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      // Wait for connection to open
+      await new Promise((resolve, reject) => {
+        ws2.on('open', resolve);
+        ws2.on('error', reject);
+      });
 
-      expect(receivedUpdates.length).toBeGreaterThan(0);
-
-      // Apply received state to new document using y-protocols
-      const doc2 = new Y.Doc();
-      for (const message of receivedUpdates) {
-        try {
-          const decoder = decoding.createDecoder(message);
-          const messageType = decoding.readVarUint(decoder);
-
-          if (messageType === syncProtocol.messageYjsSyncStep1) {
-            const encoder = encoding.createEncoder();
-            encoding.writeVarUint(encoder, syncProtocol.messageYjsSyncStep2);
-            syncProtocol.writeSyncStep2(decoder, encoder, doc2);
-            // Apply the sync step 2 response
-            const responseDecoder = decoding.createDecoder(
-              encoding.toUint8Array(encoder),
-            );
-            decoding.readVarUint(responseDecoder); // skip message type
-            syncProtocol.readSyncStep2(responseDecoder, doc2, 'test');
-          } else if (messageType === syncProtocol.messageYjsSyncStep2) {
-            syncProtocol.readSyncStep2(decoder, doc2, 'test');
-          } else {
-            // Raw update
-            Y.applyUpdate(doc2, message);
-          }
-        } catch (e) {
-          // If it's not a protocol message, try applying as raw update
-          try {
-            Y.applyUpdate(doc2, message);
-          } catch (err) {
-            console.error('Failed to apply update:', err);
-          }
-        }
-      }
+      // Wait for initial sync to complete
+      await new Promise((resolve) => setTimeout(resolve, 200));
 
       const array2 = doc2.getArray('notes');
       expect(array2.length).toBe(1);
