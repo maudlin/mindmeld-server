@@ -308,8 +308,7 @@ class YjsService {
 
       // Send initial document state to new client using y-protocols sync
       const encoder = encoding.createEncoder();
-      encoding.writeVarUint(encoder, syncProtocol.messageYjsSyncStep1);
-      syncProtocol.writeSyncStep1(encoder, doc);
+      syncProtocol.writeSyncStep1(encoder, doc); // writeSyncStep1 includes message type
       ws.send(encoding.toUint8Array(encoder));
 
       // Set up message handler
@@ -400,8 +399,8 @@ class YjsService {
       switch (messageType) {
         case syncProtocol.messageYjsSyncStep1:
           // Client is asking for the current state
-          encoding.writeVarUint(encoder, syncProtocol.messageYjsSyncStep2);
-          syncProtocol.writeSyncStep2(decoder, encoder, doc);
+          // Use readSyncStep1 which reads the state vector and writes syncStep2 response
+          syncProtocol.readSyncStep1(decoder, encoder, doc);
           ws.send(encoding.toUint8Array(encoder));
           break;
 

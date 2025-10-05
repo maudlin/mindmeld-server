@@ -459,7 +459,12 @@ describe('YjsService', () => {
       yjsService.broadcastUpdate(mapId, updateData, mockWs1);
 
       expect(mockWs1.send).not.toHaveBeenCalled(); // Origin should not receive
-      expect(mockWs2.send).toHaveBeenCalledWith(updateData);
+      // Now expects protocol-wrapped message (messageType + update data)
+      expect(mockWs2.send).toHaveBeenCalledWith(expect.any(Uint8Array));
+      // Verify the sent data starts with messageYjsUpdate type and contains the update
+      const sentData = mockWs2.send.mock.calls[0][0];
+      expect(sentData[0]).toBe(syncProtocol.messageYjsUpdate);
+      expect(sentData.length).toBeGreaterThan(updateData.length);
       expect(mockWs3.send).not.toHaveBeenCalled(); // Closed connection
     });
 
