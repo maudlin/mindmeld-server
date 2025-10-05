@@ -150,7 +150,7 @@ import { LocalJSONProvider } from './src/client/providers/LocalJSONProvider.js';
 const provider = new LocalJSONProvider({
   storagePrefix: 'mindmeld_map_',
   maxMaps: 100,
-  autosave: true
+  autosave: true,
 });
 
 // Standard DataProvider interface
@@ -168,7 +168,7 @@ import { DataProviderFactory } from './src/client/providers/DataProviderFactory.
 const provider = DataProviderFactory.create({
   preferredProvider: 'yjs', // or 'json'
   fallbackProvider: 'json',
-  serverUrl: 'http://localhost:3001'
+  serverUrl: 'http://localhost:3001',
 });
 ```
 
@@ -205,37 +205,125 @@ CORS_ORIGIN=http://localhost:3000    # Also allows https://localhost:3000
   - Request log levels: 2xx/3xx info, 4xx warn, 5xx error
 - Health and readiness endpoints: /health, /ready
 
-## Docker
+## Docker Deployment
 
-```dockerfile
-FROM node:24-alpine
-WORKDIR /app
-ENV NODE_ENV=production
-ENV SQLITE_FILE=/app/data/db.sqlite
-RUN apk add --no-cache curl
-COPY package*.json ./
-RUN npm ci --omit=dev || npm ci
-COPY src ./src
-COPY docs ./docs
-COPY design ./design
-RUN mkdir -p /app/data && chown -R node:node /app
-USER node
-EXPOSE 3001
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD curl -fsS http://localhost:3001/health || exit 1
-CMD ["npm", "start"]
-```
+### Quick Start with Docker Compose (Recommended)
 
-Run
+The easiest way to run MindMeld Server is with Docker Compose:
 
 ```bash
-docker build -t mindmeld-server:local .
-docker run --rm -p 3001:3001 \
-  -e PORT=3001 \
-  -e CORS_ORIGIN=http://localhost:3000 \
-  -e SQLITE_FILE=/app/data/db.sqlite \
+# Start the server
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop the server
+docker-compose down
+```
+
+The server will be available at `http://localhost:3001` with data persisted in the `./data` directory.
+
+### Configuration
+
+Configure the server using environment variables in a `.env` file:
+
+```bash
+# .env
+CORS_ORIGIN=http://localhost:8080
+LOG_LEVEL=info
+FEATURE_MAPS_API=true
+FEATURE_MCP=false
+```
+
+Or set environment variables in `docker-compose.yml`:
+
+```yaml
+environment:
+  - CORS_ORIGIN=http://your-client-url.com
+  - LOG_LEVEL=debug
+```
+
+### Docker CLI (Alternative)
+
+Run with Docker directly:
+
+```bash
+# Build the image
+docker build -t mindmeld-server:latest .
+
+# Run the container
+docker run -d \
+  --name mindmeld-server \
+  -p 3001:3001 \
   -v "$(pwd)/data:/app/data" \
-  mindmeld-server:local
+  -e CORS_ORIGIN=http://localhost:3000 \
+  -e LOG_LEVEL=info \
+  --restart unless-stopped \
+  mindmeld-server:latest
+
+# View logs
+docker logs -f mindmeld-server
+
+# Stop and remove
+docker stop mindmeld-server && docker rm mindmeld-server
+```
+
+### Features
+
+- ✅ **Multi-stage build** - Optimized image size with separate build and runtime stages
+- ✅ **Client bundle included** - WebSocket client bundle pre-built during Docker build
+- ✅ **Health checks** - Built-in container health monitoring
+- ✅ **Non-root user** - Runs as unprivileged `node` user for security
+- ✅ **Data persistence** - SQLite data persisted via Docker volumes
+- ✅ **Auto-restart** - Automatically restarts on failure
+
+### Advanced Options
+
+**Using named volumes for data persistence:**
+
+```bash
+# Create a named volume
+docker volume create mindmeld-data
+
+# Run with named volume
+docker run -d \
+  -p 3001:3001 \
+  -v mindmeld-data:/app/data \
+  mindmeld-server:latest
+```
+
+**Enable WebSocket collaboration:**
+
+```bash
+docker run -d \
+  -p 3001:3001 \
+  -v "$(pwd)/data:/app/data" \
+  -e SERVER_SYNC=on \
+  -e DATA_PROVIDER=yjs \
+  mindmeld-server:latest
+```
+
+**Production deployment with all features:**
+
+```bash
+docker run -d \
+  --name mindmeld-server \
+  -p 3001:3001 \
+  -v mindmeld-data:/app/data \
+  -e NODE_ENV=production \
+  -e CORS_ORIGIN=https://your-domain.com \
+  -e LOG_LEVEL=info \
+  -e FEATURE_MAPS_API=true \
+  -e FEATURE_MCP=true \
+  -e SERVER_SYNC=on \
+  -e DATA_PROVIDER=yjs \
+  --restart unless-stopped \
+  --health-cmd="curl -f http://localhost:3001/health || exit 1" \
+  --health-interval=30s \
+  --health-timeout=3s \
+  --health-retries=3 \
+  mindmeld-server:latest
 ```
 
 ## Development
